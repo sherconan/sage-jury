@@ -110,12 +110,15 @@ interface MultiReply {
 interface Msg {
   role: "user" | "sage" | "multi";
   content: string;
+  sage_id?: string;          // 单 sage 模式记录是哪位 sage 答的
   quotes?: QuoteRef[];
   followups?: string[];
   loading?: boolean;
   multiReplies?: MultiReply[];
   verdict?: string;          // 陪审团判决书
   verdictLoading?: boolean;
+  // cross-sage debate: sage A 答完后让 B 反驳
+  debates?: Array<{ sage_id: string; sage_name: string; sage_initials: string; sage_gradient: string; content: string; loading?: boolean; quotes?: QuoteRef[] }>;
   ts: number;
 }
 
@@ -303,7 +306,7 @@ export default function BattlePage() {
     };
     setMessages(prev => [...prev,
       { role: "user", content: text, ts: Date.now() },
-      { role: "sage", content: "", loading: true, ts: Date.now() + 1 }]);
+      { role: "sage", content: "", sage_id: activeSage.slug, loading: true, ts: Date.now() + 1 }]);
     setInput(""); setLoading(true);
     try {
       const res = await fetch("/api/battle/stream", {
@@ -399,6 +402,56 @@ export default function BattlePage() {
     } finally { setLoading(false); }
   };
   const submit = () => submitWith();
+
+  // ⭐ Cross-sage debate: 当前 sage 答完后，找另一位 sage 反驳
+  const triggerDebate = async (msgIdx: number, oppId: string) => {
+    const msg = messages[msgIdx];
+    if (!msg || msg.role !== "sage" || !msg.sage_id || !msg.content) return;
+    const userMsg = messages[msgIdx - 1];
+    if (!userMsg || userMsg.role !== "user") return;
+    const opp = SAGES.find(s => s.slug === oppId);
+    if (!opp) return;
+
+    setMessages(prev => prev.map((m, i) => i === msgIdx ? {
+      ...m,
+      debates: [...(m.debates || []), { sage_id: oppId, sage_name: opp.display, sage_initials: opp.initials, sage_gradient: opp.gradient, content: "", loading: true }],
+    } : m));
+
+    const updateDeb = (patch: Partial<NonNullable<Msg["debates"]>[0]>) => setMessages(prev => prev.map((m, i) => {
+      if (i !== msgIdx || !m.debates) return m;
+      const debs = [...m.debates]; const last = debs[debs.length - 1]; debs[debs.length - 1] = { ...last, ...patch };
+      return { ...m, debates: debs };
+    }));
+
+    try {
+      const res = await fetch("/api/battle/debate", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: userMsg.content, sage_a_id: msg.sage_id, sage_a_reply: msg.content, sage_b_id: oppId }),
+      });
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "", evt = "", acc = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) { evt = line.slice(7).trim(); continue; }
+          if (!line.startsWith("data: ")) continue;
+          let d: any; try { d = JSON.parse(line.slice(6)); } catch { continue; }
+          if (evt === "quotes") updateDeb({ quotes: d, loading: true });
+          else if (evt === "chunk" && d.delta) { acc += d.delta; updateDeb({ content: acc, loading: false }); }
+          else if (evt === "done") updateDeb({ content: acc || d.fullReply || "", loading: false });
+          else if (evt === "error") updateDeb({ content: `Error: ${d.message}`, loading: false });
+        }
+      }
+    } catch (e: any) {
+      updateDeb({ content: `Error: ${e.message}`, loading: false });
+    }
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 text-slate-900"
@@ -677,6 +730,33 @@ export default function BattlePage() {
                           ))}
                         </div>
                       )}
+                      {/* ⭐ Cross-sage debate triggers */}
+                      {m.role === "sage" && !m.loading && m.sage_id && m.content && (
+                        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                          <Swords className="h-3 w-3 text-rose-400" />
+                          <span>让其他大佬反驳：</span>
+                          {SAGES.filter(s => s.slug !== m.sage_id && !(m.debates || []).find(d => d.sage_id === s.slug)).map(s => (
+                            <button key={s.slug} onClick={() => triggerDebate(messages.indexOf(m), s.slug)}
+                              className={cn("flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition",
+                                "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-400 hover:bg-rose-100")}>
+                              {s.display}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {/* ⭐ Cross-sage debate replies */}
+                      {m.debates && m.debates.length > 0 && m.debates.map((deb, di) => (
+                        <div key={di} className="mt-3 rounded-xl border-l-4 border-rose-300 bg-rose-50/40 p-3.5">
+                          <div className="flex items-center gap-2 text-xs mb-1.5">
+                            <Swords className="h-3 w-3 text-rose-500" />
+                            <span className="font-semibold text-rose-700">{deb.sage_name} 反驳</span>
+                            {deb.loading && <Loader2 className="h-3 w-3 animate-spin text-rose-400" />}
+                          </div>
+                          <div className="prose prose-sm max-w-none whitespace-pre-wrap text-[13.5px] leading-[1.65] text-slate-800">
+                            {deb.content || (deb.loading ? <span className="italic text-slate-400">{deb.sage_name} 正在组织反驳...</span> : null)}
+                          </div>
+                        </div>
+                      ))}
                       {m.quotes && m.quotes.length > 0 && (
                         <details className="mt-4 border-t border-slate-100 pt-3">
                           <summary className="cursor-pointer flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-400 hover:text-slate-600">
