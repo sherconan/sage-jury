@@ -1,14 +1,33 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   ArrowLeft, Send, Loader2, ExternalLink,
   MessageSquare, Swords, Sparkles,
   Twitter, BookOpen, Mic, FileText, Globe, Hash,
-  TrendingUp, Activity, Database,
+  TrendingUp, Activity, Database, Trash2, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const HISTORY_KEY = (slug: string, mode: string) => `sj_battle_history_v1_${slug}_${mode}`;
+const MAX_HISTORY_TURNS = 30;
+function loadHistory(slug: string, mode: string): Msg[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY(slug, mode));
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr.filter((m: any) => m && m.role && m.content !== undefined) : [];
+  } catch { return []; }
+}
+function saveHistory(slug: string, mode: string, msgs: Msg[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const trimmed = msgs.slice(-MAX_HISTORY_TURNS * 2);
+    localStorage.setItem(HISTORY_KEY(slug, mode), JSON.stringify(trimmed));
+  } catch {}
+}
 
 interface SageOption {
   slug: string; display: string; alias: string;
@@ -68,8 +87,22 @@ export default function BattlePage() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
-  useEffect(() => { setMessages([]); }, [activeSage, mode]);
+  // 切换 sage 或 mode 时，从 localStorage 恢复历史对话（不再清空！）
+  useEffect(() => {
+    setMessages(loadHistory(activeSage.slug, mode));
+  }, [activeSage, mode]);
   useEffect(() => { inputRef.current?.focus(); }, [mode]);
+  // 持久化
+  useEffect(() => {
+    if (messages.length > 0) saveHistory(activeSage.slug, mode, messages);
+  }, [messages, activeSage, mode]);
+
+  const clearHistory = useCallback(() => {
+    if (typeof window !== "undefined" && window.confirm(`确认清空与 ${activeSage.display} 的「${mode === "chat" ? "对话" : "对线"}」历史？`)) {
+      localStorage.removeItem(HISTORY_KEY(activeSage.slug, mode));
+      setMessages([]);
+    }
+  }, [activeSage, mode]);
 
   const submit = async () => {
     if (loading) return;
@@ -77,6 +110,10 @@ export default function BattlePage() {
     if (mode === "chat") {
       if (!input.trim()) return;
       userContent = input; body.message = input;
+      // ⭐ 把历史 messages 转成 LLM 多轮对话格式
+      body.history = messages
+        .filter(m => !m.loading && m.content)
+        .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
     } else {
       if (!stockCode.trim()) return;
       userContent = `${stockCode}${reason ? ` — ${reason}` : ""}`;
@@ -194,7 +231,19 @@ export default function BattlePage() {
                 <Swords className="h-3.5 w-3.5" /> 对线
               </button>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              {messages.length > 0 && (
+                <>
+                  <span className="flex items-center gap-1.5 rounded-full bg-slate-50 border border-slate-200 px-2.5 py-1 text-slate-600">
+                    <Clock className="h-3 w-3" />
+                    {messages.filter(m => m.role === "user").length} 轮历史 · 已保存
+                  </span>
+                  <button onClick={clearHistory}
+                    className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition">
+                    <Trash2 className="h-3 w-3" /> 清空
+                  </button>
+                </>
+              )}
               <span>对话:</span>
               <div className={cn("flex items-center gap-1.5 rounded-full bg-gradient-to-br px-2.5 py-1 font-medium text-white",
                 activeSage.gradient)}>
