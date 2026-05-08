@@ -29,6 +29,7 @@ SAGES = {
 # 反向：从 STOCK_ALIASES 拿到 中文名 ↔ 代码 双向映射
 sys.path.insert(0, str(Path(__file__).parent))
 from data_governance import STOCK_ALIASES  # type: ignore
+from lib_normalize import normalize, extract_keywords  # type: ignore
 
 # 反向字典：代码 → [所有别名]（含中文名）
 CODE_TO_ALIASES: dict[str, list[str]] = {}
@@ -37,14 +38,19 @@ for alias, code in STOCK_ALIASES.items():
 
 
 def make_quote(r):
-    """r: (id, timestamp, text, like_count, retweet_count, url)"""
+    """r: (id, timestamp, text, like_count, retweet_count, url)
+    输出包含 text (原文)、text_n (normalized 简体普通话)、kw (jieba 关键词)"""
     id_, ts, text, lk, rt, url = r
     d = dt.fromtimestamp(ts/1000) if ts else None
+    raw = (text or "").replace("\n", " ").strip()[:600]
+    text_n = normalize(raw)
     return {
         "id": id_,
         "date": d.strftime("%Y-%m-%d") if d else "?",
         "ts": ts,
-        "text": (text or "").replace("\n", " ").strip()[:600],
+        "text": raw,                        # 保留原文（含繁体粤语）
+        "text_n": text_n if text_n != raw else "",  # normalize 后的简体（节省空间）
+        "kw": extract_keywords(raw, top_k=10),       # jieba 提取的关键词
         "likes": lk or 0,
         "rt": rt or 0,
         "url": url or "",
