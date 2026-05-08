@@ -4,30 +4,58 @@ import { ArrowLeft, BookOpen, Quote, ShieldAlert, Sparkles, TrendingUp, AlertCir
 import { SAGES, SAGE_BY_ID } from "@/data/sages";
 import { SageAvatar } from "@/components/SageAvatar";
 import { evaluate } from "@/lib/engine";
-import { LEADERBOARD_POOL } from "@/data/cases/leaderboard-pool";
+import { LEADERBOARD_POOL, SCAN_INDUSTRY_DEFAULTS, type LeaderboardEntry } from "@/data/cases/leaderboard-pool";
 import type { CaseInput } from "@/types";
 import { cn, scoreBarColor, verdictColor } from "@/lib/utils";
 
-const SCAN_INDUSTRY: Record<string, Partial<CaseInput>> = {
-  白酒: { monopolyLevel: 5, brandStrength: 5, consumerStickiness: 5, repeatedConsumption: 4, techDisruption: 1 },
-  食品: { monopolyLevel: 4, brandStrength: 4, consumerStickiness: 4, repeatedConsumption: 5, techDisruption: 1 },
-  家电: { monopolyLevel: 4, brandStrength: 4, consumerStickiness: 3, repeatedConsumption: 1, techDisruption: 3 },
-  中药: { monopolyLevel: 4, brandStrength: 4, consumerStickiness: 4, repeatedConsumption: 4, techDisruption: 1 },
-  医药: { monopolyLevel: 3, brandStrength: 3, consumerStickiness: 3, repeatedConsumption: 4, techDisruption: 3, regulatoryRisk: 4 },
-  银行: { monopolyLevel: 4, brandStrength: 3, consumerStickiness: 4, regulatoryRisk: 5, cyclical: true },
-  保险: { monopolyLevel: 3, brandStrength: 3, regulatoryRisk: 5 },
-  新能源: { monopolyLevel: 3, brandStrength: 3, techDisruption: 4, cyclical: true },
-  汽车: { monopolyLevel: 3, brandStrength: 3, techDisruption: 4, cyclical: true },
-  软件: { monopolyLevel: 3, brandStrength: 3, techDisruption: 4, regulatoryRisk: 3 },
-  消费: { monopolyLevel: 4, brandStrength: 4, consumerStickiness: 4, repeatedConsumption: 3 },
-  半导体: { monopolyLevel: 4, brandStrength: 4, techDisruption: 5 },
-  文教: { monopolyLevel: 3, brandStrength: 4, consumerStickiness: 3, repeatedConsumption: 4, techDisruption: 2 },
-};
 const pickSecid = (t: string) =>
   /^[0-9]{6}$/.test(t) ? (t.startsWith("6") || t.startsWith("9") ? `1.${t}` : `0.${t}`) : `0.${t}`;
 
+// 按 sage 偏好的 archetype（黑马/稳健/逆向）给一点点风格倾向
+// 不破坏 evaluate() 的核心评分，只是同分时选谁的 tie-breaker
+const SAGE_ARCHETYPE_PREF: Record<string, Record<string, number>> = {
+  // 段永平 / 李录：稳健长期持久性
+  "duan-yongping": { stable: 4, growth: 1, turnaround: 0, blackHorse: -3, cyclical: -3 },
+  "li-lu":         { stable: 5, growth: 1, turnaround: 0, blackHorse: -3, cyclical: -3 },
+  // 张坤：消费稳健
+  "zhang-kun":     { stable: 4, growth: 2, turnaround: 0, blackHorse: -2, cyclical: -3 },
+  // 老唐：长期复利
+  "lao-tang":      { stable: 4, growth: 1, turnaround: 0, blackHorse: -2, cyclical: -2 },
+  // 但斌：时间的玫瑰
+  "dan-bin":       { stable: 4, growth: 2, turnaround: 0, blackHorse: -1, cyclical: -2 },
+  // 林园：医药消费
+  "lin-yuan":      { stable: 4, growth: 1, turnaround: 0, blackHorse: -1, cyclical: -2 },
+  // 巴菲特：经典价值
+  "buffett":       { stable: 5, growth: 1, turnaround: 1, blackHorse: -2, cyclical: -2 },
+  // 邱国鹭：经典价值
+  "qiu-guolu":     { stable: 4, growth: 1, turnaround: 2, blackHorse: -1, cyclical: 0 },
+  // 马自冰：雪湖
+  "ma-zibing":     { stable: 0, growth: 2, turnaround: 1, blackHorse: 3, cyclical: 0 },
+  // 冯柳：弱者体系（逆向）
+  "feng-liu":      { stable: 0, growth: 1, turnaround: 5, blackHorse: 2, cyclical: 1 },
+  // 管我财：低估逆向
+  "guan-wo-cai":   { stable: 1, growth: 0, turnaround: 5, blackHorse: -1, cyclical: 2 },
+  // 杨东：宏观周期 / 逆向
+  "yang-dong":     { stable: 1, growth: 0, turnaround: 4, blackHorse: 1, cyclical: 3 },
+  // 风和资本（吴任昊 / Matt Hu）：成长 + 集中
+  "fenghe-wu":     { stable: 2, growth: 5, turnaround: 1, blackHorse: 2, cyclical: -1 },
+  // 邓晓峰：深度价值
+  "deng-xiaofeng": { stable: 4, growth: 1, turnaround: 3, blackHorse: -1, cyclical: 1 },
+  // 赵军（淡水泉）：逆向 + 拐点
+  "zhao-jun":      { stable: 0, growth: 2, turnaround: 5, blackHorse: 2, cyclical: 1 },
+  // 蒋锦志（景林）：全球品牌
+  "jiang-jinzhi":  { stable: 4, growth: 3, turnaround: 0, blackHorse: -1, cyclical: -2 },
+  // 王亚伟：黑马 / 拐点
+  "wang-yawei":    { stable: 0, growth: 2, turnaround: 3, blackHorse: 6, cyclical: 1 },
+  // 陈光明（睿远）：均衡价值
+  "chen-guangming":{ stable: 3, growth: 2, turnaround: 1, blackHorse: 0, cyclical: 0 },
+  // 谢治宇（兴全）：长期价值
+  "xie-zhiyu":     { stable: 4, growth: 2, turnaround: 0, blackHorse: 0, cyclical: -1 },
+};
+
 async function scanForSage(sageId: string) {
-  const results = await Promise.all(LEADERBOARD_POOL.map(async (p) => {
+  const archPref = SAGE_ARCHETYPE_PREF[sageId] || {};
+  const results = await Promise.all(LEADERBOARD_POOL.map(async (p: LeaderboardEntry) => {
     const secid = pickSecid(p.code);
     try {
       const res = await fetch(
@@ -40,19 +68,40 @@ async function scanForSage(sageId: string) {
       if (!d || !d.f58) return null;
       const div = (n: any) => (typeof n === "number" && !isNaN(n) ? n / 100 : undefined);
       const name = String(d.f58).replace(/\s+/g, "");
-      const indHints = SCAN_INDUSTRY[p.category] || {};
+      const indDef = SCAN_INDUSTRY_DEFAULTS[p.category] || {};
+      // 优先使用每只股票自带的指纹，行业默认值兜底
       const input: CaseInput = {
         ticker: p.code, name, industry: p.category, briefBusiness: name,
         pe: div(d.f162), pb: div(d.f167),
         monopolyLevel: 3, brandStrength: 3, consumerStickiness: 3, repeatedConsumption: 3,
         techDisruption: 3, regulatoryRisk: 3, managementQuality: 3, cyclical: false,
         intendedHoldYears: 5,
-        ...indHints,
-      };
+        ...indDef,
+        // 每股指纹（最高优先级）
+        ...(p.roe !== undefined ? { roe: p.roe } : {}),
+        ...(p.fcfMargin !== undefined ? { fcfMargin: p.fcfMargin } : {}),
+        ...(p.netMargin !== undefined ? { netMargin: p.netMargin } : {}),
+        ...(p.grossMargin !== undefined ? { grossMargin: p.grossMargin } : {}),
+        ...(p.divYield !== undefined ? { dividendYield: p.divYield } : {}),
+        ...(p.monopolyLevel !== undefined ? { monopolyLevel: p.monopolyLevel } : {}),
+        ...(p.brandStrength !== undefined ? { brandStrength: p.brandStrength } : {}),
+        ...(p.consumerStickiness !== undefined ? { consumerStickiness: p.consumerStickiness } : {}),
+        ...(p.repeatedConsumption !== undefined ? { repeatedConsumption: p.repeatedConsumption } : {}),
+        ...(p.techDisruption !== undefined ? { techDisruption: p.techDisruption } : {}),
+        ...(p.regulatoryRisk !== undefined ? { regulatoryRisk: p.regulatoryRisk } : {}),
+        ...(p.managementQuality !== undefined ? { managementQuality: p.managementQuality } : {}),
+        ...(p.cyclical !== undefined ? { cyclical: p.cyclical } : {}),
+        ...(p.yearsListed !== undefined ? { yearsListed: p.yearsListed } : {}),
+      } as CaseInput;
       const r = evaluate(input, [sageId]);
       const v = r.verdicts[0];
+      // 风格加权：每位大佬对 archetype 的偏好作为 tie-breaker（最多±6 分）
+      const archBonus = (p.growthArchetype && archPref[p.growthArchetype]) || 0;
       return { code: p.code, name, category: p.category, pe: div(d.f162),
-        score: v.finalScore, label: v.verdictLabel.split(" · ")[0], grade: v.letterGrade, oneLine: v.oneLine };
+        score: v.finalScore + archBonus,
+        rawScore: v.finalScore,
+        label: v.verdictLabel.split(" · ")[0], grade: v.letterGrade, oneLine: v.oneLine,
+        archetype: p.growthArchetype };
     } catch {
       return null;
     }
