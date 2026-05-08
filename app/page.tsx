@@ -88,7 +88,7 @@ export default function HomePage() {
             <a href="#jury" className="text-ink-700 hover:text-navy-700">陪审员</a>
             <a href="#cases" className="text-ink-700 hover:text-navy-700">历史案卷</a>
             <a href="/quotes" className="text-ink-700 hover:text-navy-700">金句墙</a>
-            <a href="/about" className="text-ink-700 hover:text-navy-700">为什么是这 6 位</a>
+            <a href="/about" className="text-ink-700 hover:text-navy-700">为什么是这 15 位</a>
             <a href="/dynamics" className="text-ink-700 hover:text-navy-700">相关性</a>
             <a href="/market" className="text-ink-700 hover:text-navy-700">市场扫描</a>
             <a href="/timemachine" className="text-ink-700 hover:text-navy-700">时光机</a>
@@ -117,7 +117,7 @@ export default function HomePage() {
                 { href: "#jury", label: "陪审员" },
                 { href: "#cases", label: "历史案卷" },
                 { href: "/quotes", label: "金句墙" },
-                { href: "/about", label: "为什么是这 6 位" },
+                { href: "/about", label: "为什么是这 15 位" },
                 { href: "/dynamics", label: "陪审员相关性" },
                 { href: "#methodology", label: "方法论" },
               ].map((l) => (
@@ -143,7 +143,7 @@ export default function HomePage() {
               <span>The Court of Investment</span>
             </div>
             <h1 className="font-serif text-4xl font-bold leading-tight text-navy-700 sm:text-5xl md:text-7xl animate-fadeUp" style={{ animationDelay: '0.1s' }}>
-              让 6 位投资大佬<br />
+              让 15 位投资大佬<br />
               <span className="text-navy-700">替你审判</span>
               <span className="relative inline-block">
                 <span className="relative z-10">每一笔交易</span>
@@ -321,7 +321,7 @@ export default function HomePage() {
             </p>
             <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">历史案卷 · 一键审议</h2>
             <p className="mx-auto mt-2 max-w-2xl text-ink-600">
-              选一个真实案例，看 6 位陪审员的判断 vs 历史结果。最好的检验是回到当年。
+              选一个真实案例，看 15 位陪审员的判断 vs 历史结果。最好的检验是回到当年。
             </p>
             <Link href="/dynamics" className="mt-3 inline-block text-sm text-gold-700 underline hover:text-navy-700">
               查看陪审员相关性热点 →
@@ -495,7 +495,7 @@ export default function HomePage() {
               },
               {
                 t: "综合判决与共识等级",
-                d: "6 位评分加权平均生成综合分，并标注'一致裁决 / 多数意见 / 严重分歧'。注意：完全的一致是危险信号——冯柳就是教你警惕共识的那个。",
+                d: "15 位评分加权平均生成综合分，并标注'一致裁决 / 多数意见 / 严重分歧'。注意：完全的一致是危险信号——冯柳就是教你警惕共识的那个。",
               },
               {
                 t: "本地运行 · 不上传数据",
@@ -546,7 +546,7 @@ export default function HomePage() {
             <div>
               <p className="mb-2 font-mono text-xs uppercase tracking-widest text-gold-300">页面索引</p>
               <ul className="space-y-1 text-sm text-cream-200">
-                <li><Link href="/about" className="hover:text-gold-300">为什么是这 6 位 →</Link></li>
+                <li><Link href="/about" className="hover:text-gold-300">为什么是这 15 位 →</Link></li>
                 <li><Link href="/dynamics" className="hover:text-gold-300">陪审员相关性 →</Link></li>
                 <li><Link href="/quotes" className="hover:text-gold-300">48 句金句墙 →</Link></li>
                 <li><a href="/api/evaluate" target="_blank" rel="noreferrer" className="hover:text-gold-300">⚡ 评估 API（POST JSON）→</a></li>

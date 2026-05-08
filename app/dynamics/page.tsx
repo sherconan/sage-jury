@@ -13,7 +13,7 @@ import { SageAvatar } from "@/components/SageAvatar";
 export const metadata = {
   title: "陪审员意见相关性 | 大佬陪审团",
   description:
-    "在 11 个历史案例上，6 位投资大佬两两之间的评分相关性 + 最一致 / 最分歧组合。",
+    "在 11 个历史案例上，15 位投资大佬两两之间的评分相关性 + 最一致 / 最分歧组合。",
 };
 
 const corrColor = (c: number) => {
@@ -58,7 +58,7 @@ export default function DynamicsPage() {
             陪审员意见 · 相关性热点
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-center text-ink-700">
-            在 11 个历史案例上跑完 6 位大佬的评分，统计他们两两之间的相关性。
+            在 11 个历史案例上跑完 15 位大佬的评分，统计他们两两之间的相关性。
             数字越接近 1 越像，越接近 -1 越对立。
           </p>
         </div>
@@ -192,7 +192,7 @@ export default function DynamicsPage() {
         <div className="mx-auto max-w-6xl px-5 py-12">
           <h2 className="mb-2 font-serif text-2xl font-bold text-navy-700">案例评分热图</h2>
           <p className="mb-6 text-sm text-ink-600">
-            横轴：11 个历史案例 · 纵轴：6 位陪审员 · 单元格颜色：评分（绿色越深=越看好）
+            横轴：11 个历史案例 · 纵轴：15 位陪审员 · 单元格颜色：评分（绿色越深=越看好）
           </p>
           <div className="overflow-x-auto rounded-xl border border-ink-200 bg-cream-50 shadow-bench">
             <table className="w-full text-sm">
