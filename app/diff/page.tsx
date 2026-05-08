@@ -94,7 +94,7 @@ export default async function DiffPage({ searchParams }: { searchParams: { a?: s
             双股对比 · 陪审团并列判决
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-ink-600">
-            6 位大佬同时对两只股票投票，看哪只更受陪审团青睐，逐位查看意见差异。
+            15 位大佬同时对两只股票投票，看哪只更受陪审团青睐，逐位查看意见差异。
           </p>
           <p className="mt-2 text-xs text-ink-500">URL: <code className="font-mono">?a=600519&b=000858</code></p>
         </div>

@@ -157,7 +157,7 @@ export default async function StockPage({ params }: { params: { ticker: string }
 
       <section className="border-b border-ink-200/60 bg-cream-50/40">
         <div className="mx-auto max-w-5xl px-5 py-12">
-          <h2 className="mb-6 font-serif text-2xl font-bold text-navy-700">6 位陪审员逐一意见</h2>
+          <h2 className="mb-6 font-serif text-2xl font-bold text-navy-700">15 位陪审员逐一意见</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {report.verdicts.map((v) => {
               const sage = SAGE_BY_ID[v.sageId];

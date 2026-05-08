@@ -43,7 +43,7 @@ export default async function OGImage() {
         </div>
 
         <div style={{ marginTop: "60px", fontSize: "72px", fontWeight: 900, lineHeight: 1.1 }}>
-          让 6 位投资大佬
+          让 15 位投资大佬
         </div>
         <div style={{ fontSize: "72px", fontWeight: 900, lineHeight: 1.1 }}>
           替你<span style={{ color: "#D4AF37" }}>审判</span>每一笔交易

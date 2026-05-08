@@ -1,12 +1,12 @@
-// /about — 为什么是这 14 位（大众 8 + 圈内 6）
+// /about — 为什么是这 15 位（大众 6 + 圈内 9）
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Compass, ShieldCheck, Users2, Sparkles } from "lucide-react";
 import { SAGES } from "@/data/sages";
 import { SageAvatar } from "@/components/SageAvatar";
 
 export const metadata = {
-  title: "为什么是这 14 位？| 大佬陪审团",
-  description: "陪审团成员选择标准——8 位大众派（高曝光度 + 公开方法论）+ 6 位圈内派（资管巨头但极少露面）。",
+  title: "为什么是这 15 位？| 大佬陪审团",
+  description: "陪审团成员选择标准——6 位大众派（高曝光度 + 公开方法论）+ 9 位圈内派（资管巨头但极少露面）。",
 };
 
 const POPULAR = SAGES.filter(s => s.tier === "popular");
@@ -19,8 +19,8 @@ const INSIDER_PROOF: Record<string, { proof: string; aum: string; rare: string }
     rare: "几乎从不接受媒体采访，30 年只出过 1 本书《文明、现代化、价值投资与中国》"
   },
   "fenghe-wu": {
-    proof: "Matt Hu 自创 5M 投资框架 + 周期投资哲学。**过去 13 年只有 1 年亏损（-4.8%）**，2025 年净回报 27%。被业界评为亚洲最佳多空对冲基金。共同创始人吴炯（John Wu）做 VC + Opportunities Fund。",
-    aum: "FengHe Asia Fund AUM **65 亿美元**（新加坡 / 2010 创立）",
+    proof: "Matt Hu 自创 5M 投资框架 + 周期投资哲学。过去 13 年只有 1 年亏损（-4.8%），2025 年净回报 27%。被业界评为亚洲最佳多空对冲基金。共同创始人吴炯（John Wu）做 VC + Opportunities Fund。",
+    aum: "FengHe Asia Fund AUM 65 亿美元（新加坡 / 2010 创立）",
     rare: "国内大众完全不熟，2025 年才首次在国内做公开分享。每年通过年度致投资人信对外发声。能力圈聚焦科技硬件 + 医疗，L/S 65/35。"
   },
   "deng-xiaofeng": {
@@ -34,14 +34,29 @@ const INSIDER_PROOF: Record<string, { proof: string; aum: string; rare: string }
     rare: "每年只通过年度致投资人信对外发声"
   },
   "jiang-jinzhi": {
-    proof: "中国版 PIMCO。2010s 早期重仓拼多多 Pre-IPO + 全球 LVMH/Hermès 类消费股 + 中概互联深度配置。",
+    proof: "前君安证券研究所所长，2004 年创立景林。被业内称'中国版 PIMCO'。2010s 早期重仓拼多多 Pre-IPO + 全球 LVMH/Hermès 类消费股 + 中概互联深度配置。",
     aum: "景林资产 AUM > 800 亿美元（亚洲最大对冲基金之一）",
     rare: "几乎从不公开露面，每年只通过年度致投资人信对外发声"
   },
-  "wang-yawei": {
-    proof: "前华夏大盘精选基金经理（2005-2012），公募时代连续 7 年战胜大盘，年化 49%。2012 年创立千合资本后完全淡出公众视野。",
-    aum: "千合资本 AUM 估算 > 200 亿元",
-    rare: "2012 年创立千合后基本不再公开露面，圈内每次操作被传为传奇"
+  "chen-guangming": {
+    proof: "前东方红资管董事长，2018 年创立睿远基金后做出公募 1.0 亿首发 700 亿天量认购的传奇。被券商研究员公认为'中国主动权益最强领军者'之一。",
+    aum: "睿远基金 AUM > 700 亿元（基民认购爆款）",
+    rare: "极少接受访谈，主要通过年度致投资人信和睿远官方季报对外发声"
+  },
+  "xie-zhiyu": {
+    proof: "兴证全球（前兴全）头牌基金经理，兴全合宜 2018 年首发 327 亿（公募历史 Top 5 募集）。被证券时报评为'十年期最佳主动管理基金经理'。",
+    aum: "兴证全球管理规模 > 1500 亿元（其个人产品 > 300 亿）",
+    rare: "在公募体系内做'圈内人'最长任期之一，访谈集中在每年 1-2 次的兴全策略会"
+  },
+  "ma-zibing": {
+    proof: "雪湖资本（Snow Lake Capital）创始人，做空中概股闻名（瑞幸、教培）。哈佛 MBA + 高盛 / 黑石经历，对'欺诈识别'有公开研究框架。",
+    aum: "雪湖资本 AUM > 50 亿美元（中国最大独立 L/S 之一）",
+    rare: "一向避开中文媒体，主要面向 LP 闭门做季度更新"
+  },
+  "yang-dong": {
+    proof: "前兴全总经理（兴证全球前身），2014 年创立宁泉资产做私募。在公募时代以'宏观周期 + 逆向'著称，2017 拒绝管理增量规模为业内传奇。",
+    aum: "宁泉资产 AUM > 300 亿元",
+    rare: "刻意控制管理规模，几乎不做媒体，主要通过年度致投资人信发声"
   },
 };
 
@@ -60,20 +75,20 @@ export default function AboutPage() {
       <section className="border-b border-ink-200/60">
         <div className="mx-auto max-w-3xl px-5 py-16">
           <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-            <span>Why These 14</span>
+            <span>Why These 15</span>
           </p>
-          <h1 className="mt-4 text-center font-serif text-4xl font-bold text-navy-700 md:text-5xl">为什么是这 14 位？</h1>
+          <h1 className="mt-4 text-center font-serif text-4xl font-bold text-navy-700 md:text-5xl">为什么是这 15 位？</h1>
           <p className="mx-auto mt-5 max-w-2xl text-center font-serif text-lg italic text-ink-700">
             "陪审团不是越多越好，是<span className="not-italic font-bold text-navy-700">大众权威 + 圈内深度</span>的互补。"
           </p>
           <div className="mt-6 grid gap-3 md:grid-cols-2">
             <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4 text-center">
-              <p className="font-mono text-xs uppercase tracking-widest text-amber-700">大众派 (8)</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-amber-700">大众派 (6)</p>
               <p className="mt-1 font-serif text-3xl font-bold text-amber-800">高曝光 · 高可查证</p>
               <p className="mt-1 text-xs text-amber-700">公开方法论书 / 季报 / 访谈丰富</p>
             </div>
             <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-4 text-center">
-              <p className="font-mono text-xs uppercase tracking-widest text-emerald-700">圈内派 (6)</p>
+              <p className="font-mono text-xs uppercase tracking-widest text-emerald-700">圈内派 (9)</p>
               <p className="mt-1 font-serif text-3xl font-bold text-emerald-800">圈内权威 · 极少露面</p>
               <p className="mt-1 text-xs text-emerald-700">大众不熟 / AUM 巨大 / 圈内传阅</p>
             </div>
@@ -84,9 +99,9 @@ export default function AboutPage() {
       <section className="border-b border-ink-200/60 bg-cream-50/40">
         <div className="mx-auto max-w-5xl px-5 py-12">
           <h2 className="mb-2 font-serif text-2xl font-bold text-navy-700">
-            <Sparkles className="mr-2 inline h-5 w-5 text-emerald-600" /> 圈内派 6 位 · 圈内地位佐证
+            <Sparkles className="mr-2 inline h-5 w-5 text-emerald-600" /> 圈内派 9 位 · 圈内地位佐证
           </h2>
-          <p className="mb-6 text-sm text-ink-600">这 6 位的方法论都有公开可查的来源——不是我们编的。每位列出"圈内地位 + AUM + 为什么大众不熟"。</p>
+          <p className="mb-6 text-sm text-ink-600">这 9 位的方法论都有公开可查的来源——不是我们编的。每位列出"圈内地位 + AUM + 为什么大众不熟"。</p>
           <div className="space-y-5">
             {INSIDERS.map((s) => {
               const proof = INSIDER_PROOF[s.id];
@@ -130,7 +145,7 @@ export default function AboutPage() {
 
       <section className="border-b border-ink-200/60">
         <div className="mx-auto max-w-5xl px-5 py-12">
-          <h2 className="mb-6 font-serif text-2xl font-bold text-navy-700">大众派 8 位 · 高曝光高可查证</h2>
+          <h2 className="mb-6 font-serif text-2xl font-bold text-navy-700">大众派 6 位 · 高曝光高可查证</h2>
           <div className="grid gap-3 md:grid-cols-2">
             {POPULAR.map((s) => (
               <Link key={s.id} href={`/sage/${s.id}`}
@@ -162,7 +177,7 @@ export default function AboutPage() {
       <section>
         <div className="mx-auto max-w-3xl px-5 py-12 text-center">
           <h2 className="font-serif text-2xl font-bold text-navy-700">现在试一试</h2>
-          <p className="mt-2 text-ink-600">提交一笔交易决策，看 14 位陪审员怎么投票——尤其留意圈内 6 位是否跟大众派的判断有差异。</p>
+          <p className="mt-2 text-ink-600">提交一笔交易决策，看 15 位陪审员怎么投票——尤其留意圈内 9 位是否跟大众派的判断有差异。</p>
           <Link href="/" className="btn-primary mt-6 inline-flex">⚡ 输代码 3 秒看 14 大佬投票 →</Link>
         </div>
       </section>
