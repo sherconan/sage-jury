@@ -89,6 +89,7 @@ export default function HomePage() {
             <a href="#cases" className="text-ink-700 hover:text-navy-700">历史案卷</a>
             <a href="/quotes" className="text-ink-700 hover:text-navy-700">金句墙</a>
             <a href="/about" className="text-ink-700 hover:text-navy-700">为什么是这 15 位</a>
+            <a href="/heatmap" className="text-ink-700 hover:text-navy-700">🔥 热力图</a>
             <a href="/dynamics" className="text-ink-700 hover:text-navy-700">相关性</a>
             <a href="/market" className="text-ink-700 hover:text-navy-700">市场扫描</a>
             <a href="/timemachine" className="text-ink-700 hover:text-navy-700">时光机</a>

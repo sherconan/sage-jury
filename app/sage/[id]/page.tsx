@@ -53,6 +53,68 @@ const SAGE_ARCHETYPE_PREF: Record<string, Record<string, number>> = {
   "xie-zhiyu":     { stable: 4, growth: 2, turnaround: 0, blackHorse: 0, cyclical: -1 },
 };
 
+// 「为什么这只股票」一句话点题——根据 sage 方法论 + 股票指纹生成
+function whyPickRationale(sageId: string, p: LeaderboardEntry, name: string): string {
+  const sigs: string[] = [];
+  if (p.roe !== undefined && p.roe >= 0.20) sigs.push(`ROE ${(p.roe*100).toFixed(0)}%`);
+  if (p.fcfMargin !== undefined && p.fcfMargin >= 0.25) sigs.push(`FCF ${(p.fcfMargin*100).toFixed(0)}%`);
+  if (p.divYield !== undefined && p.divYield >= 0.04) sigs.push(`股息 ${(p.divYield*100).toFixed(1)}%`);
+  if (p.brandStrength !== undefined && p.brandStrength >= 5) sigs.push(`品牌 5/5`);
+  if (p.monopolyLevel !== undefined && p.monopolyLevel >= 5) sigs.push(`垄断 5/5`);
+  const sig = sigs.slice(0, 3).join(" · ");
+
+  // 各 sage 方法论 + archetype 对话
+  switch (sageId) {
+    case "li-lu":
+      return p.growthArchetype === "stable"
+        ? `10 年后还在的生意 ${sig ? `· ${sig}` : ""}——李录看护城河持久性`
+        : `具备复利时间窗口 ${sig ? `· ${sig}` : ""}`;
+    case "duan-yongping":
+      return p.brandStrength && p.brandStrength >= 4
+        ? `商业模式优秀 + 品牌护城河 ${sig ? `· ${sig}` : ""}——本分型生意`
+        : `生意结构清晰 ${sig ? `· ${sig}` : ""}`;
+    case "buffett":
+      return `消费品牌持久 + 现金流稳定 ${sig ? `· ${sig}` : ""}——经典价值标的`;
+    case "feng-liu":
+    case "zhao-jun":
+      return p.growthArchetype === "turnaround"
+        ? `已被市场低估 + 拐点信号 ${sig ? `· ${sig}` : ""}——弱者体系/逆向窗口`
+        : `估值合理 + 待催化 ${sig ? `· ${sig}` : ""}`;
+    case "guan-wo-cai":
+      return p.divYield && p.divYield >= 0.04
+        ? `${sig}——股息支撑 + 下行有保护，符合"低估逆向平均赢"`
+        : `定量过线 ${sig ? `· ${sig}` : ""}——排雷过关`;
+    case "yang-dong":
+      return `${sig}——周期低位 + 现金保护，宁泉风格`;
+    case "jiang-jinzhi":
+      return p.brandStrength && p.brandStrength >= 4
+        ? `全球品牌格局 ${sig ? `· ${sig}` : ""}——景林全球价值`
+        : `跨周期消费品 ${sig ? `· ${sig}` : ""}`;
+    case "fenghe-wu":
+      return `集中长持 + 增长复利 ${sig ? `· ${sig}` : ""}——风和 5M 框架`;
+    case "deng-xiaofeng":
+      return p.growthArchetype === "stable"
+        ? `深度价值 + ROE 持久 ${sig ? `· ${sig}` : ""}——高毅纪律派`
+        : `估值合理 ${sig ? `· ${sig}` : ""}`;
+    case "wang-yawei":
+      return `黑马拐点 + 市场未充分认知 ${sig ? `· ${sig}` : ""}`;
+    case "lao-tang":
+      return `老唐估值法过关 ${sig ? `· ${sig}` : ""}——长期复利`;
+    case "chen-guangming":
+      return `均衡价值 + 竞争优势 ${sig ? `· ${sig}` : ""}——睿远风格`;
+    case "xie-zhiyu":
+      return `长期价值 + 复利窗口 ${sig ? `· ${sig}` : ""}——兴证全球`;
+    case "ma-zibing":
+      return `没有欺诈风险 + 业务可验证 ${sig ? `· ${sig}` : ""}——雪湖排雷过关`;
+    case "qiu-guolu":
+      return `好生意 + 好价格 ${sig ? `· ${sig}` : ""}——经典价值`;
+    case "zhang-kun":
+      return `消费稳健 + 长期持有 ${sig ? `· ${sig}` : ""}`;
+    default:
+      return sig || "方法论评分过线";
+  }
+}
+
 async function scanForSage(sageId: string) {
   const archPref = SAGE_ARCHETYPE_PREF[sageId] || {};
   const results = await Promise.all(LEADERBOARD_POOL.map(async (p: LeaderboardEntry) => {
@@ -101,7 +163,8 @@ async function scanForSage(sageId: string) {
         score: v.finalScore + archBonus,
         rawScore: v.finalScore,
         label: v.verdictLabel.split(" · ")[0], grade: v.letterGrade, oneLine: v.oneLine,
-        archetype: p.growthArchetype };
+        archetype: p.growthArchetype,
+        why: whyPickRationale(sageId, p, name) };
     } catch {
       return null;
     }
@@ -257,7 +320,12 @@ export default async function SageDetailPage({ params }: { params: { id: string 
                   <div className="min-w-0 flex-1">
                     <h3 className="font-serif text-lg font-bold text-ink-900 group-hover:text-navy-700">{p.name}</h3>
                     <p className="text-xs text-ink-500">{p.code} · {p.category} · PE {p.pe?.toFixed(1) || "-"}</p>
-                    <p className="mt-1 font-serif text-sm italic text-ink-700">"{p.oneLine}"</p>
+                    {p.why && (
+                      <p className="mt-1.5 inline-block rounded-md bg-emerald-50 border border-emerald-200/70 px-2 py-1 text-[11px] text-emerald-800">
+                        <span className="font-medium text-emerald-700">为什么这只 · </span>{p.why}
+                      </p>
+                    )}
+                    <p className="mt-1.5 font-serif text-sm italic text-ink-700">"{p.oneLine}"</p>
                   </div>
                   <div className="text-right">
                     <div className="font-serif text-3xl font-bold text-navy-700">{p.score}</div>
