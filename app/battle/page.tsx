@@ -585,23 +585,6 @@ export default function BattlePage() {
                   <Sparkles className="h-3.5 w-3.5 text-blue-600" />
                   <span className="font-medium">{m.multiReplies.length} 位大佬同时回答 · 看共识与分歧</span>
                 </div>
-                {/* ⭐ 陪审团判决书 — 4 个 sage 答完后的总结 */}
-                {(m.verdict || m.verdictLoading) && (
-                  <div className="rounded-2xl border-2 border-blue-300 bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50/60 p-5 shadow-sm">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">⚖️</span>
-                      <span className="text-xs font-mono uppercase tracking-wider text-indigo-700 font-semibold">陪审团判决书</span>
-                      {m.verdictLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />}
-                    </div>
-                    {m.verdict ? (
-                      <div className="prose prose-sm max-w-none whitespace-pre-wrap text-[14px] leading-[1.7] text-slate-800">
-                        {m.verdict}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-indigo-600 italic">正在综合 {m.multiReplies.length} 位大佬的观点 · 提炼共识与分歧...</p>
-                    )}
-                  </div>
-                )}
                 <div className={cn("grid gap-3", m.multiReplies.length <= 2 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
                   {m.multiReplies.map(rep => (
                     <div key={rep.sage_id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
@@ -637,6 +620,24 @@ export default function BattlePage() {
                     </div>
                   ))}
                 </div>
+
+                {/* ⭐ 陪审团判决书 — 4 个 sage 答完后的总结（在卡片下方更直观） */}
+                {(m.verdict || m.verdictLoading) && (
+                  <div className="rounded-2xl border-2 border-blue-300 bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50/60 p-5 shadow-md">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <span className="text-2xl">⚖️</span>
+                      <span className="font-mono uppercase tracking-wider text-indigo-700 font-bold text-sm">陪审团判决书</span>
+                      {m.verdictLoading && <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />}
+                    </div>
+                    {m.verdict ? (
+                      <div className="prose prose-sm max-w-none whitespace-pre-wrap text-[14.5px] leading-[1.8] text-slate-800">
+                        {m.verdict}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-indigo-600 italic">正在综合 {m.multiReplies.length} 位大佬的观点 · 提炼共识与分歧...</p>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <div key={m.ts} className={cn("flex gap-3", m.role === "user" ? "flex-row-reverse" : "flex-row")}>
@@ -661,6 +662,9 @@ export default function BattlePage() {
                       <div className={cn("prose prose-sm max-w-none whitespace-pre-wrap text-[14.5px] leading-[1.7]",
                         m.role === "user" ? "text-white prose-invert" : "text-slate-800")}>
                         {m.content}
+                        {m.role === "sage" && loading && messages[messages.length - 1] === m && (
+                          <span className="inline-block w-0.5 h-4 ml-0.5 bg-blue-500 align-middle animate-pulse" />
+                        )}
                       </div>
                       {m.role === "sage" && m.followups && m.followups.length > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2">
