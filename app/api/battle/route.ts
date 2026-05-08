@@ -21,8 +21,88 @@ const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
 
 interface Quote {
-  id: number; date: string; ts?: number; text: string; likes: number;
-  rt?: number; url: string;
+  id: number; date: string; ts?: number;
+  text: string;             // 原文（含繁体粤语）
+  text_n?: string;          // normalized 简体普通话
+  kw?: string[];            // jieba 提取关键词
+  likes: number;
+  rt?: number;
+  url: string;
+}
+
+// === 轻量级 normalize（TS 端 query 标准化，跟 Python 端 lib_normalize.py 同步）===
+const HK_TO_M: Array<[string, string]> = [
+  ["點解","为什么"],["點樣","怎么样"],["呢個","这个"],["呢隻","这只"],
+  ["嗰個","那个"],["嗰隻","那只"],["邊度","哪里"],["邊個","哪个"],
+  ["乜嘢","什么"],["有冇","有没有"],["係咪","是不是"],["唔會","不会"],
+  ["嘅","的"],["咗","了"],["喺","在"],["啲","些"],["冇","没"],
+  ["畀","给"],["俾","给"],["咁","这么"],["咩","什么"],["邊","哪"],
+  ["唔","不"],["睇","看"],["識","会"],["靚","好"],["搵","找"],
+  ["嚟","来"],["攞","拿"],["揀","挑"],
+];
+// 极简繁→简核心字典（覆盖管我财高频用字，无重复 key）
+// 索引端 Python lib_normalize.py 用 zhconv 做了完整繁→简 + 粤→普；TS 端只需要让 query 端跟上即可
+const T_TO_S_MAP: Record<string, string> = {
+  "騰":"腾","訊":"讯","壘":"垒","質":"质","業":"业","個":"个","為":"为",
+  "見":"见","話":"说","覺":"觉","後":"后","從":"从","與":"与","對":"对",
+  "時":"时","將":"将","會":"会","學":"学","來":"来","這":"这","麼":"么",
+  "樣":"样","還":"还","實":"实","關":"关","內":"内","總":"总","經":"经",
+  "維":"维","應":"应","歷":"历","當":"当","體":"体","構":"构","並":"并",
+  "東":"东","風":"风","險":"险","認":"认","務":"务","產":"产","資":"资",
+  "樂":"乐","興":"兴","達":"达","團":"团","貴":"贵","購":"购","幾":"几",
+  "錢":"钱","網":"网","頁":"页","選":"选","讓":"让","變":"变","廠":"厂",
+  "舊":"旧","萬":"万","廣":"广","華":"华","週":"周","軟":"软","驗":"验",
+  "電":"电","訪":"访","計":"计","劃":"划","節":"节","縣":"县","參":"参",
+  "車":"车","農":"农","葉":"叶","標":"标","頭":"头","顧":"顾","龍":"龙",
+  "島":"岛","勝":"胜","進":"进","擔":"担","檻":"槛","護":"护","雜":"杂",
+  "醫":"医","藥":"药","療":"疗","條":"条","幣":"币","臺":"台","複":"复",
+  "顯":"显","終":"终","長":"长","場":"场","頂":"顶","獨":"独","屬":"属",
+  "於":"于","園":"园","鏈":"链","獲":"获","負":"负","異":"异","綜":"综",
+  "頻":"频","聯":"联","紅":"红","層":"层","謝":"谢","檢":"检","測":"测",
+  "責":"责","補":"补","種":"种","類":"类","營":"营","員":"员","規":"规",
+  "靜":"静","樓":"楼","氣":"气","減":"减","賣":"卖","買":"买","錯":"错",
+  "聲":"声","聞":"闻","議":"议","語":"语","勢":"势","勵":"励","驅":"驱",
+  "損":"损","擁":"拥","擇":"择","盤":"盘","眾":"众","鐘":"钟","趨":"趋",
+  "邊":"边","適":"适","鎖":"锁","鏡":"镜","鋪":"铺","錄":"录","鎮":"镇",
+  "錦":"锦","鎚":"锤","鏟":"铲","鋼":"钢",
+};
+function normalize(s: string): string {
+  if (!s) return "";
+  // 1. 粤普
+  for (const [hk, m] of HK_TO_M) {
+    s = s.split(hk).join(m);
+  }
+  // 2. 繁简（最高频字符）
+  let out = "";
+  for (const c of s) out += T_TO_S_MAP[c] || c;
+  return out;
+}
+
+const STOPWORDS = new Set("的 了 是 在 我 你 他 她 它 们 也 都 这 那 与 及 但 于 不 没 会 要 可 能 不 也 都 在 是 想 看 说 觉 知道 一个 一些 这个 那个".split(" "));
+
+function tokenize(query: string): string[] {
+  // 简单 1-3 字滑窗 + 标点切分（替代 jieba，运行时无依赖）
+  const n = normalize(query);
+  // 按非中文/英文/数字切分
+  const segs = n.split(/[\s,，。！？!?、:：；;\(\)（）"'""''\[\]【】《》<>「」『』]+/).filter(Boolean);
+  const tokens = new Set<string>();
+  for (const seg of segs) {
+    // 整段
+    if (seg.length >= 2 && !STOPWORDS.has(seg)) tokens.add(seg);
+    // 2-gram + 3-gram 滑窗（仅中文段）
+    if (/^[一-龥]+$/.test(seg)) {
+      for (let i = 0; i < seg.length - 1; i++) {
+        const bi = seg.slice(i, i + 2);
+        if (!STOPWORDS.has(bi)) tokens.add(bi);
+      }
+      for (let i = 0; i < seg.length - 2; i++) {
+        tokens.add(seg.slice(i, i + 3));
+      }
+    } else {
+      tokens.add(seg);
+    }
+  }
+  return [...tokens];
 }
 interface SageData {
   slug: string; display: string; alias: string;
@@ -46,67 +126,83 @@ async function loadSage(slug: string): Promise<SageData | null> {
   } catch { return null; }
 }
 
+// 在 normalized 文本上做匹配（quote 自带 text_n + kw 字段）
+function quoteMatchesTokens(q: Quote, tokens: string[]): number {
+  // 返回命中的 token 数量（用于 scoring）
+  if (!tokens.length) return 0;
+  const txt = q.text_n || q.text;          // 优先用 normalized
+  const txtLow = txt.toLowerCase();
+  const kwSet = new Set(q.kw || []);
+  let score = 0;
+  for (const t of tokens) {
+    const tl = t.toLowerCase();
+    if (kwSet.has(t)) score += 3;          // jieba 关键词命中权重最高
+    if (txtLow.includes(tl)) score += 1;
+  }
+  return score;
+}
+
 function findRelevant(sage: SageData, query: string, limit = 8): Quote[] {
-  const found: Quote[] = []; const seen = new Set<number>();
-  const push = (q: Quote) => { if (!seen.has(q.id)) { found.push(q); seen.add(q.id); } };
+  const found: Map<number, { q: Quote; score: number }> = new Map();
+  const tokens = tokenize(query);
+  const queryNorm = normalize(query).toLowerCase();
 
-  // ⭐ 关键修复 1：双向匹配股票字典 key（中文别名 + 代码都查）
+  const tryAdd = (q: Quote, base: number) => {
+    const ms = quoteMatchesTokens(q, tokens);
+    const total = base + ms;
+    if (total > 0 || base >= 5) {
+      const prev = found.get(q.id);
+      if (!prev || prev.score < total) found.set(q.id, { q, score: total });
+    }
+  };
+
+  // 1. 股票字典（代码 + 中文别名 双向命中，最高权重）
   for (const stockKey of Object.keys(sage.by_stock)) {
-    if (query.includes(stockKey) || stockKey.includes(query.trim())) {
-      for (const q of sage.by_stock[stockKey].slice(0, 6)) push(q);
+    const k = stockKey.toLowerCase();
+    if (queryNorm.includes(k) || (stockKey.length >= 2 && tokens.some(t => k.includes(t.toLowerCase()) || t.toLowerCase().includes(k)))) {
+      for (const q of sage.by_stock[stockKey]) tryAdd(q, 8);
     }
   }
 
-  // 概念匹配
+  // 2. 概念字典
   for (const concept of Object.keys(sage.by_concept)) {
-    if (query.includes(concept)) {
-      for (const q of sage.by_concept[concept].slice(0, 3)) push(q);
+    if (queryNorm.includes(concept) || tokens.includes(concept)) {
+      for (const q of sage.by_concept[concept]) tryAdd(q, 5);
     }
   }
 
-  // ⭐ 关键修复 2：直接对最近 90 天发言做全文搜索（最近热点必扫）
-  const terms = query.match(/[一-龥]{2,}|[A-Z]{2,}|\$\w+/g) || [];
-  if (terms.length > 0 && sage.recent_originals) {
-    for (const q of sage.recent_originals) {
-      if (found.length >= limit + 4) break;
-      if (seen.has(q.id)) continue;
-      if (terms.some(t => q.text.includes(t))) push(q);
-    }
+  // 3. 最近 90 天原创（normalized 全文 + keyword）
+  if (sage.recent_originals) {
+    for (const q of sage.recent_originals) tryAdd(q, 0);
   }
 
-  // ⭐ 关键修复 3：再扫历史高赞（高质量原创）
-  if (found.length < limit) {
-    for (const q of sage.high_quality_originals) {
-      if (found.length >= limit) break;
-      if (seen.has(q.id)) continue;
-      if (terms.some(t => q.text.includes(t))) push(q);
-    }
-  }
+  // 4. 历史高赞原创
+  for (const q of sage.high_quality_originals) tryAdd(q, 0);
 
-  // ⭐ 关键修复 4：扫持仓变化（重要！比如"换成泡泡玛特"必须被找到）
+  // 5. 持仓变化
   if (sage.position_changes) {
-    for (const q of sage.position_changes) {
-      if (found.length >= limit + 2) break;
-      if (seen.has(q.id)) continue;
-      if (terms.some(t => q.text.includes(t))) push(q);
+    for (const q of sage.position_changes) tryAdd(q, 1);
+  }
+
+  // 兜底：至少返回 3 条
+  if (found.size < 3) {
+    for (const q of sage.high_quality_originals.slice(0, 3 - found.size)) {
+      if (!found.has(q.id)) found.set(q.id, { q, score: 0.1 });
     }
   }
 
-  // 兜底
-  if (found.length < 3) {
-    for (const q of sage.high_quality_originals.slice(0, 3 - found.length)) push(q);
-  }
-
-  // 按"时间近 + 赞多"排序：先按时间倒序保留最近的
-  return found.slice(0, limit).sort((a, b) => {
-    // 时间衰减：每 30 天减 0.5 倍权重
-    const now = Date.now();
-    const aDays = a.ts ? (now - a.ts) / 86400000 : 9999;
-    const bDays = b.ts ? (now - b.ts) / 86400000 : 9999;
-    const aScore = a.likes * Math.max(0.2, 1 - aDays / 365);
-    const bScore = b.likes * Math.max(0.2, 1 - bDays / 365);
-    return bScore - aScore;
-  });
+  // 排序：score 主导 + 时间衰减 + 点赞数
+  const now = Date.now();
+  return [...found.values()]
+    .map(({ q, score }) => {
+      const days = q.ts ? (now - q.ts) / 86400000 : 9999;
+      const recencyBoost = Math.max(0.3, 1 - days / 365);
+      const finalScore = score * 10 + q.likes * 0.05 * recencyBoost;
+      return { q, finalScore };
+    })
+    .sort((a, b) => b.finalScore - a.finalScore)
+    .slice(0, limit)
+    .map(({ q }) => q);
 }
 
 const SAGE_PROMPTS: Record<string, string> = {
@@ -119,7 +215,7 @@ const SAGE_PROMPTS: Record<string, string> = {
 - 投的是公司未来现金流的折现
 回答风格：朴实、直接、不端架子，常说"我不懂"、"看十年"、"对的事，把事做对"、"我只投我看得懂的"。
 拒绝回答与方法论不符的问题（比如短期博弈、技术分析），但拒绝时要给出他的理由。`,
-  "guan-wo-cai": `你是管我财（雪球 ID @管我财，价值投资派低估逆向定量代表，香港人，常用繁体粤式中文）。
+  "guan-wo-cai": `你是管我财（雪球 ID @管我财，香港价值投资派低估逆向定量代表）。
 方法论：
 - 低估逆向平均赢，排雷排千平常心
 - 定量估值：PE / PB / 历史分位 / 股息率
@@ -127,8 +223,13 @@ const SAGE_PROMPTS: Record<string, string> = {
 - 长期回报 = 股价收益 + 股息收益（5% + 5% = 10% 即可）
 - 最容易亏钱的方法是趁回吐买入，比追高危险十倍百倍
 - "排雷"重于"选股"——避开烂公司的 ROI 高于精选好公司
-回答风格：粤式繁体中文（也可简体），冷静、定量、注重数字。常说"低估逆向平均赢"、"排雷排千平常心"、"放長線釣大魚"、谈具体 PE/PB/股息率分位。
-不会被炒作打动，习惯反问"PE在歷史什麼分位？"、"有沒有股息支撐？"、"下行有沒有保護？"`,
+
+⭐ 输出语言要求（重要）：
+你的最终回复**必须用简体中文普通话**呈现给用户，方便大众读懂。
+你过去的雪球原文是繁体粤语，引用时请同步翻译成简体普通话（保留观点和数字）。
+可以保留少量粤语口头禅作风格点缀（如"放长线钓大鱼"），但不要写"點解、嘅、咗、喺、啲、冇、咁、邊個、唔好、睇好"这类纯粤字。
+冷静、定量、注重数字。常说"低估逆向平均赢"、"排雷排千平常心"，谈具体 PE/PB/股息率分位。
+习惯反问"PE 在历史什么分位？"、"有没有股息支撑？"、"下行有没有保护？"`,
 };
 
 interface ChatMsg { role: "user" | "assistant"; content: string; }
@@ -165,9 +266,11 @@ async function callLLM(
 
 function buildRagContext(quotes: Quote[]): string {
   if (!quotes.length) return "（暂无相关历史发言）";
-  return quotes.map((q, i) =>
-    `[原文 ${i+1}] ${q.date} (👍${q.likes}): ${q.text.replace(/\n/g, " ").slice(0, 250)}`
-  ).join("\n\n");
+  return quotes.map((q, i) => {
+    // 优先用 normalized 简体（管我财繁体粤语会被翻译过来给 LLM 看）
+    const txt = (q.text_n || q.text).replace(/\n/g, " ").slice(0, 280);
+    return `[原文 ${i+1}] ${q.date} (👍${q.likes}): ${txt}`;
+  }).join("\n\n");
 }
 
 async function chatMode(sage: SageData, message: string, history: ChatMsg[] = []) {
