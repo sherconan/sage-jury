@@ -6,7 +6,7 @@ import {
   ArrowLeft, Send, Loader2, ExternalLink,
   MessageSquare, Swords, Sparkles,
   Twitter, BookOpen, Mic, FileText, Globe, Hash,
-  TrendingUp, Activity, Database, Trash2, Clock,
+  TrendingUp, Activity, Database, Trash2, Clock, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -147,6 +147,58 @@ export default function BattlePage() {
       setMessages([]);
     }
   }, [activeSage, mode]);
+
+  const exportMarkdown = useCallback(() => {
+    if (!messages.length) return;
+    const today = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const sageName = mode === "jury" ? `陪审团 (${SAGES.length} 位)` : activeSage.display;
+    const lines: string[] = [
+      `# ${sageName} · 交易对线对话存档`,
+      ``,
+      `> 导出时间: ${today}`,
+      `> 模式: ${mode === "chat" ? "1v1 对话" : mode === "jury" ? "多人陪审" : "对线判决"}`,
+      `> 来源: https://sage-jury.vercel.app/battle`,
+      ``,
+      `---`,
+      ``,
+    ];
+    for (const m of messages) {
+      if (m.role === "user") {
+        lines.push(`### 🧑 你`, ``, m.content || "", ``);
+      } else if (m.role === "multi" && m.multiReplies) {
+        lines.push(`### 🏛️ 陪审团 · ${m.multiReplies.length} 位回答`, ``);
+        for (const r of m.multiReplies) {
+          lines.push(`#### ${r.sage_name}`, ``, r.content || "(无回应)", ``);
+          if (r.quotes && r.quotes.length) {
+            lines.push(`<details><summary>引用 ${r.quotes.length} 条原帖</summary>`, ``);
+            r.quotes.slice(0, 3).forEach(q => lines.push(`- [${q.date} 👍${q.likes}](${q.url}) ${q.text.slice(0, 100)}`));
+            lines.push(`</details>`, ``);
+          }
+        }
+      } else {
+        lines.push(`### 🎩 ${activeSage.display}`, ``, m.content || "", ``);
+        if (m.quotes && m.quotes.length) {
+          lines.push(`<details><summary>引用 ${m.quotes.length} 条历史原帖</summary>`, ``);
+          m.quotes.forEach((q, i) => lines.push(`${i+1}. [${q.date} 👍${q.likes}](${q.url}) ${q.text.slice(0, 120)}`));
+          lines.push(`</details>`, ``);
+        }
+        if (m.followups && m.followups.length) {
+          lines.push(`**跟进建议**: ${m.followups.map(f => `\`${f}\``).join(" · ")}`, ``);
+        }
+      }
+      lines.push(`---`, ``);
+    }
+    const md = lines.join("\n");
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sage-jury-${activeSage.slug}-${mode}-${today.slice(0, 10)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [messages, activeSage, mode]);
 
   // 共用：单 sage SSE 流处理（用于 chat 模式 + jury 模式各 sage）
   const streamOneSage = async (
@@ -346,11 +398,28 @@ export default function BattlePage() {
         </div>
       </nav>
 
-      {/* BODY */}
-      <div className="mx-auto grid max-w-[1600px] gap-0" style={{ gridTemplateColumns: "300px 1fr 320px" }}>
+      {/* BODY — mobile: 单列堆叠; tablet: chat + sources; desktop: 三栏 */}
+      <div className="mx-auto grid max-w-[1600px] gap-0 grid-cols-1 md:grid-cols-[260px_1fr] xl:grid-cols-[280px_1fr_320px]">
 
-        {/* LEFT — sage list */}
-        <aside className="border-r border-slate-200/80 px-4 py-5 space-y-3 min-h-[calc(100vh-57px)]">
+        {/* LEFT — sage list (mobile: 横向滚动 chip 行) */}
+        <aside className="border-b md:border-b-0 md:border-r border-slate-200/80 md:min-h-[calc(100vh-57px)]">
+          <div className="md:px-4 md:py-5 md:space-y-3">
+            {/* Mobile: 横向滚动条 */}
+            <div className="md:hidden flex items-center gap-2 overflow-x-auto px-4 py-3 bg-white">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 shrink-0">陪审 {SAGES.length}</span>
+              {SAGES.map(s => (
+                <button key={s.slug} onClick={() => setActiveSage(s)}
+                  className={cn("shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                    activeSage.slug === s.slug
+                      ? `bg-gradient-to-br ${s.gradient} text-white shadow-sm`
+                      : "border border-slate-200 bg-white text-slate-600")}>
+                  <span className="font-mono text-[9px] opacity-80">{s.initials}</span>
+                  {s.display}
+                </button>
+              ))}
+            </div>
+            {/* Desktop: 完整卡片 */}
+            <div className="hidden md:block md:px-4 md:py-5 md:space-y-3">
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">陪审席</h2>
             <span className="text-xs text-slate-400">{SAGES.length} 位</span>
@@ -388,6 +457,8 @@ export default function BattlePage() {
             <p className="text-xs text-slate-500">+ 冯柳 / 林园 / 张坤</p>
             <p className="mt-1 text-[10px] text-slate-400">陆续接入</p>
           </div>
+            </div>{/* close hidden md:block */}
+          </div>{/* close aside inner */}
         </aside>
 
         {/* CENTER — chat */}
@@ -419,6 +490,10 @@ export default function BattlePage() {
                     <Clock className="h-3 w-3" />
                     {messages.filter(m => m.role === "user").length} 轮历史 · 已保存
                   </span>
+                  <button onClick={exportMarkdown} title="导出为 Markdown"
+                    className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 transition">
+                    <Download className="h-3 w-3" /> 导出
+                  </button>
                   <button onClick={clearHistory}
                     className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-slate-500 hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600 transition">
                     <Trash2 className="h-3 w-3" /> 清空
@@ -644,8 +719,8 @@ export default function BattlePage() {
           </div>
         </section>
 
-        {/* RIGHT — sources & data */}
-        <aside className="border-l border-slate-200/80 px-4 py-5 space-y-5 min-h-[calc(100vh-57px)] bg-slate-50/40">
+        {/* RIGHT — sources & data (hidden on tablet/mobile) */}
+        <aside className="hidden xl:block border-l border-slate-200/80 px-4 py-5 space-y-5 min-h-[calc(100vh-57px)] bg-slate-50/40">
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400">数据源</h2>
