@@ -117,6 +117,8 @@ interface SageData {
 const SAGE_FILES: Record<string, string> = {
   "duan-yongping": "duan-yongping.json",
   "guan-wo-cai":   "guan-wo-cai.json",
+  "lao-tang":      "lao-tang.json",
+  "dan-bin":       "dan-bin.json",
 };
 
 async function loadSage(slug: string): Promise<SageData | null> {
@@ -215,6 +217,24 @@ const SAGE_PROMPTS: Record<string, string> = {
 - 投的是公司未来现金流的折现
 回答风格：朴实、直接、不端架子，常说"我不懂"、"看十年"、"对的事，把事做对"、"我只投我看得懂的"。
 拒绝回答与方法论不符的问题（比如短期博弈、技术分析），但拒绝时要给出他的理由。`,
+  "lao-tang": `你是唐朝（雪球 ID @唐朝，俗称老唐，"老唐估值法"创立者，《价值投资实战手册》作者）。
+方法论：
+- 老唐估值法：买点 = 三年后合理估值（25-30 倍 PE）的 50%；卖点 = 当年合理估值的 150%
+- 三年一倍：心理预期年化 26%
+- 守正用奇：守正——买入护城河深、ROE 高、能力圈内的好生意；用奇——估值低位逆向加仓
+- 关注的核心：自由现金流可预测性、管理层诚信、ROE 持续性
+- 经典持仓：茅台、腾讯、洋河、古井贡、分众、福寿园
+回答风格：朴实、说理透彻、爱用打比方，常说"看长做短"、"老唐估值法走起"、"算个账"、"心里有底"。
+习惯先算账再下结论：先报当年合理估值范围、买点、卖点三条线，再讲质化判断。`,
+  "dan-bin": `你是但斌（雪球 ID @但斌，东方港湾董事长，《时间的玫瑰》作者）。
+方法论：
+- 时间的玫瑰：长期持有伟大公司，赚时间的钱
+- 全球资产配置：从 A 股到港股到美股，找全球最优秀的企业
+- 集中持股：少数好生意、长期不卖
+- 关注的核心：公司商业模式护城河、长期成长性、全球竞争力
+- 经典持仓：贵州茅台（持有 20 年）、苹果、特斯拉、英伟达
+回答风格：诗意、宏大叙事、爱讲哲理，常引用费雪/巴菲特，常说"时间的玫瑰"、"伟大企业"、"做时间的朋友"。
+喜欢从历史长河视角看公司，把投资当艺术。`,
   "guan-wo-cai": `你是管我财（雪球 ID @管我财，香港价值投资派低估逆向定量代表）。
 方法论：
 - 低估逆向平均赢，排雷排千平常心
@@ -282,29 +302,26 @@ async function chatMode(sage: SageData, message: string, history: ChatMsg[] = []
 }
 
 async function battleMode(sage: SageData, stockCode: string, reason: string) {
-  // 检索股票相关的发言（优先持仓变化记录）
-  const stockQuotes: Quote[] = [];
-  // 1. 持仓变化里找该股票
-  for (const pc of sage.position_changes || []) {
-    if (pc.text && (pc.text.includes(stockCode) || stockCode.split(/[\s/]/).some(s => s && pc.text.includes(s)))) {
-      stockQuotes.push(pc);
-      if (stockQuotes.length >= 3) break;
-    }
-  }
-  // 2. by_stock 字典
-  for (const k of Object.keys(sage.by_stock)) {
-    if (stockCode.includes(k) || k.includes(stockCode)) {
-      stockQuotes.push(...sage.by_stock[k].slice(0, 4));
-    }
-  }
-  const reasonQuotes = findRelevant(sage, reason, 3);
-  const allQuotes = [...stockQuotes.slice(0, 5), ...reasonQuotes].slice(0, 8);
+  // ⭐ 复用同一套 findRelevant（已支持中文别名 / 繁简 / 粤普 / jieba 关键词）
+  // 把 stockCode + reason 拼成 query，统一走新检索
+  const fullQuery = `${stockCode} ${reason || ""}`.trim();
+  const allQuotes = findRelevant(sage, fullQuery, 8);
   const ragCtx = buildRagContext(allQuotes);
 
-  const sys = SAGE_PROMPTS[sage.slug] + `\n\n=== 你过去在雪球上的真实相关发言（背景知识）===\n${ragCtx}\n\n现在用户来跟你"对线"——他想买入股票并给了买入理由。你的任务：\n1. 用你的方法论质疑他（至少 3 个尖锐问题）\n2. 引用你过去的真实发言（注明日期）作为论据\n3. 最后给一个明确的判断：买 / 等 / 不买，并说明理由\n4. 保持你的口吻特征（段永平：朴实直接 / 管我财：粤式繁体定量）`;
+  const sys = SAGE_PROMPTS[sage.slug] + `\n\n=== 你过去在雪球上的真实相关发言（背景知识，请引用其中至少 1-2 条作为论据，注明日期）===\n${ragCtx}\n\n现在用户来跟你"对线"——他想买入股票并给了买入理由。你的任务：\n1. 用你的方法论尖锐质疑他（至少 3 个针对性问题）\n2. 引用你过去的真实发言（注明日期）作为论据\n3. 最后给一个明确的判决：「买入」/「等等」/「不买」，并说明理由\n4. 保持你的口吻特征，**最终输出必须是简体中文普通话**（管我财即使引用繁体粤语原文也要翻译）`;
   const userPrompt = `我想买入：**${stockCode}**\n\n我的买入理由：\n${reason || "(未填写理由)"}\n\n请你按你的方法论审判我这个交易决策，并直接告诉我该买、该等、还是不该买。`;
   const reply = await callLLM(sys, userPrompt);
   return { reply, quotes: allQuotes, mode: "battle" as const };
+}
+
+// 用一个独立 LLM 调用根据当前对话生成 3 个跟进问题（"再问一句"）
+async function generateFollowups(sage: SageData, lastUserMsg: string, lastReply: string): Promise<string[]> {
+  try {
+    const sys = `你是一个对话辅助助手。基于刚才用户和投资大佬 ${sage.display} 的对话，生成 3 个用户可能想接着问的简短跟进问题。要求：\n- 每个问题不超过 18 字\n- 跟当前股票/话题强相关\n- 发挥 ${sage.display} 的方法论（${sage.philosophy}）\n- 直接输出 3 行，每行 1 个问题，不要编号、不要引号、不要解释`;
+    const user = `用户上一轮问：${lastUserMsg.slice(0, 200)}\n${sage.display} 回答：${lastReply.slice(0, 600)}\n\n请生成 3 个跟进问题：`;
+    const out = await callLLM(sys, user);
+    return out.split(/\n+/).map(s => s.trim().replace(/^[•·\-\d\.\)、]+\s*/, "").replace(/^[「『""]|[」』""]$/g, "")).filter(s => s.length >= 4 && s.length <= 30).slice(0, 3);
+  } catch { return []; }
 }
 
 export async function OPTIONS() { return new NextResponse(null, { status: 204, headers: cors }); }
@@ -341,8 +358,16 @@ export async function POST(req: NextRequest) {
     const result = mode === "battle"
       ? await battleMode(sage, stock_code || message || "", reason || "")
       : await chatMode(sage, message || "", hist);
+
+    // 异步生成「再问一句」跟进建议（不阻塞主回复，前端拿到 followups 字段渲染）
+    let followups: string[] = [];
+    if (mode === "chat" && result.reply && message) {
+      followups = await generateFollowups(sage, message, result.reply);
+    }
+
     return NextResponse.json({
       sage: { id: sage.slug, name: sage.display, philosophy: sage.philosophy, total_posts: sage.total_posts },
+      followups,
       ...result,
     }, { headers: cors });
   } catch (e: any) {

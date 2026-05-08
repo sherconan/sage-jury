@@ -20,7 +20,7 @@ import sys, sqlite3, re, json, os
 from pathlib import Path
 
 DATA_DIR = Path.home() / "sage-jury/data/xueqiu-watcher"
-SAGES = ["duan-yongping", "guan-wo-cai"]
+SAGES = ["duan-yongping", "guan-wo-cai", "lao-tang", "dan-bin"]
 
 # === 股票/公司词典 ===
 STOCK_ALIASES = {
