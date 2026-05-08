@@ -21,7 +21,7 @@ const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
 
 interface Quote {
-  id: number; date: string; text: string; likes: number;
+  id: number; date: string; ts?: number; text: string; likes: number;
   rt?: number; url: string;
 }
 interface SageData {
@@ -46,30 +46,67 @@ async function loadSage(slug: string): Promise<SageData | null> {
   } catch { return null; }
 }
 
-function findRelevant(sage: SageData, query: string, limit = 6): Quote[] {
+function findRelevant(sage: SageData, query: string, limit = 8): Quote[] {
   const found: Quote[] = []; const seen = new Set<number>();
-  for (const stock of Object.keys(sage.by_stock)) {
-    if (query.includes(stock)) {
-      for (const q of sage.by_stock[stock].slice(0, 3)) if (!seen.has(q.id)) { found.push(q); seen.add(q.id); }
+  const push = (q: Quote) => { if (!seen.has(q.id)) { found.push(q); seen.add(q.id); } };
+
+  // ⭐ 关键修复 1：双向匹配股票字典 key（中文别名 + 代码都查）
+  for (const stockKey of Object.keys(sage.by_stock)) {
+    if (query.includes(stockKey) || stockKey.includes(query.trim())) {
+      for (const q of sage.by_stock[stockKey].slice(0, 6)) push(q);
     }
   }
+
+  // 概念匹配
   for (const concept of Object.keys(sage.by_concept)) {
     if (query.includes(concept)) {
-      for (const q of sage.by_concept[concept].slice(0, 2)) if (!seen.has(q.id)) { found.push(q); seen.add(q.id); }
+      for (const q of sage.by_concept[concept].slice(0, 3)) push(q);
     }
   }
+
+  // ⭐ 关键修复 2：直接对最近 90 天发言做全文搜索（最近热点必扫）
+  const terms = query.match(/[一-龥]{2,}|[A-Z]{2,}|\$\w+/g) || [];
+  if (terms.length > 0 && sage.recent_originals) {
+    for (const q of sage.recent_originals) {
+      if (found.length >= limit + 4) break;
+      if (seen.has(q.id)) continue;
+      if (terms.some(t => q.text.includes(t))) push(q);
+    }
+  }
+
+  // ⭐ 关键修复 3：再扫历史高赞（高质量原创）
   if (found.length < limit) {
-    const terms = query.match(/[一-龥]{2,}|[A-Z]{2,}|\$\w+/g) || [];
     for (const q of sage.high_quality_originals) {
       if (found.length >= limit) break;
       if (seen.has(q.id)) continue;
-      if (terms.some(t => q.text.includes(t))) { found.push(q); seen.add(q.id); }
+      if (terms.some(t => q.text.includes(t))) push(q);
     }
   }
-  if (found.length < 3) {
-    for (const q of sage.high_quality_originals.slice(0, 3 - found.length)) if (!seen.has(q.id)) { found.push(q); seen.add(q.id); }
+
+  // ⭐ 关键修复 4：扫持仓变化（重要！比如"换成泡泡玛特"必须被找到）
+  if (sage.position_changes) {
+    for (const q of sage.position_changes) {
+      if (found.length >= limit + 2) break;
+      if (seen.has(q.id)) continue;
+      if (terms.some(t => q.text.includes(t))) push(q);
+    }
   }
-  return found.slice(0, limit).sort((a, b) => b.likes - a.likes);
+
+  // 兜底
+  if (found.length < 3) {
+    for (const q of sage.high_quality_originals.slice(0, 3 - found.length)) push(q);
+  }
+
+  // 按"时间近 + 赞多"排序：先按时间倒序保留最近的
+  return found.slice(0, limit).sort((a, b) => {
+    // 时间衰减：每 30 天减 0.5 倍权重
+    const now = Date.now();
+    const aDays = a.ts ? (now - a.ts) / 86400000 : 9999;
+    const bDays = b.ts ? (now - b.ts) / 86400000 : 9999;
+    const aScore = a.likes * Math.max(0.2, 1 - aDays / 365);
+    const bScore = b.likes * Math.max(0.2, 1 - bDays / 365);
+    return bScore - aScore;
+  });
 }
 
 const SAGE_PROMPTS: Record<string, string> = {
@@ -94,20 +131,26 @@ const SAGE_PROMPTS: Record<string, string> = {
 不会被炒作打动，习惯反问"PE在歷史什麼分位？"、"有沒有股息支撐？"、"下行有沒有保護？"`,
 };
 
-async function callLLM(systemPrompt: string, userPrompt: string): Promise<string> {
-  // DeepSeek V4 PRO endpoint
-  const url = LLM_BASE.endsWith("/v1")
-    ? `${LLM_BASE}/chat/completions`
-    : `${LLM_BASE}/chat/completions`;
+interface ChatMsg { role: "user" | "assistant"; content: string; }
+
+async function callLLM(
+  systemPrompt: string,
+  userPrompt: string,
+  history: ChatMsg[] = []
+): Promise<string> {
+  const url = `${LLM_BASE}/chat/completions`;
+  const messages = [
+    { role: "system", content: systemPrompt },
+    // 携带历史对话（最多保留最近 10 轮）
+    ...history.slice(-10),
+    { role: "user", content: userPrompt },
+  ];
   const res = await fetch(url, {
     method: "POST",
     headers: { "Authorization": `Bearer ${LLM_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       model: LLM_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      messages,
       max_tokens: 1500,
       temperature: 0.75,
       stream: false,
@@ -127,11 +170,11 @@ function buildRagContext(quotes: Quote[]): string {
   ).join("\n\n");
 }
 
-async function chatMode(sage: SageData, message: string) {
-  const quotes = findRelevant(sage, message, 5);
+async function chatMode(sage: SageData, message: string, history: ChatMsg[] = []) {
+  const quotes = findRelevant(sage, message, 8);
   const ragCtx = buildRagContext(quotes);
-  const sys = SAGE_PROMPTS[sage.slug] + `\n\n=== 你过去在雪球上的真实相关发言（请优先引用 / 化用，保持你的口吻和观点一致）===\n${ragCtx}\n\n回答时尽量引用其中至少 1-2 条作为依据，注明日期。`;
-  const reply = await callLLM(sys, message);
+  const sys = SAGE_PROMPTS[sage.slug] + `\n\n=== 你过去在雪球上的真实相关发言（请优先引用 / 化用，保持你的口吻和观点一致；如果用户问到的话题在历史发言里有，必须正面回答而不是说"我不关注"）===\n${ragCtx}\n\n回答时尽量引用其中至少 1-2 条作为依据，注明日期。如果用户问到的标的你确实在最近发言里讨论过，要正面引述你的真实观点。`;
+  const reply = await callLLM(sys, message, history);
   return { reply, quotes, mode: "chat" as const };
 }
 
@@ -179,17 +222,22 @@ export async function POST(req: NextRequest) {
   let body: any;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400, headers: cors }); }
 
-  const { sage_id, mode, message, stock_code, reason } = body;
+  const { sage_id, mode, message, stock_code, reason, history } = body;
   if (!sage_id || !SAGE_FILES[sage_id]) {
     return NextResponse.json({ error: "Unknown sage_id", available: Object.keys(SAGE_FILES) }, { status: 400, headers: cors });
   }
   const sage = await loadSage(sage_id);
   if (!sage) return NextResponse.json({ error: "Failed to load sage data" }, { status: 500, headers: cors });
 
+  // history 来自前端 localStorage（用户在这位 sage 下的历史对话）
+  const hist: ChatMsg[] = Array.isArray(history)
+    ? history.filter((m: any) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+    : [];
+
   try {
     const result = mode === "battle"
       ? await battleMode(sage, stock_code || message || "", reason || "")
-      : await chatMode(sage, message || "");
+      : await chatMode(sage, message || "", hist);
     return NextResponse.json({
       sage: { id: sage.slug, name: sage.display, philosophy: sage.philosophy, total_posts: sage.total_posts },
       ...result,
