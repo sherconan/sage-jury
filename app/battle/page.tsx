@@ -50,6 +50,20 @@ const SAGES: SageOption[] = [
     accent: "#10B981", gradient: "from-emerald-500 to-teal-600",
     initials: "GWC", tagline: "粤式定量派 · 荒岛系列年度策略",
   },
+  {
+    slug: "dan-bin", display: "但斌", alias: "但斌",
+    philosophy: "时间的玫瑰 · 长期持有伟大公司 · 全球资产配置",
+    total_posts: 597, position_changes: 23,
+    accent: "#F59E0B", gradient: "from-amber-500 to-orange-600",
+    initials: "DB", tagline: "东方港湾董事长 · 茅台持仓 20 年",
+  },
+  {
+    slug: "lao-tang", display: "唐朝", alias: "老唐",
+    philosophy: "老唐估值法 · 三年一倍 · 守正用奇",
+    total_posts: 116, position_changes: 1,
+    accent: "#8B5CF6", gradient: "from-violet-500 to-purple-600",
+    initials: "LT", tagline: "《价值投资实战手册》作者 · 老唐估值法创立者",
+  },
 ];
 
 const SOURCES: Record<string, { name: string; icon: any; color: string; bgColor: string; status: "live" | "soon" }> = {
@@ -69,6 +83,7 @@ interface Msg {
   role: "user" | "sage";
   content: string;
   quotes?: QuoteRef[];
+  followups?: string[];
   loading?: boolean;
   ts: number;
 }
@@ -104,12 +119,13 @@ export default function BattlePage() {
     }
   }, [activeSage, mode]);
 
-  const submit = async () => {
+  const submitWith = async (overrideText?: string) => {
     if (loading) return;
+    const text = overrideText !== undefined ? overrideText : input;
     let userContent = "", body: any = { sage_id: activeSage.slug, mode };
     if (mode === "chat") {
-      if (!input.trim()) return;
-      userContent = input; body.message = input;
+      if (!text.trim()) return;
+      userContent = text; body.message = text;
       // ⭐ 把历史 messages 转成 LLM 多轮对话格式
       body.history = messages
         .filter(m => !m.loading && m.content)
@@ -134,6 +150,7 @@ export default function BattlePage() {
           role: "sage",
           content: d.error ? `Error: ${d.error}` : (d.reply || ""),
           quotes: (d.quotes || []).map((q: any) => ({ ...q, source: q.source || "xueqiu" })),
+          followups: Array.isArray(d.followups) ? d.followups : [],
           ts: Date.now(),
         };
         return arr;
@@ -146,6 +163,7 @@ export default function BattlePage() {
       });
     } finally { setLoading(false); }
   };
+  const submit = () => submitWith();
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50/30 text-slate-900"
@@ -210,7 +228,7 @@ export default function BattlePage() {
             </button>
           ))}
           <div className="rounded-xl border border-dashed border-slate-200 bg-white/40 p-3 text-center">
-            <p className="text-xs text-slate-500">+ 冯柳 / 老唐 / 但斌</p>
+            <p className="text-xs text-slate-500">+ 冯柳 / 林园 / 张坤</p>
             <p className="mt-1 text-[10px] text-slate-400">陆续接入</p>
           </div>
         </aside>
@@ -315,6 +333,17 @@ export default function BattlePage() {
                         m.role === "user" ? "text-white prose-invert" : "text-slate-800")}>
                         {m.content}
                       </div>
+                      {m.role === "sage" && m.followups && m.followups.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {m.followups.map((q, k) => (
+                            <button key={k} onClick={() => submitWith(q)}
+                              className="group flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50/80 px-3 py-1.5 text-xs text-blue-800 hover:bg-blue-100 hover:border-blue-300 transition shadow-sm">
+                              <Sparkles className="h-3 w-3 text-blue-500 group-hover:scale-110 transition" />
+                              <span>{q}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       {m.quotes && m.quotes.length > 0 && (
                         <details className="mt-4 border-t border-slate-100 pt-3">
                           <summary className="cursor-pointer flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-400 hover:text-slate-600">

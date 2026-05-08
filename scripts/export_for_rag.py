@@ -24,6 +24,10 @@ SAGES = {
                       "philosophy": "本分 / 不懂不投 / 看十年 / stop doing list"},
     "guan-wo-cai":   {"display": "管我财", "alias": "管我财",
                       "philosophy": "低估逆向平均赢 / 排雷排千平常心 / 定量估值"},
+    "lao-tang":      {"display": "唐朝（老唐）", "alias": "老唐",
+                      "philosophy": "老唐估值法 / 三年一倍 / 守正用奇"},
+    "dan-bin":       {"display": "但斌", "alias": "但斌",
+                      "philosophy": "时间的玫瑰 / 长期持有 / 全球资产配置"},
 }
 
 # 反向：从 STOCK_ALIASES 拿到 中文名 ↔ 代码 双向映射
