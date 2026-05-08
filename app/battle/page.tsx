@@ -119,26 +119,85 @@ export default function BattlePage() {
     }
   }, [activeSage, mode]);
 
+  // Chat 模式走 SSE 流式 (/api/battle/stream)；Battle 模式走传统 POST
+  const submitChatStream = async (text: string) => {
+    const body: any = {
+      sage_id: activeSage.slug,
+      message: text,
+      history: messages
+        .filter(m => !m.loading && m.content)
+        .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
+    };
+    setMessages(prev => [...prev,
+      { role: "user", content: text, ts: Date.now() },
+      { role: "sage", content: "", loading: true, ts: Date.now() + 1 }]);
+    setInput(""); setLoading(true);
+    try {
+      const res = await fetch("/api/battle/stream", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      });
+      if (!res.ok || !res.body) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "", evt = "", accumulated = "";
+      const updateLast = (patch: Partial<Msg>) => setMessages(prev => {
+        const arr = [...prev]; arr[arr.length - 1] = { ...arr[arr.length - 1], ...patch }; return arr;
+      });
+      const processLines = (lines: string[]) => {
+        for (const line of lines) {
+          if (line.startsWith("event: ")) { evt = line.slice(7).trim(); continue; }
+          if (!line.startsWith("data: ")) continue;
+          let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
+          if (evt === "quotes") {
+            updateLast({ quotes: (data || []).map((q: any) => ({ ...q, source: q.source || "xueqiu" })), loading: true });
+          } else if (evt === "chunk" && data.delta) {
+            accumulated += data.delta;
+            updateLast({ content: accumulated, loading: false });
+          } else if (evt === "done") {
+            updateLast({ content: accumulated || data.fullReply || "", followups: data.followups || [], loading: false });
+          } else if (evt === "error") {
+            updateLast({ content: `Error: ${data.message}`, loading: false });
+          }
+        }
+      };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          // ⭐ flush 残留 buf —— done event 经常残留在最后一段
+          if (buf) processLines(buf.split("\n"));
+          break;
+        }
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        processLines(lines);
+      }
+    } catch (e: any) {
+      setMessages(prev => {
+        const arr = [...prev];
+        arr[arr.length - 1] = { role: "sage", content: `Error: ${e.message}`, ts: Date.now() };
+        return arr;
+      });
+    } finally { setLoading(false); }
+  };
+
   const submitWith = async (overrideText?: string) => {
     if (loading) return;
     const text = overrideText !== undefined ? overrideText : input;
-    let userContent = "", body: any = { sage_id: activeSage.slug, mode };
     if (mode === "chat") {
       if (!text.trim()) return;
-      userContent = text; body.message = text;
-      // ⭐ 把历史 messages 转成 LLM 多轮对话格式
-      body.history = messages
-        .filter(m => !m.loading && m.content)
-        .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
-    } else {
-      if (!stockCode.trim()) return;
-      userContent = `${stockCode}${reason ? ` — ${reason}` : ""}`;
-      body.stock_code = stockCode; body.reason = reason;
+      return submitChatStream(text);
     }
+    // battle 模式（传统）
+    if (!stockCode.trim()) return;
+    const userContent = `${stockCode}${reason ? ` — ${reason}` : ""}`;
+    const body: any = { sage_id: activeSage.slug, mode: "battle", stock_code: stockCode, reason };
     setMessages(prev => [...prev,
       { role: "user", content: userContent, ts: Date.now() },
       { role: "sage", content: "", loading: true, ts: Date.now() + 1 }]);
-    setInput(""); setLoading(true);
+    setLoading(true);
     try {
       const res = await fetch("/api/battle", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
@@ -150,7 +209,6 @@ export default function BattlePage() {
           role: "sage",
           content: d.error ? `Error: ${d.error}` : (d.reply || ""),
           quotes: (d.quotes || []).map((q: any) => ({ ...q, source: q.source || "xueqiu" })),
-          followups: Array.isArray(d.followups) ? d.followups : [],
           ts: Date.now(),
         };
         return arr;
