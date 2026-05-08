@@ -22,7 +22,7 @@ export interface Sage {
   name: string;
   title: string;
   era: string;
-  tier?: "popular" | "insider";  // 大众派 / 圈内派
+  tier?: "popular" | "insider" | "removed";  // 大众派 / 圈内派 / 已移除
   school: "value" | "reverse" | "growth" | "moat" | "concentration" | "consumer";
   philosophy: string;
   coreLine: string;
@@ -39,7 +39,7 @@ export interface Sage {
   accentColor: string;
 }
 
-export const SAGES: Sage[] = [
+const SAGES_RAW: Sage[] = [
   {
     id: "duan-yongping",
     name: "段永平",
@@ -154,7 +154,7 @@ export const SAGES: Sage[] = [
     name: "但斌",
     title: "东方港湾董事长 · 时间的玫瑰",
     era: "2003-至今",
-    tier: "popular",
+    tier: "removed",
     school: "consumer",
     philosophy:
       "时间是优秀公司的朋友。买入并长期持有伟大消费品公司，享受复利的玫瑰。",
@@ -206,7 +206,7 @@ export const SAGES: Sage[] = [
     name: "林园",
     title: "林园投资董事长 · 嘴巴股专家",
     era: "1989-至今",
-    tier: "popular",
+    tier: "removed",
     school: "consumer",
     philosophy:
       "投嘴巴上的生意——人天天要吃要喝要看病。垄断 + 上瘾 + 重复消费 = 印钞机。",
@@ -521,28 +521,28 @@ export const SAGES: Sage[] = [
   },
   {
     id: "fenghe-wu",
-    name: "吴任昊（风和资本）",
-    title: "风和资本 FengHe Asia · 亚洲对冲基金圈内派",
-    era: "2007-至今",
+    name: "胡猛 Matt Hu（风和亚洲）",
+    title: "FengHe Asia 创始人 + CIO · 亚洲最佳多空对冲基金 13 年只 1 年亏损",
+    era: "1990-至今",
     tier: "insider",
     school: "concentration",
     philosophy:
-      "风和资本投资亚洲，专注 5-10 年视野的集中头寸。前金石资本/Maverick Capital 系，圈内被称作'真正做深度研究的对冲基金'。重仓 5 个公司而不是分散 50 个。极少出现在大众视野，圈内每次年度致投资人信被传阅。",
-    coreLine: "5-10 年看好的就重仓，短期不确定的就不碰。",
-    bookOrSource: "风和资本年度致投资人信 / 吴任昊在 GMIC 等闭门会议演讲",
+      "风和亚洲创立于 2010 年新加坡，AUM 65 亿美元。Matt Hu 自创 **5M 投资框架** + 周期投资哲学：不预测宏观、不预测市场，只研究具体公司。L/S 多空策略（多 65% / 空 35%），能力圈集中在**科技硬件 + 医疗**两个行业。**过去 13 年只有 1 年亏损（-4.8%），其余 12 年盈利**，2025 年净回报 27%。被业界评为'亚洲最佳多空对冲基金'。在国内大众完全不熟，圈内（机构投资人）每次胡猛公开演讲都被全文传阅。",
+    coreLine: "投资不虑宏观，不预测市场，择股。",
+    bookOrSource: "风和亚洲年度致投资人信 / 胡猛公开演讲（2025 年首次国内分享） / 5M 投资框架白皮书",
     representativeTrades: [
-      "万华化学长期重仓（穿越 MDI 周期）",
-      "海康威视低位重仓",
-      "Sea Limited (Shopee) 东南亚电商早期",
-      "美团早期重仓",
-      "贵州茅台核心仓位",
+      "科技硬件多年重仓（半导体设备 + 消费电子核心标的）",
+      "医疗赛道长期持有（创新药 + 医疗器械龙头）",
+      "做空过度炒作的赛道股 — 13 年风控记录",
+      "穿越 2015 / 2018 / 2022 多次熊市",
+      "2025 年净回报 27% — 全市场最高水平之一",
     ],
     dimensions: [
-      { key: "industrySpace", label: "行业 5-10 年空间", weight: 0.25, description: "5 年后这个行业是 2 倍还是腰斩？" },
-      { key: "moatEvolution", label: "护城河演变", weight: 0.25, description: "公司的护城河是变深还是变浅？" },
+      { key: "industrySpace", label: "行业 5-10 年空间", weight: 0.25, description: "周期投资框架——这个行业处于上行还是下行周期？" },
+      { key: "moatEvolution", label: "护城河演变", weight: 0.25, description: "5M 框架的核心：Moat（护城河）演变方向" },
       { key: "concentrationFit", label: "集中头寸适合度", weight: 0.20, description: "值得放进 Top 5 仓位吗？流动性 + 确定性双高？" },
-      { key: "managementLongTerm", label: "管理层长期可信", weight: 0.15, description: "管理层是否专注主业、不乱并购、不掏空公司" },
-      { key: "valueRationality", label: "估值合理性", weight: 0.15, description: "5-10 年视角的估值是否合理（不是 PE 几倍这种短期看法）" },
+      { key: "managementLongTerm", label: "Management 管理层", weight: 0.15, description: "5M 之 Management — 长期专注主业、不乱并购" },
+      { key: "valueRationality", label: "Margin 边际安全", weight: 0.15, description: "5M 之 Margin — 估值合理性 + 多空对冲后的实际风险敞口" },
     ],
     redFlags: [
       { key: "industry_no_space", label: "行业空间不足", trigger: "5 年内行业空间 < 1.5 倍当前", severity: "veto" },
@@ -557,18 +557,20 @@ export const SAGES: Sage[] = [
       "集中市场 (CR5 > 60%)",
     ],
     quotes: [
-      "重仓是因为研究透了，不是因为情绪。",
-      "5 年看不清的公司不在我们的组合里。",
-      "投资是少数人的游戏，越拥挤越没价值。",
-      "护城河不是静态的，看它怎么演变才是关键。",
+      "投资不虑宏观，不预测市场，择股。",
+      "5M 框架——Market 市场 / Moat 护城河 / Management 管理层 / Margin 安全边际 / Macro（最后一位）。",
+      "13 年只有 1 年亏损 — 不是因为我聪明，是因为我把自己限制在科技硬件 + 医疗能力圈内。",
+      "做空 35% 不是为了赚钱，是为了给做多 65% 让你拿得住。",
+      "亚洲最好的对冲基金不在 CNBC 上，在年度致投资人信里。",
     ],
     misuseWarnings: [
-      "小盘股：风和规模大，<100 亿市值不进入视野。",
-      "高频博弈：5-10 年视角不适合短线。",
-      "新兴科技：5 年看不清的颠覆性技术，风和保守。",
+      "能力圈外：胡猛只投科技硬件 + 医疗，其他行业谨慎。",
+      "纯多策略：风和亚洲 L/S 65/35，纯多头投资者难以复刻。",
+      "高频博弈：周期投资视角 12-36 个月，不适合短线。",
+      "宏观择时：Matt Hu 明确不预测宏观——不要用他的方法论做宏观判断。",
     ],
-    complementarySages: ["feng-liu", "duan-yongping"],
-    avatar: "FH",
+    complementarySages: ["feng-liu", "deng-xiaofeng"],
+    avatar: "MH",
     color: "#0E7490",
     accentColor: "#67E8F9",
   },
@@ -733,7 +735,7 @@ export const SAGES: Sage[] = [
     name: "王亚伟",
     title: "千合资本创始人 · 公募一哥转私募传奇",
     era: "1995-至今",
-    tier: "insider",
+    tier: "removed",
     school: "growth",
     philosophy:
       "前华夏大盘精选基金经理（2005-2012），公募时代连续 7 年战胜大盘。2012 年创立千合资本后**几乎完全淡出公众视野**。投资风格：自下而上选股 + 重仓黑马 + 看重管理层与战略。圈内称为'A 股最敏感的选股嗅觉'。",
@@ -781,4 +783,191 @@ export const SAGES: Sage[] = [
   },
 ];
 
+// 添加 3 位真正活跃的中生代圈内派（替代翻车的但斌/林园/王亚伟）
+SAGES_RAW.push(
+  {
+    id: "chen-guangming",
+    name: "陈光明",
+    title: "睿远基金创始人 · 圈内最受推崇的价值派",
+    era: "1998-至今",
+    tier: "insider",
+    school: "value",
+    philosophy:
+      "前东方红资管 CEO，2018 年 50 岁创立睿远，圈内被称为'A 股价值投资派的领袖'。陈光明强调'好行业 + 好公司 + 好价格'三者必须同时具备，重视长期 ROE 和 free cash flow。睿远旗下基金销售时被秒抢，但陈光明本人从不出来唱多。",
+    coreLine: "投资是认知的变现——你看到别人看不到的，才能赚到别人赚不到的钱。",
+    bookOrSource: "睿远成长价值年报 / 睿远基金致投资人信",
+    representativeTrades: [
+      "东方红资管时期长期持有伊利、海康威视、招商银行（10 年+）",
+      "睿远成长价值长期重仓白酒+化工龙头",
+      "穿越 2018 / 2022 两轮熊市保持业绩",
+    ],
+    dimensions: [
+      { key: "biz", label: "好行业 / 好公司", weight: 0.30, description: "行业空间 + 公司护城河双重过滤" },
+      { key: "price", label: "好价格", weight: 0.25, description: "PE/PB 在历史合理区间" },
+      { key: "fcf", label: "自由现金流", weight: 0.20, description: "FCF/Net Income > 0.7 且稳定" },
+      { key: "roe", label: "长期 ROE", weight: 0.15, description: "10 年 ROE > 15% 且方差小" },
+      { key: "longTerm", label: "长期持有意愿", weight: 0.10, description: "3-5 年视角 vs 短线" },
+    ],
+    redFlags: [
+      { key: "no_three_good", label: "三好缺一", trigger: "好行业/好公司/好价格至少缺一项", severity: "major" },
+      { key: "fcf_neg", label: "FCF 为负", trigger: "FCF/Revenue < 0", severity: "veto" },
+      { key: "weak_industry", label: "行业空间弱", trigger: "强周期或巨变行业", severity: "major" },
+    ],
+    bonus: ["10 年 ROE > 15%", "FCF/Net Income > 0.7", "细分龙头", "现金分红率高"],
+    quotes: [
+      "投资是认知的变现。",
+      "好行业 + 好公司 + 好价格——三者缺一不可。",
+      "市场短期看情绪，长期看价值。",
+      "我们不预测市场，只研究公司。",
+    ],
+    misuseWarnings: [
+      "周期股：陈光明远离强周期 + 高资本开支。",
+      "短期博弈：陈光明持有期 3-5 年，不适合趋势交易。",
+      "新兴科技：偏好可持续盈利的成熟商业模式。",
+    ],
+    complementarySages: ["feng-liu", "deng-xiaofeng"],
+    avatar: "CGM",
+    color: "#0F766E",
+    accentColor: "#5EEAD4",
+  },
+  {
+    id: "xie-zhiyu",
+    name: "谢治宇",
+    title: "兴证全球基金 · 80 后顶流基金经理",
+    era: "2007-至今",
+    tier: "insider",
+    school: "growth",
+    philosophy:
+      "兴证全球合宜混合基金经理，80 后中生代中**圈内最受推崇**的成长价值派。中长期视角 + 行业景气度 + 商业模式扫描。重仓三一重工、海尔智家、隆基绿能等覆盖周期+消费+新能源。圈内年轻一代基金经理几乎都把谢治宇作为标杆。",
+    coreLine: "我不是在选股票，我是在选未来 5 年还在变好的公司。",
+    bookOrSource: "兴证全球合宜年报 / 谢治宇路演纪要",
+    representativeTrades: [
+      "兴证全球合宜成立至今年化 18%+",
+      "重仓三一重工 / 海尔智家 / 隆基绿能",
+      "穿越多个周期保持稳定回报",
+    ],
+    dimensions: [
+      { key: "industryUpcycle", label: "行业景气向上", weight: 0.30, description: "未来 3-5 年行业景气度上行" },
+      { key: "bizModel", label: "商业模式", weight: 0.25, description: "可持续盈利能力 + 现金流" },
+      { key: "growth", label: "增长可见性", weight: 0.20, description: "未来 2-3 年业绩增长清晰" },
+      { key: "valuationFit", label: "估值匹配", weight: 0.15, description: "PEG 合理 + 估值在景气度中位数附近" },
+      { key: "mgmtVision", label: "管理层格局", weight: 0.10, description: "管理层是否有长期战略" },
+    ],
+    redFlags: [
+      { key: "industry_decline", label: "行业景气下行", trigger: "未来 3 年行业空间收缩", severity: "major" },
+      { key: "no_growth", label: "无增长", trigger: "ROE 持续低于 10%", severity: "major" },
+      { key: "overvalued", label: "过度高估", trigger: "PE > 50 且增速 < 30%", severity: "major" },
+    ],
+    bonus: ["行业景气度上行", "净利润增速 > 20%", "ROE > 15%", "现金流稳定"],
+    quotes: [
+      "我不是在选股票，我是在选未来 5 年还在变好的公司。",
+      "行业 beta 比个股 alpha 重要。",
+      "成长股不是没有估值上限，是估值要跟得上增长。",
+      "周期股也能长期持有——前提是你看清了行业拐点。",
+    ],
+    misuseWarnings: [
+      "稳定低成长股：谢治宇要求增长可见性，对纯收息股不感冒。",
+      "高度博弈品种：偏好基本面驱动，不参与纯主题炒作。",
+    ],
+    complementarySages: ["feng-liu", "chen-guangming"],
+    avatar: "XZY",
+    color: "#0369A1",
+    accentColor: "#7DD3FC",
+  },
+  {
+    id: "ma-zibing",
+    name: "马自铭（雪湖资本）",
+    title: "Snow Lake Capital 创始人 · 圈内\"最低调的对冲基金\" · 做空瑞幸震动业界",
+    era: "2009-至今",
+    tier: "insider",
+    school: "value",
+    philosophy:
+      "雪湖资本香港 2009 创立，AUM 数十亿美金。**2019 年与浑水联手做空瑞幸**震动业界——做空决策来自基本面深度调研。投资策略：长期 + 基本面 + 重点布局科技/消费/金融/医疗。坚持两点：要研究透一家企业 + 看公司能否带来生产效率提升（创新成果带来行业利润率提升 + 创新塑造的产业链是否能够成立）。**与高瓴关系密切**，被称'高瓴门徒'，但圈内最低调。",
+    coreLine: "要么研究透一家企业，要么不碰——做空和做多用同一套方法论。",
+    bookOrSource: "雪湖资本年度致投资人信 / 浑水做空瑞幸研究报告（雪湖联署）",
+    representativeTrades: [
+      "2019 年与浑水联手做空瑞幸（10 个月内瑞幸股价跌 90%+）",
+      "中国 LS 对冲基金 (2010 成立) — 长期跑赢业界",
+      "中国多头基金 (2015) — 重仓科技+消费龙头",
+      "泛亚洲 LS 对冲 (2018) — 跨区域配置",
+    ],
+    dimensions: [
+      { key: "researchDepth", label: "研究深度", weight: 0.30, description: "你是否真的研究透了这家公司？还是听别人说的？" },
+      { key: "productivityLeverage", label: "生产效率提升", weight: 0.25, description: "公司创新能否带来行业利润率提升？" },
+      { key: "industrialChain", label: "产业链合理性", weight: 0.20, description: "公司创新塑造的产业链是否能够成立" },
+      { key: "asymRisk", label: "多空对称风险", weight: 0.15, description: "适合做多还是做空？还是等待？" },
+      { key: "longTerm", label: "长期持有意愿", weight: 0.10, description: "3-5 年视角的耐心" },
+    ],
+    redFlags: [
+      { key: "fake_growth", label: "虚假增长", trigger: "财务数据可疑 + 缺乏真实生产效率提升", severity: "veto" },
+      { key: "no_research", label: "研究不透", trigger: "用户无法清晰说出公司商业模式细节", severity: "major" },
+      { key: "low_margin_trend", label: "毛利率持续下降", trigger: "净利率持续低于行业", severity: "major" },
+    ],
+    bonus: ["创新带来行业利润率提升", "ROE > 18% 长期", "产业链上下游话语权强", "海外业务占比上升"],
+    quotes: [
+      "要么研究透一家企业，要么不碰。",
+      "做空和做多用同一套方法论——研究透。",
+      "判断一家公司，看它能否带来行业生产效率提升。",
+      "我们不预测市场，我们识别欺骗。",
+      "亚洲最低调的对冲基金 — 因为我们的客户不需要 PR，需要业绩。",
+    ],
+    misuseWarnings: [
+      "纯主题股：雪湖远离纯概念股 — 没有基本面支撑的不碰。",
+      "短期博弈：研究深度 + 长期持有，不适合趋势交易。",
+      "本土小盘：偏好中大盘 + 港美股 + A 股龙头。",
+    ],
+    complementarySages: ["feng-liu", "fenghe-wu"],
+    avatar: "MZB",
+    color: "#0891B2",
+    accentColor: "#A5F3FC",
+  },
+  {
+    id: "yang-dong",
+    name: "杨东",
+    title: "宁泉资产创始人 · 兴证全球前明星基金经理",
+    era: "2003-至今",
+    tier: "insider",
+    school: "value",
+    philosophy:
+      "前兴证全球趋势基金经理（2008-2018），10 年战胜大盘 + 多次精准提示风险（2007 年顶部 / 2015 股灾前清仓）。2018 年创立宁泉资产**完全淡出公开市场**。圈内被称为'真正会择时的价值派'——风险控制比业绩更被推崇。",
+    coreLine: "活下来比赚得多更重要。",
+    bookOrSource: "兴证全球趋势历史业绩 / 宁泉资产年度致投资人信",
+    representativeTrades: [
+      "兴证全球趋势 10 年年化 25%",
+      "2007 年 5800 点公开提示风险",
+      "2015 年股灾前减仓",
+      "宁泉资产成立至今多次穿越熊市",
+    ],
+    dimensions: [
+      { key: "downsideProtection", label: "下行保护", weight: 0.30, description: "市场最大跌幅时能跌多少？最坏情况估值底" },
+      { key: "asymRiskReturn", label: "风险收益不对称", weight: 0.25, description: "下跌空间小 + 上涨空间大" },
+      { key: "macroSafety", label: "宏观安全度", weight: 0.20, description: "宏观环境是否友好（不是逆风）" },
+      { key: "liquidityBuffer", label: "流动性缓冲", weight: 0.15, description: "公司财务健康度 + 行业是否抗周期" },
+      { key: "patience", label: "持有耐心", weight: 0.10, description: "你能等多久" },
+    ],
+    redFlags: [
+      { key: "high_pe_high_pb", label: "高估值组合", trigger: "PE > 30 且 PB > 5", severity: "major" },
+      { key: "leverage_high", label: "高杠杆", trigger: "资产负债率 > 70%", severity: "veto" },
+      { key: "macro_headwind", label: "宏观逆风", trigger: "强监管 + 周期下行", severity: "major" },
+    ],
+    bonus: ["PB < 2", "现金 / 总资产 > 20%", "派息率 > 30%", "穿越多次熊市"],
+    quotes: [
+      "活下来比赚得多更重要。",
+      "我宁可错过 100% 的涨幅，也不愿承担 50% 的亏损。",
+      "市场最大的风险是你以为没有风险。",
+      "择时不是预测顶底，是识别极端。",
+    ],
+    misuseWarnings: [
+      "高速成长股：杨东要求安全边际，对高估值成长股保守。",
+      "纯趋势交易：杨东重视风险控制，不参与无下行保护的标的。",
+    ],
+    complementarySages: ["feng-liu", "li-lu"],
+    avatar: "YD",
+    color: "#A16207",
+    accentColor: "#FDE047",
+  },
+);
+
+// 对外只导出非 removed 的陪审员
+export const SAGES = SAGES_RAW.filter(s => s.tier !== "removed");
 export const SAGE_BY_ID = Object.fromEntries(SAGES.map((s) => [s.id, s]));

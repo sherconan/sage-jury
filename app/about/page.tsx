@@ -19,9 +19,9 @@ const INSIDER_PROOF: Record<string, { proof: string; aum: string; rare: string }
     rare: "几乎从不接受媒体采访，30 年只出过 1 本书《文明、现代化、价值投资与中国》"
   },
   "fenghe-wu": {
-    proof: "前金石资本 / Maverick Capital 系。亚洲对冲基金圈年度致投资人信被持续传阅。",
-    aum: "风和资本 FengHe Asia AUM > 50 亿美元（圈内估算）",
-    rare: "公开演讲极少，主要在 GMIC 等闭门会议 + 年度致投资人信"
+    proof: "Matt Hu 自创 5M 投资框架 + 周期投资哲学。**过去 13 年只有 1 年亏损（-4.8%）**，2025 年净回报 27%。被业界评为亚洲最佳多空对冲基金。共同创始人吴炯（John Wu）做 VC + Opportunities Fund。",
+    aum: "FengHe Asia Fund AUM **65 亿美元**（新加坡 / 2010 创立）",
+    rare: "国内大众完全不熟，2025 年才首次在国内做公开分享。每年通过年度致投资人信对外发声。能力圈聚焦科技硬件 + 医疗，L/S 65/35。"
   },
   "deng-xiaofeng": {
     proof: "前博时基金明星基金经理（2002-2014），2014 加入高毅与冯柳同事但风格相反。圈内被称'A 股最深的研究'。",

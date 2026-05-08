@@ -95,6 +95,7 @@ export default function HomePage() {
             <a href="/watchlist" className="text-ink-700 hover:text-navy-700">自选股</a>
             <a href="/diff" className="text-ink-700 hover:text-navy-700">对比</a>
             <a href="/faq" className="text-ink-700 hover:text-navy-700">FAQ</a>
+            <a href="/battle" className="text-ink-700 hover:text-navy-700">⚔️ 交易对线</a>
             <a href="/cli" className="text-ink-700 hover:text-navy-700">CLI</a>
             <a href="/embed" className="text-ink-700 hover:text-navy-700">Embed</a>
             <a href="/leaderboard" className="text-ink-700 hover:text-navy-700">榜单</a>
@@ -232,14 +233,16 @@ export default function HomePage() {
             <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
               <span>Meet the Jury · 12 Justices</span>
             </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">十四位陪审员 · 大众 8 + 圈内 6</h2>
+            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">十五位陪审员 · 大众 6 + 圈内 9</h2>
             <p className="mx-auto mt-2 max-w-2xl text-ink-600">
-              <span className="font-mono text-xs uppercase tracking-widest text-amber-700">大众派 (8)</span> 段永平 / 冯柳 / 但斌 / 林园 / 张坤 / 巴菲特 / 邱国鹭 / 唐朝
+              <span className="font-mono text-xs uppercase tracking-widest text-amber-700">大众派 (6)</span> 段永平 / 冯柳 / 张坤 / 巴菲特 / 邱国鹭 / 唐朝
               <br />
-              <span className="font-mono text-xs uppercase tracking-widest text-emerald-700">圈内派 (6)</span> <span className="font-bold">李录</span>（喜马拉雅）/ <span className="font-bold">吴任昊</span>（风和）/ <span className="font-bold">邓晓峰</span>（高毅 CIO）/ <span className="font-bold">赵军</span>（淡水泉）/ <span className="font-bold">蒋锦志</span>（景林）/ <span className="font-bold">王亚伟</span>（千合）
+              <span className="font-mono text-xs uppercase tracking-widest text-emerald-700">圈内派 (9)</span> <span className="font-bold">李录</span>（喜马拉雅）/ <span className="font-bold">胡猛</span>（风和亚洲）/ <span className="font-bold">马自铭</span>（雪湖资本）/ <span className="font-bold">邓晓峰</span>（高毅 CIO）/ <span className="font-bold">赵军</span>（淡水泉）/ <span className="font-bold">蒋锦志</span>（景林）/ <span className="font-bold">陈光明</span>（睿远）/ <span className="font-bold">谢治宇</span>（兴证全球）/ <span className="font-bold">杨东</span>（宁泉）
+              <br />
+              <span className="text-xs text-ink-500 italic">已移除：但斌、林园、王亚伟（翻车 / 大众化）</span>
             </p>
             <Link href="/about" className="mt-3 inline-block text-sm text-gold-700 underline hover:text-navy-700">
-              为什么是这 14 位？→
+              为什么换人 / 为什么是这 14 位？→
             </Link>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

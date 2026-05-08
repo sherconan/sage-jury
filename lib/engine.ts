@@ -1438,6 +1438,274 @@ function scoreWangYawei(input: CaseInput): SageVerdict {
   };
 }
 
+// =======================
+// 陈光明 (睿远) — 三好+FCF
+// =======================
+function scoreChenGuangming(input: CaseInput): SageVerdict {
+  const sage = SAGE_BY_ID["chen-guangming"];
+  const dims: DimensionScore[] = [];
+  const hits: RedFlagHit[] = [];
+  const bonusHits: string[] = [];
+
+  let biz = 50;
+  if (input.cyclical === true) {
+    biz -= 25;
+    hits.push({ key: "weak_industry", label: "强周期", severity: "major", reason: "陈光明远离强周期。" });
+  }
+  if (input.monopolyLevel) biz += (input.monopolyLevel - 3) * 12;
+  if (input.brandStrength) biz += (input.brandStrength - 3) * 8;
+  dims.push({ key: "biz", label: "好行业 / 好公司", weight: 0.30, rawScore: clamp(biz), weightedScore: clamp(biz) * 0.30, reason: "行业 + 公司双重过滤" });
+
+  let price = 60;
+  if (input.pe !== undefined) {
+    if (input.pe < 15) price = 80;
+    else if (input.pe < 25) price = 65;
+    else if (input.pe < 40) price = 45;
+    else price = 25;
+  }
+  dims.push({ key: "price", label: "好价格", weight: 0.25, rawScore: price, weightedScore: price * 0.25, reason: input.pe ? `PE ${input.pe}` : "无" });
+
+  let fcf = 50;
+  if (input.fcfMargin !== undefined) {
+    if (input.fcfMargin > 0.2) fcf = 85;
+    else if (input.fcfMargin > 0.1) fcf = 70;
+    else if (input.fcfMargin > 0) fcf = 55;
+    else { fcf = 20; hits.push({ key: "fcf_neg", label: "FCF 为负", severity: "veto", reason: "陈光明对 FCF 为负的公司 veto。" }); }
+  }
+  dims.push({ key: "fcf", label: "自由现金流", weight: 0.20, rawScore: clamp(fcf), weightedScore: clamp(fcf) * 0.20, reason: input.fcfMargin !== undefined ? `${(input.fcfMargin * 100).toFixed(0)}%` : "无 FCF" });
+
+  let roe = 50;
+  if (input.roe !== undefined) {
+    if (input.roe > 0.20) roe = 85;
+    else if (input.roe > 0.15) roe = 70;
+    else if (input.roe > 0.10) roe = 55;
+    else roe = 25;
+  }
+  dims.push({ key: "roe", label: "长期 ROE", weight: 0.15, rawScore: clamp(roe), weightedScore: clamp(roe) * 0.15, reason: input.roe !== undefined ? `ROE ${(input.roe * 100).toFixed(0)}%` : "无" });
+
+  let lt = input.intendedHoldYears !== undefined && input.intendedHoldYears >= 5 ? 80 : input.intendedHoldYears !== undefined && input.intendedHoldYears >= 3 ? 60 : 40;
+  dims.push({ key: "longTerm", label: "长期持有意愿", weight: 0.10, rawScore: lt, weightedScore: lt * 0.10, reason: `预计 ${input.intendedHoldYears || "?"} 年` });
+
+  if (input.roe !== undefined && input.roe > 0.15) bonusHits.push("ROE > 15% 长期");
+  if (input.dividendYield !== undefined && input.dividendYield > 0.03) bonusHits.push("现金分红 > 3%");
+
+  let final = dims.reduce((s, d) => s + d.weightedScore, 0);
+  hits.forEach((h) => { if (h.severity === "veto") final = Math.min(final, 25); else final -= 10; });
+  bonusHits.forEach(() => (final += 3));
+  final = clamp(final);
+
+  const v = scoreToVerdict(final);
+  let oneLine = final >= 80 ? "好行业 + 好公司 + 好价格 + 现金流——三好齐聚，下手。" :
+                 final >= 60 ? "三好缺一项，再等等。" :
+                 final >= 40 ? "认知没到位，宁可错过。" :
+                              "投资是认知的变现——这个我看不到。";
+
+  return { sageId: sage.id, sageName: sage.name, finalScore: Math.round(final), letterGrade: scoreToGrade(final),
+    verdict: v.verdict, verdictLabel: v.label, oneLine,
+    comment: buildComment(sage, dims, hits, bonusHits, final),
+    dimensions: dims, redFlags: hits, bonusHits, signatureQuote: pickQuote(sage, final) };
+}
+
+// =======================
+// 谢治宇 (兴证全球) — 行业景气+成长
+// =======================
+function scoreXieZhiyu(input: CaseInput): SageVerdict {
+  const sage = SAGE_BY_ID["xie-zhiyu"];
+  const dims: DimensionScore[] = [];
+  const hits: RedFlagHit[] = [];
+  const bonusHits: string[] = [];
+
+  let upcycle = 50;
+  if (input.cyclical === true && input.oversoldRecently === true) upcycle = 70;
+  if (input.cyclical === true && input.oversoldRecently !== true) upcycle = 35;
+  if (input.techDisruption && input.techDisruption >= 4) {
+    upcycle -= 15;
+    hits.push({ key: "industry_decline", label: "行业可能下行", severity: "major", reason: "技术替代风险高。" });
+  }
+  dims.push({ key: "industryUpcycle", label: "行业景气向上", weight: 0.30, rawScore: clamp(upcycle), weightedScore: clamp(upcycle) * 0.30, reason: "行业景气度判断" });
+
+  let bm = 50 + ((input.brandStrength || 3) - 3) * 12;
+  if (input.fcfMargin !== undefined && input.fcfMargin > 0.1) bm += 10;
+  dims.push({ key: "bizModel", label: "商业模式", weight: 0.25, rawScore: clamp(bm), weightedScore: clamp(bm) * 0.25, reason: "可持续盈利" });
+
+  let growth = 50;
+  if (input.roe !== undefined) {
+    if (input.roe > 0.20) growth = 80;
+    else if (input.roe > 0.15) growth = 65;
+    else if (input.roe < 0.10) {
+      growth = 30;
+      hits.push({ key: "no_growth", label: "无增长", severity: "major", reason: "ROE < 10% 不符合谢治宇成长标准。" });
+    }
+  }
+  dims.push({ key: "growth", label: "增长可见性", weight: 0.20, rawScore: clamp(growth), weightedScore: clamp(growth) * 0.20, reason: input.roe !== undefined ? `ROE ${(input.roe * 100).toFixed(0)}%` : "无" });
+
+  let valFit = 50;
+  if (input.pe !== undefined && input.roe !== undefined && input.roe > 0) {
+    const peg = input.pe / Math.max(input.roe * 100, 1);
+    if (peg < 1) valFit = 80;
+    else if (peg < 1.5) valFit = 60;
+    else valFit = 30;
+    if (input.pe > 50 && input.roe < 0.3) {
+      hits.push({ key: "overvalued", label: "过度高估", severity: "major", reason: "PE > 50 但增速跟不上。" });
+    }
+  }
+  dims.push({ key: "valuationFit", label: "估值匹配", weight: 0.15, rawScore: clamp(valFit), weightedScore: clamp(valFit) * 0.15, reason: "PEG 合理性" });
+
+  let mgmt = 50 + ((input.managementQuality || 3) - 3) * 12;
+  dims.push({ key: "mgmtVision", label: "管理层格局", weight: 0.10, rawScore: clamp(mgmt), weightedScore: clamp(mgmt) * 0.10, reason: input.managementQuality ? `管理层 ${input.managementQuality}/5` : "未评" });
+
+  if (input.roe !== undefined && input.roe > 0.20) bonusHits.push("ROE > 20%");
+  if (input.fcfMargin !== undefined && input.fcfMargin > 0.15) bonusHits.push("现金流充沛");
+
+  let final = dims.reduce((s, d) => s + d.weightedScore, 0);
+  hits.forEach((h) => { final -= 10; });
+  bonusHits.forEach(() => (final += 3));
+  final = clamp(final);
+
+  const v = scoreToVerdict(final);
+  let oneLine = final >= 80 ? "行业景气向上 + 增长可见 + 估值合理——值得 5 年持有。" :
+                 final >= 60 ? "好公司，但行业景气度还不够明确。" :
+                 final >= 40 ? "增长跟不上估值，再等。" :
+                              "我选的是未来 5 年还在变好的公司——不是这个。";
+
+  return { sageId: sage.id, sageName: sage.name, finalScore: Math.round(final), letterGrade: scoreToGrade(final),
+    verdict: v.verdict, verdictLabel: v.label, oneLine,
+    comment: buildComment(sage, dims, hits, bonusHits, final),
+    dimensions: dims, redFlags: hits, bonusHits, signatureQuote: pickQuote(sage, final) };
+}
+
+// =======================
+// 杨东 (宁泉) — 安全边际择时派
+// =======================
+function scoreYangDong(input: CaseInput): SageVerdict {
+  const sage = SAGE_BY_ID["yang-dong"];
+  const dims: DimensionScore[] = [];
+  const hits: RedFlagHit[] = [];
+  const bonusHits: string[] = [];
+
+  let down = 50;
+  if (input.pb !== undefined) {
+    if (input.pb < 1.5) down = 85;
+    else if (input.pb < 3) down = 65;
+    else if (input.pb > 6) down = 25;
+  }
+  if (input.dividendYield !== undefined && input.dividendYield > 0.04) down += 10;
+  if (input.recentDrawdown !== undefined && input.recentDrawdown > 0.4) down += 10;
+  dims.push({ key: "downsideProtection", label: "下行保护", weight: 0.30, rawScore: clamp(down), weightedScore: clamp(down) * 0.30, reason: input.pb ? `PB ${input.pb}` : "无 PB" });
+
+  let asym = 50;
+  if (input.oversoldRecently === true) asym = 75;
+  if (input.consensusBullish === true) asym = 25;
+  if (input.pe !== undefined && input.pe > 30 && input.pb !== undefined && input.pb > 5) {
+    hits.push({ key: "high_pe_high_pb", label: "高估值组合", severity: "major", reason: "PE > 30 + PB > 5 — 风险大于回报。" });
+  }
+  dims.push({ key: "asymRiskReturn", label: "风险收益不对称", weight: 0.25, rawScore: clamp(asym), weightedScore: clamp(asym) * 0.25, reason: "下跌空间 vs 上涨空间" });
+
+  let macro = 60;
+  if (input.regulatoryRisk && input.regulatoryRisk >= 4) {
+    macro -= 15;
+    hits.push({ key: "macro_headwind", label: "宏观逆风", severity: "major", reason: "强监管 — 宏观环境不利。" });
+  }
+  if (input.cyclical === true) macro -= 10;
+  dims.push({ key: "macroSafety", label: "宏观安全度", weight: 0.20, rawScore: clamp(macro), weightedScore: clamp(macro) * 0.20, reason: "监管 + 周期" });
+
+  let liq = 60;
+  if (input.debtToAsset !== undefined && input.debtToAsset > 0.7) {
+    liq = 25;
+    hits.push({ key: "leverage_high", label: "高杠杆", severity: "veto", reason: "杨东对资产负债率 > 70% veto。" });
+  } else if (input.debtToAsset !== undefined && input.debtToAsset < 0.4) liq = 80;
+  dims.push({ key: "liquidityBuffer", label: "流动性缓冲", weight: 0.15, rawScore: clamp(liq), weightedScore: clamp(liq) * 0.15, reason: "财务健康度" });
+
+  let pat = input.intendedHoldYears !== undefined && input.intendedHoldYears >= 5 ? 80 : input.intendedHoldYears !== undefined && input.intendedHoldYears >= 3 ? 60 : 40;
+  dims.push({ key: "patience", label: "持有耐心", weight: 0.10, rawScore: pat, weightedScore: pat * 0.10, reason: `预计 ${input.intendedHoldYears || "?"} 年` });
+
+  if (input.pb !== undefined && input.pb < 2) bonusHits.push("PB < 2 安全边际");
+  if (input.dividendYield !== undefined && input.dividendYield > 0.03) bonusHits.push("派息 > 3%");
+
+  let final = dims.reduce((s, d) => s + d.weightedScore, 0);
+  hits.forEach((h) => { if (h.severity === "veto") final = Math.min(final, 25); else final -= 10; });
+  bonusHits.forEach(() => (final += 3));
+  final = clamp(final);
+
+  const v = scoreToVerdict(final);
+  let oneLine = final >= 80 ? "下行有保护 + 风险收益不对称 — 活下来比赚得多重要。" :
+                 final >= 60 ? "有点意思但还不够安全。" :
+                 final >= 40 ? "宏观逆风或估值偏高 — 我宁愿等。" :
+                              "我宁可错过 100% 的涨幅，也不愿承担 50% 亏损。";
+
+  return { sageId: sage.id, sageName: sage.name, finalScore: Math.round(final), letterGrade: scoreToGrade(final),
+    verdict: v.verdict, verdictLabel: v.label, oneLine,
+    comment: buildComment(sage, dims, hits, bonusHits, final),
+    dimensions: dims, redFlags: hits, bonusHits, signatureQuote: pickQuote(sage, final) };
+}
+
+// =======================
+// 马自铭 (雪湖资本) — 研究深度 + 生产效率派
+// =======================
+function scoreMaZibing(input: CaseInput): SageVerdict {
+  const sage = SAGE_BY_ID["ma-zibing"];
+  const dims: DimensionScore[] = [];
+  const hits: RedFlagHit[] = [];
+  const bonusHits: string[] = [];
+
+  // 研究深度 (30%) — 用户是否真的清楚生意逻辑
+  let depth = input.inUserCircle === true ? 80 : input.inUserCircle === false ? 20 : 50;
+  if (input.inUserCircle === false) {
+    hits.push({ key: "no_research", label: "研究不透", severity: "major", reason: "雪湖坚持研究透才下手 — 不在能力圈直接出局。" });
+  }
+  dims.push({ key: "researchDepth", label: "研究深度", weight: 0.30, rawScore: depth, weightedScore: depth * 0.30, reason: input.inUserCircle === true ? "用户能讲清楚商业模式" : "未明" });
+
+  // 生产效率提升 (25%) — 创新能否带来行业利润率提升
+  let prod = 50;
+  if (input.brandStrength) prod += (input.brandStrength - 3) * 8;
+  if (input.monopolyLevel && input.monopolyLevel >= 4) prod += 12;
+  if (input.netMargin !== undefined && input.netMargin > 0.18) prod += 10;
+  if (input.netMargin !== undefined && input.netMargin < 0.05) {
+    prod -= 15;
+    hits.push({ key: "low_margin_trend", label: "净利率偏低", severity: "major", reason: "净利率 < 5% — 无明显生产效率优势。" });
+  }
+  dims.push({ key: "productivityLeverage", label: "生产效率提升", weight: 0.25, rawScore: clamp(prod), weightedScore: clamp(prod) * 0.25, reason: input.netMargin !== undefined ? `净利率 ${(input.netMargin * 100).toFixed(0)}%` : "无" });
+
+  // 产业链合理性 (20%)
+  let chain = 50 + ((input.monopolyLevel || 3) - 3) * 10;
+  if (input.cyclical === true) chain -= 10;
+  if (input.fcfMargin !== undefined && input.fcfMargin > 0.15) chain += 10;
+  if (input.fcfMargin !== undefined && input.fcfMargin < 0) {
+    chain -= 20;
+    hits.push({ key: "fake_growth", label: "FCF 为负 + 增长可疑", severity: "veto", reason: "雪湖做空的就是这种 — 增长靠融资烧钱不是真增长。" });
+  }
+  dims.push({ key: "industrialChain", label: "产业链合理性", weight: 0.20, rawScore: clamp(chain), weightedScore: clamp(chain) * 0.20, reason: input.fcfMargin !== undefined ? `FCF/收入 ${(input.fcfMargin * 100).toFixed(0)}%` : "无" });
+
+  // 多空对称风险 (15%)
+  let asym = 50;
+  if (input.consensusBullish === true && input.pe !== undefined && input.pe > 50) asym = 25;
+  if (input.oversoldRecently === true && input.catalystVisible === true) asym = 75;
+  dims.push({ key: "asymRisk", label: "多空对称风险", weight: 0.15, rawScore: clamp(asym), weightedScore: clamp(asym) * 0.15, reason: "适合做多还是做空？" });
+
+  // 长期持有 (10%)
+  let lt = input.intendedHoldYears !== undefined && input.intendedHoldYears >= 5 ? 75 : input.intendedHoldYears !== undefined && input.intendedHoldYears >= 3 ? 60 : 40;
+  dims.push({ key: "longTerm", label: "长期持有意愿", weight: 0.10, rawScore: lt, weightedScore: lt * 0.10, reason: `预计 ${input.intendedHoldYears || "?"} 年` });
+
+  if (input.roe !== undefined && input.roe > 0.18) bonusHits.push("ROE > 18% 长期");
+  if (input.brandStrength && input.brandStrength >= 4) bonusHits.push("产业链话语权强");
+
+  let final = dims.reduce((s, d) => s + d.weightedScore, 0);
+  hits.forEach((h) => { if (h.severity === "veto") final = Math.min(final, 25); else final -= 10; });
+  bonusHits.forEach(() => (final += 3));
+  final = clamp(final);
+
+  const v = scoreToVerdict(final);
+  let oneLine = final >= 80 ? "研究透了 + 生产效率提升 + 产业链合理 — 雪湖会做多。" :
+                 final >= 60 ? "好公司但还没研究透到能下手。" :
+                 final >= 40 ? "增长可疑或没创新 — 雪湖看做空机会。" :
+                              "我们不预测市场，我们识别欺骗 — 这种我会做空。";
+
+  return { sageId: sage.id, sageName: sage.name, finalScore: Math.round(final), letterGrade: scoreToGrade(final),
+    verdict: v.verdict, verdictLabel: v.label, oneLine,
+    comment: buildComment(sage, dims, hits, bonusHits, final),
+    dimensions: dims, redFlags: hits, bonusHits, signatureQuote: pickQuote(sage, final) };
+}
+
 const SCORE_FUNCS: Record<string, (i: CaseInput) => SageVerdict> = {
   "duan-yongping": scoreDuanYongping,
   "feng-liu": scoreFengLiu,
@@ -1453,6 +1721,10 @@ const SCORE_FUNCS: Record<string, (i: CaseInput) => SageVerdict> = {
   "zhao-jun": scoreZhaoJun,
   "jiang-jinzhi": scoreJiang,
   "wang-yawei": scoreWangYawei,
+  "chen-guangming": scoreChenGuangming,
+  "xie-zhiyu": scoreXieZhiyu,
+  "yang-dong": scoreYangDong,
+  "ma-zibing": scoreMaZibing,
 };
 
 export function evaluate(input: CaseInput, sageIds?: string[]): JuryReport {
