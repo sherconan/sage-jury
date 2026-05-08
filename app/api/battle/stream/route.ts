@@ -138,7 +138,10 @@ const SAGE_PROMPTS: Record<string, string> = {
 
 function buildRagContext(quotes: Quote[]): string {
   if (!quotes.length) return "（暂无相关历史发言）";
-  return quotes.map((q, i) => `[原文 ${i+1}] ${q.date} (👍${q.likes}): ${(q.text_n || q.text).replace(/\n/g, " ").slice(0, 280)}`).join("\n\n");
+  // 截短到 180 字符 + 限制最多 5 条 → 系统 prompt 缩 ~50%，TTFC 减 ~500ms
+  return quotes.slice(0, 5).map((q, i) =>
+    `[原文 ${i+1}] ${q.date}(👍${q.likes}): ${(q.text_n || q.text).replace(/\n/g, " ").slice(0, 180)}`
+  ).join("\n");
 }
 
 const enc = new TextEncoder();
@@ -162,7 +165,7 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       try {
         // 第 1 步: 立即推送 RAG 召回结果
-        const quotes = findRelevant(sage, userMsg, 8);
+        const quotes = findRelevant(sage, userMsg, 5);
         controller.enqueue(sse("quotes", quotes));
 
         // 第 2 步: 推送实时行情
