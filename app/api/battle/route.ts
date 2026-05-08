@@ -287,16 +287,101 @@ async function callLLM(
 function buildRagContext(quotes: Quote[]): string {
   if (!quotes.length) return "（暂无相关历史发言）";
   return quotes.map((q, i) => {
-    // 优先用 normalized 简体（管我财繁体粤语会被翻译过来给 LLM 看）
     const txt = (q.text_n || q.text).replace(/\n/g, " ").slice(0, 280);
     return `[原文 ${i+1}] ${q.date} (👍${q.likes}): ${txt}`;
   }).join("\n\n");
 }
 
+// === 实时行情注入：用户问"现在 茅台 能买吗" → 自动喂 LLM 今日 PE/PB/股息 ===
+// 中文名 → A 股代码（精简版，覆盖最常被问的 30 多只）
+const NAME_TO_TICKER: Record<string, string> = {
+  "茅台":"600519","贵州茅台":"600519","五粮液":"000858","汾酒":"600809","山西汾酒":"600809",
+  "泸州老窖":"000568","洋河":"002304","海天":"603288","海天味业":"603288","伊利":"600887","伊利股份":"600887",
+  "片仔癀":"600436","云南白药":"000538","恒瑞":"600276","恒瑞医药":"600276",
+  "美的":"000333","美的集团":"000333","格力":"000651","格力电器":"000651","海尔":"600690",
+  "招行":"600036","招商银行":"600036","平安":"601318","中国平安":"601318","工行":"601398","工商银行":"601398",
+  "宁德时代":"300750","宁德":"300750","比亚迪":"002594","隆基":"601012","隆基绿能":"601012",
+  "中免":"601888","中国中免":"601888","神华":"601088","海康":"002415","海康威视":"002415",
+  "中石油":"601857","万华":"600309","万科":"000002","泡泡玛特":"09992","腾讯":"00700","腾讯控股":"00700",
+};
+
+interface LiveQuote { code: string; name: string; price?: number; pe?: number; pb?: number; chg?: number; divYield?: number; secid: string; }
+
+function detectTickers(query: string): Array<{ code: string; name: string }> {
+  const found: Map<string, string> = new Map();
+  // 匹配 6 位代码
+  const codes = query.match(/(?<![\d])[036][05][0-9]{4}(?![\d])|[023][0-9]{4}(?![\d])|0?9992/g) || [];
+  for (const c of codes) {
+    const code = c.padStart(c.length === 4 ? 5 : c.length, "0");
+    found.set(code, code);
+  }
+  // 匹配中文名
+  for (const [name, code] of Object.entries(NAME_TO_TICKER)) {
+    if (query.includes(name)) found.set(code, name);
+  }
+  return [...found.entries()].slice(0, 3).map(([code, name]) => ({ code, name }));
+}
+
+async function fetchLiveQuote(code: string, name: string): Promise<LiveQuote | null> {
+  // secid 规则：A 股 sh 用 1.，sz 用 0.；港股用 116.
+  let secid: string;
+  if (/^0?9992$/.test(code) || /^[0-9]{4,5}$/.test(code) && code.length <= 5) {
+    secid = `116.${code.padStart(5, "0")}`;
+  } else if (/^[6]\d{5}$/.test(code) || code.startsWith("6")) {
+    secid = `1.${code}`;
+  } else {
+    secid = `0.${code}`;
+  }
+  try {
+    const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f58,f162,f167,f170,f60,f168`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0", Referer: "https://quote.eastmoney.com/" },
+      // @ts-ignore
+      next: { revalidate: 600 },
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    const d = j?.data;
+    if (!d || !d.f58) return null;
+    const div = (n: any) => (typeof n === "number" && !isNaN(n) ? n / 100 : undefined);
+    return {
+      code, name, secid,
+      price: div(d.f43),
+      pe: div(d.f162),
+      pb: div(d.f167),
+      chg: div(d.f170),  // 涨跌幅
+      divYield: div(d.f168), // 股息率
+    };
+  } catch { return null; }
+}
+
+async function enrichWithLiveData(query: string): Promise<string> {
+  const tickers = detectTickers(query);
+  if (!tickers.length) return "";
+  const quotes = await Promise.all(tickers.map(t => fetchLiveQuote(t.code, t.name)));
+  const live = quotes.filter(Boolean) as LiveQuote[];
+  if (!live.length) return "";
+  const lines = live.map(q => {
+    const parts = [`${q.name}(${q.code})`];
+    if (q.price !== undefined) parts.push(`价格 ${q.price.toFixed(2)}`);
+    if (q.chg !== undefined) parts.push(`今日 ${q.chg > 0 ? '+' : ''}${q.chg.toFixed(2)}%`);
+    if (q.pe !== undefined) parts.push(`PE ${q.pe.toFixed(1)}`);
+    if (q.pb !== undefined) parts.push(`PB ${q.pb.toFixed(2)}`);
+    if (q.divYield !== undefined && q.divYield > 0) parts.push(`股息 ${q.divYield.toFixed(2)}%`);
+    return `- ${parts.join(' · ')}`;
+  }).join("\n");
+  const today = new Date().toISOString().slice(0, 10);
+  return `\n\n=== 📊 ${today} 实时行情（请优先用这些当前数据回答估值类问题，不要瞎编 PE）===\n${lines}\n`;
+}
+
 async function chatMode(sage: SageData, message: string, history: ChatMsg[] = []) {
-  const quotes = findRelevant(sage, message, 8);
+  // 并行：检索 + 实时行情
+  const [quotes, liveCtx] = await Promise.all([
+    Promise.resolve(findRelevant(sage, message, 8)),
+    enrichWithLiveData(message),
+  ]);
   const ragCtx = buildRagContext(quotes);
-  const sys = SAGE_PROMPTS[sage.slug] + `\n\n=== 你过去在雪球上的真实相关发言（请优先引用 / 化用，保持你的口吻和观点一致；如果用户问到的话题在历史发言里有，必须正面回答而不是说"我不关注"）===\n${ragCtx}\n\n回答时尽量引用其中至少 1-2 条作为依据，注明日期。如果用户问到的标的你确实在最近发言里讨论过，要正面引述你的真实观点。`;
+  const sys = SAGE_PROMPTS[sage.slug] + `\n\n=== 你过去在雪球上的真实相关发言（请优先引用 / 化用，保持你的口吻和观点一致；如果用户问到的话题在历史发言里有，必须正面回答而不是说"我不关注"）===\n${ragCtx}${liveCtx}\n\n回答时尽量引用其中至少 1-2 条作为依据，注明日期。如果用户问到的标的你确实在最近发言里讨论过，要正面引述你的真实观点。`;
   const reply = await callLLM(sys, message, history);
   return { reply, quotes, mode: "chat" as const };
 }
