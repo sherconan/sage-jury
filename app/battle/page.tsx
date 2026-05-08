@@ -66,6 +66,24 @@ const SAGES: SageOption[] = [
   },
 ];
 
+// 每位 sage 的高价值起手问题（基于他们最近最热门的真实持仓 / 经典话题）
+const STARTERS: Record<string, string[]> = {
+  "duan-yongping": ["段大你换神华去泡泡玛特怎么想的？", "苹果还能拿吗？", "拼多多看长期怎么样？", "什么是 stop doing list？", "你怎么看小米？"],
+  "guan-wo-cai":   ["腾讯现在能买吗？", "招行 PE 历史什么分位？", "工行股息现在多少？", "26 年荒岛策略怎么选？", "排雷比选股重要在哪？"],
+  "lao-tang":      ["老唐茅台现在能买吗？", "腾讯三年合理估值是多少？", "洋河怎么看？", "守正出奇你怎么解释？", "分众分红的事老唐怎么看？"],
+  "dan-bin":       ["但总英伟达还能拿吗？", "茅台拿 20 年这事现在还成立吗？", "特斯拉怎么看？", "时间的玫瑰最重要的是什么？", "苹果护城河在哪？"],
+};
+
+// 股票自动补全候选（datalist 用）
+const STOCK_SUGGESTIONS = [
+  "茅台", "贵州茅台", "五粮液", "汾酒", "泸州老窖", "洋河", "海天", "伊利",
+  "片仔癀", "云南白药", "恒瑞医药", "美的", "格力", "海尔", "招商银行", "招行",
+  "中国平安", "工商银行", "工行", "宁德时代", "比亚迪", "隆基", "中国中免",
+  "腾讯", "阿里", "美团", "京东", "拼多多", "网易", "小米",
+  "苹果 AAPL", "英伟达 NVDA", "特斯拉 TSLA", "亚马逊 AMZN", "谷歌 GOOGL",
+  "微软 MSFT", "Meta", "可口可乐 KO", "Costco", "泡泡玛特", "神华",
+];
+
 const SOURCES: Record<string, { name: string; icon: any; color: string; bgColor: string; status: "live" | "soon" }> = {
   xueqiu:    { name: "雪球",     icon: Twitter,       color: "#0EA5E9", bgColor: "bg-sky-50",     status: "live" },
   weibo:     { name: "微博",     icon: MessageSquare, color: "#DB2777", bgColor: "bg-pink-50",    status: "soon" },
@@ -79,18 +97,29 @@ interface QuoteRef {
   date: string; text: string; likes: number;
   url: string; concepts?: string; type?: string; source?: string;
 }
-interface Msg {
-  role: "user" | "sage";
+interface MultiReply {
+  sage_id: string;
+  sage_name: string;
+  sage_initials: string;
+  sage_gradient: string;
   content: string;
   quotes?: QuoteRef[];
   followups?: string[];
   loading?: boolean;
+}
+interface Msg {
+  role: "user" | "sage" | "multi";
+  content: string;
+  quotes?: QuoteRef[];
+  followups?: string[];
+  loading?: boolean;
+  multiReplies?: MultiReply[];
   ts: number;
 }
 
 export default function BattlePage() {
   const [activeSage, setActiveSage] = useState<SageOption>(SAGES[0]);
-  const [mode, setMode] = useState<"chat" | "battle">("chat");
+  const [mode, setMode] = useState<"chat" | "battle" | "jury">("chat");
   const [input, setInput] = useState("");
   const [stockCode, setStockCode] = useState("");
   const [reason, setReason] = useState("");
@@ -118,6 +147,72 @@ export default function BattlePage() {
       setMessages([]);
     }
   }, [activeSage, mode]);
+
+  // 共用：单 sage SSE 流处理（用于 chat 模式 + jury 模式各 sage）
+  const streamOneSage = async (
+    sageSlug: string,
+    text: string,
+    history: any[],
+    onUpdate: (patch: { content?: string; quotes?: QuoteRef[]; followups?: string[]; loading?: boolean }) => void,
+  ) => {
+    const res = await fetch("/api/battle/stream", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sage_id: sageSlug, message: text, history }),
+    });
+    if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "", evt = "", accumulated = "";
+    const processLines = (lines: string[]) => {
+      for (const line of lines) {
+        if (line.startsWith("event: ")) { evt = line.slice(7).trim(); continue; }
+        if (!line.startsWith("data: ")) continue;
+        let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
+        if (evt === "quotes") onUpdate({ quotes: (data || []).map((q: any) => ({ ...q, source: q.source || "xueqiu" })), loading: true });
+        else if (evt === "chunk" && data.delta) { accumulated += data.delta; onUpdate({ content: accumulated, loading: false }); }
+        else if (evt === "done") onUpdate({ content: accumulated || data.fullReply || "", followups: data.followups || [], loading: false });
+        else if (evt === "error") onUpdate({ content: `Error: ${data.message}`, loading: false });
+      }
+    };
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) { if (buf) processLines(buf.split("\n")); break; }
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() || "";
+      processLines(lines);
+    }
+  };
+
+  // 陪审团模式：4 个 sage 并行流式
+  const submitJury = async (text: string) => {
+    setInput(""); setLoading(true);
+    const tsBase = Date.now();
+    const initialReplies: MultiReply[] = SAGES.map(s => ({
+      sage_id: s.slug, sage_name: s.display, sage_initials: s.initials, sage_gradient: s.gradient,
+      content: "", loading: true,
+    }));
+    setMessages(prev => [...prev,
+      { role: "user", content: text, ts: tsBase },
+      { role: "multi", content: text, multiReplies: initialReplies, ts: tsBase + 1 }]);
+
+    const updateMulti = (sageSlug: string, patch: Partial<MultiReply>) => setMessages(prev => {
+      const arr = [...prev];
+      const last = arr[arr.length - 1];
+      if (last.role === "multi" && last.multiReplies) {
+        last.multiReplies = last.multiReplies.map(r => r.sage_id === sageSlug ? { ...r, ...patch } : r);
+        arr[arr.length - 1] = { ...last };
+      }
+      return arr;
+    });
+
+    // 4 个并行（不传历史 — jury 模式独立每问）
+    await Promise.all(SAGES.map(s =>
+      streamOneSage(s.slug, text, [], patch => updateMulti(s.slug, patch))
+        .catch(e => updateMulti(s.slug, { content: `Error: ${e.message}`, loading: false }))
+    ));
+    setLoading(false);
+  };
 
   // Chat 模式走 SSE 流式 (/api/battle/stream)；Battle 模式走传统 POST
   const submitChatStream = async (text: string) => {
@@ -186,6 +281,10 @@ export default function BattlePage() {
   const submitWith = async (overrideText?: string) => {
     if (loading) return;
     const text = overrideText !== undefined ? overrideText : input;
+    if (mode === "jury") {
+      if (!text.trim()) return;
+      return submitJury(text);
+    }
     if (mode === "chat") {
       if (!text.trim()) return;
       return submitChatStream(text);
@@ -306,6 +405,12 @@ export default function BattlePage() {
                   mode === "battle" ? "bg-rose-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700")}>
                 <Swords className="h-3.5 w-3.5" /> 对线
               </button>
+              <button onClick={() => setMode("jury")}
+                className={cn("flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all",
+                  mode === "jury" ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-700")}>
+                <Sparkles className="h-3.5 w-3.5" /> 陪审团
+                <span className="rounded-full bg-blue-500/20 px-1.5 text-[9px] font-mono text-blue-700">x{SAGES.length}</span>
+              </button>
             </div>
             <div className="flex items-center gap-3 text-xs text-slate-500">
               {messages.length > 0 && (
@@ -339,26 +444,31 @@ export default function BattlePage() {
                   <Sparkles className="h-8 w-8" />
                 </div>
                 <h3 className="mt-5 text-xl font-semibold text-slate-900">
-                  {mode === "chat" ? `和 ${activeSage.display} 对话` : `让 ${activeSage.display} 审判你的交易`}
+                  {mode === "jury" ? `${SAGES.length} 位大佬陪审团 · 同问一题`
+                    : mode === "chat" ? `和 ${activeSage.display} 对话`
+                    : `让 ${activeSage.display} 审判你的交易`}
                 </h3>
-                <p className="mt-2 text-sm text-slate-500 max-w-md">{activeSage.philosophy}</p>
-                <p className="mt-1.5 text-xs text-slate-400">基于 {activeSage.total_posts.toLocaleString()} 条真实雪球发言 · {activeSage.position_changes} 条持仓变化</p>
+                {mode === "jury" ? (
+                  <>
+                    <p className="mt-2 text-sm text-slate-500 max-w-md">同一个问题，4 位大佬同时回答 · 看共识 vs 分歧</p>
+                    <p className="mt-1.5 text-xs text-slate-400">{SAGES.map(s => `${s.display}（${s.total_posts.toLocaleString()}）`).join(" · ")}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm text-slate-500 max-w-md">{activeSage.philosophy}</p>
+                    <p className="mt-1.5 text-xs text-slate-400">基于 {activeSage.total_posts.toLocaleString()} 条真实雪球发言 · {activeSage.position_changes} 条持仓变化</p>
+                  </>
+                )}
                 <div className="mt-7 flex flex-wrap justify-center gap-2 max-w-2xl">
-                  {(mode === "chat" ? [
-                    "你怎么看 NVDA？",
-                    "白酒未来 5 年怎样？",
-                    "什么是真正的护城河？",
-                    "现在该买茅台吗？",
-                    "PE 多少算贵？",
-                  ] : [
-                    "茅台 / PE 20 长期持有",
-                    "宁德时代 / 新能源龙头",
-                    "腾讯 / 历史低估反弹",
-                    "英伟达 / AI 必涨",
-                  ]).map(s => (
-                    <button key={s} onClick={() => mode === "chat" ? setInput(s) : (() => {
-                      const [c, r] = s.split(" / "); setStockCode(c); setReason(r || "");
-                    })()}
+                  {(mode === "jury"
+                    ? ["茅台现在能买吗？", "腾讯能买吗？", "英伟达还能拿吗？", "招商银行还有上涨空间吗？", "AI 这波该跟吗？"]
+                    : mode === "chat"
+                    ? (STARTERS[activeSage.slug] || ["你怎么看 NVDA？","什么是护城河？","PE 多少算贵？"])
+                    : ["茅台 / PE 20 长期持有","宁德时代 / 新能源龙头","腾讯 / 历史低估反弹","英伟达 / AI 必涨"]
+                  ).map(s => (
+                    <button key={s} onClick={() => mode === "battle"
+                      ? (() => { const [c, r] = s.split(" / "); setStockCode(c); setReason(r || ""); })()
+                      : submitWith(s)}
                       className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition shadow-sm">
                       {s}
                     </button>
@@ -367,7 +477,50 @@ export default function BattlePage() {
               </div>
             )}
 
-            {messages.map((m) => (
+            {messages.map((m) => m.role === "multi" && m.multiReplies ? (
+              // ⭐ 陪审团模式：N 个 sage 并排 grid 卡片
+              <div key={m.ts} className="space-y-3">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="font-medium">{m.multiReplies.length} 位大佬同时回答 · 看共识与分歧</span>
+                </div>
+                <div className={cn("grid gap-3", m.multiReplies.length <= 2 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
+                  {m.multiReplies.map(rep => (
+                    <div key={rep.sage_id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
+                      <div className={cn("flex items-center gap-2 border-b border-slate-100 px-4 py-2.5 bg-gradient-to-br", rep.sage_gradient, "text-white")}>
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/20 font-mono text-[10px] font-bold">
+                          {rep.sage_initials}
+                        </div>
+                        <span className="text-sm font-semibold">{rep.sage_name}</span>
+                        {rep.loading && <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin opacity-80" />}
+                      </div>
+                      <div className="flex-1 px-4 py-3 text-[13.5px] leading-[1.65] text-slate-800 whitespace-pre-wrap">
+                        {rep.loading && !rep.content ? (
+                          <span className="text-slate-400">正在翻历史发言…</span>
+                        ) : (
+                          rep.content || <span className="text-slate-400 italic">无回应</span>
+                        )}
+                      </div>
+                      {rep.quotes && rep.quotes.length > 0 && (
+                        <details className="border-t border-slate-100 px-4 py-2 bg-slate-50/50">
+                          <summary className="cursor-pointer text-[10px] font-medium uppercase tracking-wider text-slate-400 hover:text-slate-600">
+                            引用 {rep.quotes.length} 条原帖
+                          </summary>
+                          <ul className="mt-2 space-y-1.5">
+                            {rep.quotes.slice(0, 3).map((q, j) => (
+                              <li key={j} className="text-[11px] text-slate-600">
+                                <a href={q.url} target="_blank" rel="noreferrer" className="font-mono text-slate-400 hover:text-blue-600">{q.date} 👍{q.likes}</a>
+                                <span className="ml-2 line-clamp-2">{q.text.slice(0, 80)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <div key={m.ts} className={cn("flex gap-3", m.role === "user" ? "flex-row-reverse" : "flex-row")}>
                 <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-xl font-mono text-[10px] font-bold shadow-sm",
                   m.role === "user"
@@ -445,18 +598,29 @@ export default function BattlePage() {
 
           {/* Input */}
           <div className="border-t border-slate-200/80 bg-white p-4">
-            {mode === "chat" ? (
+            {mode === "chat" || mode === "jury" ? (
               <div className="flex gap-2">
+                <datalist id="stockSugList">
+                  {STOCK_SUGGESTIONS.map(s => <option key={s} value={s} />)}
+                </datalist>
                 <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+                  list="stockSugList"
                   onKeyDown={e => e.key === "Enter" && !loading && submit()}
-                  placeholder={`问 ${activeSage.display}...`}
-                  className="flex-1 rounded-full border border-slate-200 bg-slate-50/50 px-5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-50 transition"
+                  placeholder={mode === "jury"
+                    ? `同问 ${SAGES.length} 位大佬...（输入"茅台"等股票名有提示）`
+                    : `问 ${activeSage.display}...（输入"茅台"等股票名有提示）`}
+                  className={cn("flex-1 rounded-full border bg-slate-50/50 px-5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-4 transition",
+                    mode === "jury"
+                      ? "border-blue-200 focus:border-blue-500 focus:ring-blue-100"
+                      : "border-slate-200 focus:border-blue-400 focus:ring-blue-50")}
                   disabled={loading} />
                 <button onClick={submit} disabled={loading || !input.trim()}
-                  className={cn("flex items-center gap-1.5 rounded-full bg-gradient-to-br px-5 text-sm font-medium text-white shadow-md hover:shadow-lg disabled:opacity-30 transition",
-                    activeSage.gradient)}>
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                  发送
+                  className={cn("flex items-center gap-1.5 rounded-full px-5 text-sm font-medium text-white shadow-md hover:shadow-lg disabled:opacity-30 transition",
+                    mode === "jury"
+                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      : `bg-gradient-to-br ${activeSage.gradient}`)}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (mode === "jury" ? <Sparkles className="h-4 w-4" /> : <Send className="h-4 w-4" />)}
+                  {mode === "jury" ? "陪审" : "发送"}
                 </button>
               </div>
             ) : (
