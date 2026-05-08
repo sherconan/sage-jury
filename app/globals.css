@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #F5F0E8;
+  --ink: #0F0C08;
+  --gold: #D4AF37;
+  --navy: #0A1A30;
+  --paper: #FBF8F2;
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  src: local("Playfair Display");
+  font-display: swap;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans, system-ui), -apple-system, "Helvetica Neue", "Noto Sans SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background:
+    radial-gradient(rgba(86,74,51,0.045) 1px, transparent 1px) 0 0 / 12px 12px,
+    radial-gradient(rgba(86,74,51,0.025) 1px, transparent 1px) 6px 6px / 24px 24px,
+    linear-gradient(180deg, #FBF8F2 0%, #F5F0E8 80%, #EFE8D5 100%);
+  min-height: 100vh;
+}
+
+/* Fade-up animation kicks off paint-state visible by default; keyframes adjust opacity on top */
+.animate-fadeUp {
+  opacity: 0;
+  animation: fadeUp 0.6s ease-out forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer components {
+  .court-card {
+    @apply relative overflow-hidden rounded-2xl border border-ink-200/70 bg-cream-50 shadow-bench transition-all duration-300;
+  }
+  .court-card-header {
+    @apply relative flex items-center gap-4 border-b border-ink-200/60 bg-gradient-to-b from-cream-50 to-cream-100 px-5 py-4;
+  }
+  .gold-rule {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-gold-400/60 to-transparent;
+  }
+  .nameplate {
+    @apply inline-flex items-center gap-1.5 rounded-md border border-ink-300/40 bg-cream-100 px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ink-600;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium;
+  }
+  .grade-badge {
+    @apply flex h-14 w-14 items-center justify-center rounded-full border-2 font-serif text-3xl font-bold shadow-sm;
+  }
+  .stat-bar {
+    @apply relative h-2 w-full overflow-hidden rounded-full bg-ink-100;
+  }
+  .stat-bar-fill {
+    @apply absolute inset-y-0 left-0 rounded-full transition-[width] duration-700;
+  }
+  .ornament-line {
+    @apply flex items-center gap-3 text-ink-400;
+  }
+  .ornament-line::before, .ornament-line::after {
+    content: "";
+    @apply h-px flex-1 bg-gradient-to-r from-transparent via-ink-300/50 to-transparent;
+  }
+  .verdict-stamp {
+    @apply inline-flex items-center justify-center rounded-md border-2 px-3 py-1 font-serif text-sm font-bold uppercase tracking-[0.2em];
+  }
+  .case-textarea {
+    @apply w-full resize-none rounded-xl border border-ink-200 bg-cream-50/70 px-4 py-3 font-serif text-base text-ink-800 placeholder:text-ink-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-400/30;
+  }
+  .case-input {
+    @apply rounded-lg border border-ink-200 bg-cream-50 px-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-gold-400 focus:outline-none focus:ring-1 focus:ring-gold-400/40;
+  }
+  .case-select {
+    @apply rounded-lg border border-ink-200 bg-cream-50 px-3 py-2 text-sm text-ink-800 focus:border-gold-400 focus:outline-none focus:ring-1 focus:ring-gold-400/40;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-navy-700 px-6 py-3 font-serif text-base font-semibold text-cream-50 shadow-gavel transition-all hover:bg-navy-800 hover:shadow-gold disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-ink-300 bg-transparent px-4 py-2 text-sm font-medium text-ink-700 transition-colors hover:border-ink-500 hover:bg-cream-100;
+  }
+}
+
+::selection {
+  background: rgba(212, 175, 55, 0.35);
+  color: #0F0C08;
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(86,74,51,0.25); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(86,74,51,0.45); }

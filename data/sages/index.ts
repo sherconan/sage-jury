@@ -1,0 +1,784 @@
+// 大佬陪审团方法论数据库
+// 6 位投资大佬的结构化投资哲学 + 评分维度 + 红旗 + 名言
+
+export type Verdict = "STRONG_BUY" | "BUY" | "HOLD" | "AVOID" | "STRONG_AVOID";
+
+export interface ScoreDimension {
+  key: string;
+  label: string;
+  weight: number;
+  description: string;
+}
+
+export interface RedFlag {
+  key: string;
+  label: string;
+  trigger: string;
+  severity: "veto" | "major" | "warning";
+}
+
+export interface Sage {
+  id: string;
+  name: string;
+  title: string;
+  era: string;
+  tier?: "popular" | "insider";  // 大众派 / 圈内派
+  school: "value" | "reverse" | "growth" | "moat" | "concentration" | "consumer";
+  philosophy: string;
+  coreLine: string;
+  bookOrSource: string;
+  representativeTrades: string[];
+  dimensions: ScoreDimension[];
+  redFlags: RedFlag[];
+  bonus: string[];
+  quotes: string[];
+  misuseWarnings?: string[];
+  complementarySages?: string[];
+  avatar: string;
+  color: string;
+  accentColor: string;
+}
+
+export const SAGES: Sage[] = [
+  {
+    id: "duan-yongping",
+    name: "段永平",
+    title: "步步高/OPPO/vivo 创始人 · 中国巴菲特",
+    era: "1990s-至今",
+    tier: "popular",
+    school: "value",
+    philosophy:
+      "本分。不懂不投。看十年后。商业模式 > 估值 > 时机。生意的本质是赚钱，赚钱的本质是产品和团队。",
+    coreLine: "我只投三类公司：好生意、好公司、好价格。",
+    bookOrSource: "雪球《段永平投资问答录》/ 网易投资案例",
+    representativeTrades: [
+      "2001 年底投资网易（PC 退市边缘买入，10 倍以上收益）",
+      "2002 起重仓苹果（持有至今）",
+      "拒绝百度（不懂搜索的护城河）",
+    ],
+    dimensions: [
+      { key: "businessModel", label: "商业模式", weight: 0.35, description: "生意的本质是不是赚钱机器？现金流稳定吗？" },
+      { key: "moat", label: "差异化/护城河", weight: 0.25, description: "十年后还能赚钱吗？竞争对手能否模仿？" },
+      { key: "management", label: "管理层与企业文化", weight: 0.15, description: "有没有 owner 意识？是不是本分人？" },
+      { key: "circle", label: "在能力圈内", weight: 0.15, description: "你真的懂这个生意吗？还是听别人说的？" },
+      { key: "price", label: "合理估值", weight: 0.10, description: "好价格但绝不是第一位的——好生意第一" },
+    ],
+    redFlags: [
+      { key: "out_of_circle", label: "超出能力圈", trigger: "用户无法清晰说出生意逻辑", severity: "veto" },
+      { key: "leverage_buyout", label: "高杠杆扩张", trigger: "资产负债率 > 70%", severity: "major" },
+      { key: "story_stock", label: "讲故事股", trigger: "PE > 100 且无盈利或盈利波动剧烈", severity: "major" },
+      { key: "obsolete_industry", label: "夕阳行业", trigger: "行业空间收缩", severity: "major" },
+    ],
+    bonus: [
+      "用户日常使用并喜欢的产品（消费品视角）",
+      "10 年以上未变的核心业务",
+      "公司内部高管自发持股增持",
+      "ROE 长期 > 15%",
+    ],
+    quotes: [
+      "投资的本质就是 stop doing list。",
+      "我只赚我看得懂的钱。",
+      "便宜不是买入理由——好公司在合理价格才是。",
+      "看十年。看不清的不投。",
+      "做对的事，把事做对。",
+      "本分——这个词比任何商业模型都重要。",
+      "一年涨十倍的事我宁愿错过，五年五倍的事我不会错过。",
+    ],
+    misuseWarnings: [
+      "周期股 / 困境反转：段的方法论假设公司持续盈利，对深度周期或基本面崩塌后的反转判断不擅长 — 那是冯柳的领域。",
+      "短期持有：段看十年，如果你计划持有 < 3 年，他的评分可能误导你。",
+      "高速成长但当前亏损的公司：段的'好生意+好公司+好价格'三件套，对现金流尚未跑出的成长股保守。",
+    ],
+    complementarySages: ["feng-liu", "buffett"],
+    avatar: "DYP",
+    color: "#1E3A8A",
+    accentColor: "#FCD34D",
+  },
+  {
+    id: "feng-liu",
+    name: "冯柳",
+    title: "高毅资产董事总经理 · 弱者体系教父",
+    era: "2003-至今",
+    tier: "popular",
+    school: "reverse",
+    philosophy:
+      "弱者体系——承认自己信息劣势，专挑被市场杀跌、预期已经很低的公司。利空出尽是利好。",
+    coreLine: "我专门捡市场不要的、被打到底的好公司——左侧买入，等业绩反转。",
+    bookOrSource: "雪球《茅台 03》《冯柳谈价投》/ 高毅季报",
+    representativeTrades: [
+      "2014 年底重仓买入海康威视（戴维斯双击）",
+      "2018 年熊市抄底白酒",
+      "2020 年逆势加仓医药 CXO",
+      "2022 年低吸新能源中游",
+    ],
+    dimensions: [
+      { key: "expectationGap", label: "预期差", weight: 0.30, description: "市场对它的预期是不是过低？利空是否已经定价？" },
+      { key: "downsideProtection", label: "下行保护", weight: 0.25, description: "最坏情况下能跌多少？股价距离价值底部多远？" },
+      { key: "businessQuality", label: "生意质量", weight: 0.20, description: "再差也是好生意吗？长期 ROE > 15%？" },
+      { key: "catalystVisible", label: "反转催化剂", weight: 0.15, description: "未来 12 个月有没有业绩拐点信号？" },
+      { key: "marketSentiment", label: "情绪极致", weight: 0.10, description: "成交量、卖空、融券、机构持仓占比是不是历史低位？" },
+    ],
+    redFlags: [
+      { key: "fundamental_collapse", label: "基本面崩塌", trigger: "ROE 转负且无反转信号", severity: "veto" },
+      { key: "left_side_no_bottom", label: "无底深渊", trigger: "持续下行 > 70%且没有催化剂", severity: "major" },
+      { key: "consensus_buy", label: "共识买入", trigger: "卖方一致看多 + 散户排队加仓", severity: "major" },
+      { key: "fashionable_track", label: "热门赛道", trigger: "市场最热的板块（不在弱者体系内）", severity: "warning" },
+    ],
+    bonus: [
+      "近 12 个月跌幅 > 40% 但商业模式未变",
+      "大股东 / 高管增持",
+      "PB 接近历史底部分位",
+      "卖方覆盖减少 / 机构持仓比例下降",
+    ],
+    quotes: [
+      "弱者就要躲着强者打。",
+      "买入要左侧，卖出要右侧。",
+      "我喜欢被讨论的少、被骂的多的公司。",
+      "对错不重要，赔率和概率才重要。",
+      "情绪低点不一定是底，但情绪高点一定是顶。",
+      "这个市场上最贵的字眼是『这次不一样』。",
+      "弱者体系不是预测，是承认无法预测。",
+    ],
+    misuseWarnings: [
+      "高位优质股：冯柳明确不参与共识看好的热门赛道，对长牛股的高位评分会偏低。",
+      "经营持续恶化的公司：冯只在'被错杀'但基本面未变的好公司上做左侧——基本面真的崩了不是预期差。",
+      "短期 / 趋势交易：弱者体系强调左侧抄底+耐心等业绩拐点，与右侧追涨完全不兼容。",
+    ],
+    complementarySages: ["dan-bin", "buffett"],
+    avatar: "FL",
+    color: "#7C2D12",
+    accentColor: "#FB923C",
+  },
+  {
+    id: "dan-bin",
+    name: "但斌",
+    title: "东方港湾董事长 · 时间的玫瑰",
+    era: "2003-至今",
+    tier: "popular",
+    school: "consumer",
+    philosophy:
+      "时间是优秀公司的朋友。买入并长期持有伟大消费品公司，享受复利的玫瑰。",
+    coreLine: "找到一家可以让你拿 20 年的公司，然后真的拿 20 年。",
+    bookOrSource: "《时间的玫瑰》/ 东方港湾季报",
+    representativeTrades: [
+      "2003 年起长期持有贵州茅台（至 2024 年涨幅 > 100 倍）",
+      "2010s 持有腾讯控股",
+      "中概股 / 美股科技股配置",
+    ],
+    dimensions: [
+      { key: "longevity", label: "生意可持续性", weight: 0.30, description: "这门生意 20 年后还存在吗？" },
+      { key: "brandPower", label: "品牌/消费惯性", weight: 0.25, description: "是不是有定价权的消费/平台型品牌？" },
+      { key: "compoundingEngine", label: "复利引擎", weight: 0.20, description: "ROE 高且能持续再投资吗？" },
+      { key: "managementVision", label: "管理层格局", weight: 0.15, description: "管理层是创业者还是职业经理人？长期主义吗？" },
+      { key: "patience", label: "投资者耐心", weight: 0.10, description: "你能拿 10 年不看股价吗？" },
+    ],
+    redFlags: [
+      { key: "tech_obsolescence", label: "技术替代风险", trigger: "核心技术存在颠覆性替代可能", severity: "major" },
+      { key: "regulatory_risk", label: "强监管行业", trigger: "教育/游戏/互金等政策风险敏感", severity: "major" },
+      { key: "short_term_holder", label: "短期心态", trigger: "用户预期持有 < 3 年", severity: "warning" },
+    ],
+    bonus: [
+      "强消费品（白酒、调味品、医药、奢侈品）",
+      "持续高分红 + 持续高 ROE",
+      "成立 > 20 年仍在增长",
+      "股东大会管理层透明度高",
+    ],
+    quotes: [
+      "时间的玫瑰需要时间才能盛开。",
+      "伟大的公司一定要长期持有，否则跟没买没区别。",
+      "10 年 10 倍不算什么，30 年 100 倍才是真复利。",
+      "买股票就是买公司。",
+      "唯有时间能让平庸的资产暴露真相。",
+      "我不预测股价，我只判断公司。",
+    ],
+    misuseWarnings: [
+      "技术革命领域：但斌偏爱穿越时间的消费品，对快速迭代的科技股容易低估其商业模式可持续性。",
+      "短期投资者：核心方法论是 20 年持有，3 年内出场会让他的评分参考价值有限。",
+      "强监管行业：教育/游戏/互金这些政策敏感行业，时间未必是朋友——但斌的模型对此风险计入不足。",
+    ],
+    complementarySages: ["feng-liu", "zhang-kun"],
+    avatar: "DB",
+    color: "#831843",
+    accentColor: "#F472B6",
+  },
+  {
+    id: "lin-yuan",
+    name: "林园",
+    title: "林园投资董事长 · 嘴巴股专家",
+    era: "1989-至今",
+    tier: "popular",
+    school: "consumer",
+    philosophy:
+      "投嘴巴上的生意——人天天要吃要喝要看病。垄断 + 上瘾 + 重复消费 = 印钞机。",
+    coreLine: "选股看三个：垄断、上瘾、重复消费。三个都占的，闭眼买。",
+    bookOrSource: "《林园炒股秘籍》/ 公开演讲",
+    representativeTrades: [
+      "1989 年至今重仓贵州茅台",
+      "片仔癀长期持有",
+      "云南白药",
+      "重仓医药健康赛道",
+    ],
+    dimensions: [
+      { key: "monopoly", label: "垄断属性", weight: 0.30, description: "细分市场是否一家独大？是否有定价权？" },
+      { key: "addiction", label: "上瘾性/刚需", weight: 0.25, description: "用户是否离不开？复购率多少？" },
+      { key: "repeatedConsumption", label: "重复消费", weight: 0.20, description: "用户是否高频复购？" },
+      { key: "growthCertainty", label: "增长确定性", weight: 0.15, description: "未来 5 年业绩可见性高吗？" },
+      { key: "valuation", label: "估值合理", weight: 0.10, description: "PE 不能太离谱（< 50 通常）" },
+    ],
+    redFlags: [
+      { key: "no_monopoly", label: "无垄断地位", trigger: "市场份额 < 30% 或激烈红海", severity: "major" },
+      { key: "low_freq_consumption", label: "低频消费", trigger: "用户复购周期 > 3 年", severity: "major" },
+      { key: "tech_dependency", label: "强技术依赖", trigger: "需要持续大额研发投入维持竞争力", severity: "warning" },
+    ],
+    bonus: [
+      "毛利率 > 60%",
+      "白酒/中药/医疗服务/食品饮料",
+      "百年老字号 / 国民品牌",
+      "派息率稳定",
+    ],
+    quotes: [
+      "嘴巴的生意永远不会过时。",
+      "垄断 + 上瘾 + 重复消费——三个都占，闭眼买。",
+      "我不懂科技，所以我不投科技。",
+      "选股就像选老婆，要选能过一辈子的。",
+      "我的能力圈窄但深——这就是我的优势。",
+      "不是所有的好生意都赚钱，但所有印钞机都是好生意。",
+    ],
+    misuseWarnings: [
+      "科技股 / 平台型公司：林园明确表态不投科技——他的评分对真正有护城河的科技公司可能严重低估。",
+      "新兴消费品类：林园偏爱百年老字号，对 5-10 年内崛起的新消费品牌评分保守。",
+      "成长型公司：嘴巴股方法论强调'垄断+上瘾+复购'，对早期成长股的爆发力捕捉不足。",
+    ],
+    complementarySages: ["zhang-kun", "buffett"],
+    avatar: "LY",
+    color: "#064E3B",
+    accentColor: "#34D399",
+  },
+  {
+    id: "zhang-kun",
+    name: "张坤",
+    title: "易方达基金经理 · 公募一哥",
+    era: "2012-至今",
+    tier: "popular",
+    school: "concentration",
+    philosophy:
+      "在自己理解的少数几个行业内集中持股，重视企业自由现金流和资本回报率。",
+    coreLine: "我只在自己看得懂的行业里买。少即是多，集中即是力量。",
+    bookOrSource: "易方达蓝筹精选季报 / 雪球公开发言",
+    representativeTrades: [
+      "白酒（茅台、五粮液长期重仓）",
+      "互联网平台（腾讯、阿里）",
+      "海外消费品（爱马仕等）",
+    ],
+    dimensions: [
+      { key: "fcfQuality", label: "自由现金流质量", weight: 0.30, description: "FCF/Net Income > 0.8？现金流稳定？" },
+      { key: "roic", label: "投入资本回报", weight: 0.25, description: "ROIC > 15% 且持续？" },
+      { key: "industryStability", label: "行业稳定性", weight: 0.20, description: "需求是否长期稳定且可预测？" },
+      { key: "competitiveDurability", label: "竞争优势持续", weight: 0.15, description: "竞争优势能持续多久？" },
+      { key: "concentration", label: "集中度匹配", weight: 0.10, description: "是否值得放进 Top 10 仓位？" },
+    ],
+    redFlags: [
+      { key: "fcf_negative", label: "自由现金流为负", trigger: "FCF/Revenue < 0", severity: "veto" },
+      { key: "high_capex", label: "重资产高资本开支", trigger: "Capex/Revenue > 30%", severity: "major" },
+      { key: "cyclical_extreme", label: "强周期股", trigger: "周期波动 > 50% 且无法预测", severity: "warning" },
+    ],
+    bonus: [
+      "ROIC > 20%",
+      "派息率稳定",
+      "海外业务占比上升",
+      "管理层股权激励对齐",
+    ],
+    quotes: [
+      "好公司不需要太多——三五家就够。",
+      "自由现金流是企业最诚实的指标。",
+      "看十年，不看三个月。",
+      "当大家都恐慌时，我反而买得更坚决。",
+      "持有就是最难的——下跌时拿得住的人才能赚到大钱。",
+      "组合的超额收益不是来自买对，是来自不卖错。",
+    ],
+    misuseWarnings: [
+      "重资产+周期行业：张坤明确远离强周期 / 高资本开支股，他的评分对这类公司可能误判。",
+      "未盈利成长股：FCF 为负即触发 veto——对早期 SaaS / 互联网公司不友好。",
+      "风格漂移：张的方法论是集中持股 + 长期持有，与短线 / 行业轮动完全不匹配。",
+    ],
+    complementarySages: ["feng-liu", "duan-yongping"],
+    avatar: "ZK",
+    color: "#0C4A6E",
+    accentColor: "#38BDF8",
+  },
+  {
+    id: "buffett",
+    name: "巴菲特",
+    title: "伯克希尔·哈撒韦 CEO · 奥马哈先知",
+    era: "1956-至今",
+    tier: "popular",
+    school: "moat",
+    philosophy:
+      "用合理价格买入伟大公司，胜过用便宜价格买入平庸公司。经济护城河 + 优秀管理层 + 长期持有。",
+    coreLine: "Our favorite holding period is forever.",
+    bookOrSource: "Berkshire Hathaway 年报 / 《滚雪球》",
+    representativeTrades: [
+      "1988 年买入可口可乐（持有至今）",
+      "美国运通（恢复持仓后多年持有）",
+      "苹果公司（2016 年起重仓）",
+      "比亚迪（2008 年至 2022 年减仓）",
+    ],
+    dimensions: [
+      { key: "economicMoat", label: "经济护城河", weight: 0.30, description: "品牌、网络效应、转换成本、规模、专利——至少占一个？" },
+      { key: "circleOfCompetence", label: "能力圈", weight: 0.20, description: "我真的理解这门生意吗？" },
+      { key: "managementIntegrity", label: "管理层正直能干", weight: 0.20, description: "管理层是否诚信、理性、为股东着想？" },
+      { key: "intrinsicValue", label: "内在价值折扣", weight: 0.20, description: "买入价 vs DCF 内在价值，至少 20% 安全边际" },
+      { key: "longTermHolding", label: "可长期持有", weight: 0.10, description: "10 年后还想持有吗？" },
+    ],
+    redFlags: [
+      { key: "no_moat", label: "无护城河", trigger: "无法说出竞争优势", severity: "veto" },
+      { key: "out_of_circle", label: "能力圈外", trigger: "复杂技术驱动且无法理解", severity: "major" },
+      { key: "weak_management", label: "管理层有问题", trigger: "诚信瑕疵或资本分配差", severity: "major" },
+      { key: "no_margin_of_safety", label: "无安全边际", trigger: "市价 > 内在价值估算", severity: "major" },
+    ],
+    bonus: [
+      "10 年以上 ROE > 15%",
+      "股东信件管理层坦诚",
+      "回购股票而非乱投资",
+      "穿越多个经济周期仍盈利",
+    ],
+    quotes: [
+      "Be fearful when others are greedy, and greedy when others are fearful.",
+      "Price is what you pay; value is what you get.",
+      "Our favorite holding period is forever.",
+      "Risk comes from not knowing what you're doing.",
+      "It's far better to buy a wonderful company at a fair price than a fair company at a wonderful price.",
+      "The stock market is a device for transferring money from the impatient to the patient.",
+      "Diversification is a protection against ignorance.",
+    ],
+    misuseWarnings: [
+      "微盘股：巴菲特规模太大无法买入小公司，他的方法论对小盘股的可投资性不敏感。",
+      "新兴市场技术股：巴菲特承认错过亚马逊和谷歌——能力圈外的颠覆性技术他会保守。",
+      "高速成长但暂无现金流：巴菲特要求安全边际+稳定现金流，对初创期公司过于严格。",
+    ],
+    complementarySages: ["feng-liu", "duan-yongping"],
+    avatar: "WB",
+    color: "#451A03",
+    accentColor: "#FBBF24",
+  },
+  {
+    id: "qiu-guolu",
+    name: "邱国鹭",
+    title: "高毅资产董事长 · 投资三大思路作者",
+    era: "1998-至今",
+    tier: "popular",
+    school: "value",
+    philosophy:
+      "投资三大思路：好行业、好公司、好价格。便宜是硬道理，但要在好行业的好公司中找便宜。强周期 + 高负债 + 巨变行业三不投。",
+    coreLine: "投资就像找配偶——挑好行业（家境）、好公司（人品）、好价格（合适时机）。",
+    bookOrSource: "《投资中最简单的事》/《投资中不简单的事》",
+    representativeTrades: [
+      "2014-2015 年初白酒重仓抄底",
+      "格力电器多年长期持有",
+      "高毅资产产品长期跑赢市场",
+    ],
+    dimensions: [
+      { key: "industryGood", label: "好行业", weight: 0.30, description: "竞争格局稳定+空间大+赚现金流——避开夕阳/红海/巨变行业" },
+      { key: "companyGood", label: "好公司", weight: 0.30, description: "ROE 稳定+市占率提升+管理层正派——龙头效应" },
+      { key: "priceGood", label: "好价格", weight: 0.25, description: "PE/PB 在历史区间合理位置+股息率支撑" },
+      { key: "marginOfSafety", label: "安全边际", weight: 0.10, description: "下跌空间有限+利空已经定价" },
+      { key: "noObviousFlaw", label: "无明显瑕疵", weight: 0.05, description: "不踩三不投——周期+高负债+巨变" },
+    ],
+    redFlags: [
+      { key: "bad_industry", label: "坏行业", trigger: "强周期 / 红海 / 巨变行业", severity: "veto" },
+      { key: "high_leverage", label: "高负债", trigger: "资产负债率 > 70%", severity: "major" },
+      { key: "low_market_share", label: "无市场份额", trigger: "市占率 < 20% 且红海", severity: "major" },
+      { key: "industry_decline", label: "行业萎缩", trigger: "技术替代风险高", severity: "major" },
+    ],
+    bonus: [
+      "ROE 长期稳定 > 15%",
+      "细分龙头",
+      "高毛利 > 50%",
+      "持续高分红",
+    ],
+    quotes: [
+      "便宜是硬道理。",
+      "强周期 + 高负债 + 巨变行业，三不投。",
+      "好生意是聪明人扎堆的地方做傻事。",
+      "投资中最简单的事就是常识。",
+      "别人贪婪我恐惧，别人恐惧我贪婪——但前提是你看得懂。",
+    ],
+    misuseWarnings: [
+      "高速成长股：邱重视稳定 ROE，对高增长但波动大的公司可能保守。",
+      "新兴行业：邱明确远离巨变行业，对 5 年内格局未定的赛道一律不投。",
+      "短线博弈：邱的方法论是中长期持有龙头，不适合趋势交易。",
+    ],
+    complementarySages: ["feng-liu", "duan-yongping"],
+    avatar: "QGL",
+    color: "#52525B",
+    accentColor: "#A1A1AA",
+  },
+  {
+    id: "lao-tang",
+    name: "唐朝（老唐）",
+    title: "雪球价投教父 · 老唐估值法作者",
+    era: "2008-至今",
+    tier: "popular",
+    school: "value",
+    philosophy:
+      "老唐估值法：三年后合理估值 × 50% 安全边际 = 当下买入价。只投自己能算清楚未来三年净利润的公司。买股票就是买公司，买公司就是买未来现金流的折现。",
+    coreLine: "三年后合理估值打 5 折，就是我现在敢下手的价。",
+    bookOrSource: "《手把手教你读财报》/ 雪球《老唐实盘》系列",
+    representativeTrades: [
+      "茅台长期重仓持有",
+      "腾讯 2018-2022 多次买入",
+      "古井贡酒 2017 起持有",
+      "海康威视低位买入",
+    ],
+    dimensions: [
+      { key: "earningPredictability", label: "三年盈利可预测", weight: 0.30, description: "你能不能算出 3 年后的净利润？算不出就不在能力圈内" },
+      { key: "fairValueDiscount", label: "合理估值折扣", weight: 0.25, description: "现价 vs 三年后合理估值（PE 25-30 × 三年后利润）的折扣" },
+      { key: "moatStable", label: "护城河稳定", weight: 0.20, description: "未来 3 年护城河会变深还是变浅？" },
+      { key: "mgmtTrust", label: "管理层可信", weight: 0.15, description: "管理层是否诚信、为股东着想、不乱花钱" },
+      { key: "biasMargin", label: "买卖纪律", weight: 0.10, description: "三年后估值 × 50% 才是买点；超过合理估值才卖" },
+    ],
+    redFlags: [
+      { key: "unpredictable", label: "未来不可预测", trigger: "用户无法说出 3 年后净利润大致区间", severity: "veto" },
+      { key: "overvalued", label: "高估", trigger: "现价 > 三年后合理估值的 70%", severity: "major" },
+      { key: "shrinking_moat", label: "护城河收窄", trigger: "技术替代风险高", severity: "major" },
+      { key: "untrustworthy_mgmt", label: "管理层不可信", trigger: "管理层评分 ≤ 2", severity: "major" },
+    ],
+    bonus: [
+      "ROE > 20% 且历史稳定",
+      "PE < 20 且业务稳定",
+      "三年后利润大概率翻倍",
+      "现金分红比例 > 30%",
+    ],
+    quotes: [
+      "买股票就是买公司，买公司就是买现金流。",
+      "三年后估值打 5 折，是我敢下手的价。",
+      "不懂的不投——能力圈内不丢人。",
+      "市场先生今天报价多少，与公司价值无关。",
+      "持有不动是最难的事，但也是最赚钱的事。",
+    ],
+    misuseWarnings: [
+      "亏损/扭亏股：老唐估值法基于三年后净利润，对当下亏损的公司不适用。",
+      "高速颠覆性行业：老唐要求三年盈利可预测，AI/SaaS/Biotech 这类波动太大。",
+      "短期博弈：老唐持有期至少 3 年，不适合短线。",
+    ],
+    complementarySages: ["feng-liu", "lin-yuan"],
+    avatar: "LT",
+    color: "#7E22CE",
+    accentColor: "#C084FC",
+  },
+  {
+    id: "li-lu",
+    name: "李录",
+    title: "喜马拉雅资本创始人 · 芒格唯一推荐的中国投资人",
+    era: "1996-至今",
+    tier: "insider",
+    school: "value",
+    philosophy:
+      "芒格亲口推荐给巴菲特的中国投资人，30 年保持 16% 复合年化回报。投资是关于在不确定的世界里寻找确定性——商业模式 + 长期复利 + 安全边际。极少公开露面，但每次发言都被价值投资圈奉为经典。",
+    coreLine: "投资中最重要的事是知道自己不知道什么。",
+    bookOrSource: "《文明、现代化、价值投资与中国》/ Columbia Business School 讲座",
+    representativeTrades: [
+      "1998-2002 重仓比亚迪（推荐给芒格 → 2008 年伯克希尔大笔买入 BYD H 股）",
+      "持有福耀玻璃多年",
+      "重仓中国互联网 + 消费龙头",
+      "喜马拉雅资本 30 年复合 16% 收益（巴菲特+芒格+加拿大 University of Toronto 联合背书）",
+    ],
+    dimensions: [
+      { key: "businessDurability", label: "商业模式持久性", weight: 0.30, description: "10-20 年后这门生意还在吗？是否赚的是社会进步的钱？" },
+      { key: "marginOfSafety", label: "安全边际 + 合理估值", weight: 0.25, description: "买入价 vs 内在价值的折扣，宁可错过不可买错" },
+      { key: "circleOfCompetence", label: "能力圈范围", weight: 0.20, description: "你真的懂这家公司的竞争优势吗？还是凭直觉？" },
+      { key: "managementIntegrity", label: "管理层正直", weight: 0.15, description: "管理层是否诚信、长期主义、为股东着想" },
+      { key: "compoundingWindow", label: "复利时间窗口", weight: 0.10, description: "你能持有 10 年以上让复利发生吗？" },
+    ],
+    redFlags: [
+      { key: "out_of_circle", label: "看不懂", trigger: "用户无法清晰说出公司商业模式", severity: "veto" },
+      { key: "short_term", label: "短期投机", trigger: "持有期 < 3 年", severity: "major" },
+      { key: "high_leverage", label: "高杠杆", trigger: "资产负债率 > 60%", severity: "major" },
+      { key: "no_safety_margin", label: "无安全边际", trigger: "现价高于合理估值", severity: "major" },
+    ],
+    bonus: [
+      "ROE 长期 > 15% 且稳定",
+      "重资产但有强护城河",
+      "管理层持股 / 创始人在位",
+      "穿越多个经济周期",
+    ],
+    quotes: [
+      "投资中最重要的事是知道自己不知道什么。",
+      "Mr. Market 是你的仆人，不是你的向导。",
+      "做时间的朋友，让复利发生作用。",
+      "中国是过去 100 年最好的投资市场，未来 30 年也是。",
+      "投资人的最大优势是有耐心做正确的事。",
+    ],
+    misuseWarnings: [
+      "强周期股：李录偏好穿越周期的稳定生意，对深度周期股保守。",
+      "短期博弈：持有期 5-10 年，3 年内卖出他不会出手。",
+      "中小盘股：喜马拉雅资本规模大，对小盘股不敏感。",
+    ],
+    complementarySages: ["feng-liu", "lin-yuan"],
+    avatar: "LL",
+    color: "#1F2937",
+    accentColor: "#9CA3AF",
+  },
+  {
+    id: "fenghe-wu",
+    name: "吴任昊（风和资本）",
+    title: "风和资本 FengHe Asia · 亚洲对冲基金圈内派",
+    era: "2007-至今",
+    tier: "insider",
+    school: "concentration",
+    philosophy:
+      "风和资本投资亚洲，专注 5-10 年视野的集中头寸。前金石资本/Maverick Capital 系，圈内被称作'真正做深度研究的对冲基金'。重仓 5 个公司而不是分散 50 个。极少出现在大众视野，圈内每次年度致投资人信被传阅。",
+    coreLine: "5-10 年看好的就重仓，短期不确定的就不碰。",
+    bookOrSource: "风和资本年度致投资人信 / 吴任昊在 GMIC 等闭门会议演讲",
+    representativeTrades: [
+      "万华化学长期重仓（穿越 MDI 周期）",
+      "海康威视低位重仓",
+      "Sea Limited (Shopee) 东南亚电商早期",
+      "美团早期重仓",
+      "贵州茅台核心仓位",
+    ],
+    dimensions: [
+      { key: "industrySpace", label: "行业 5-10 年空间", weight: 0.25, description: "5 年后这个行业是 2 倍还是腰斩？" },
+      { key: "moatEvolution", label: "护城河演变", weight: 0.25, description: "公司的护城河是变深还是变浅？" },
+      { key: "concentrationFit", label: "集中头寸适合度", weight: 0.20, description: "值得放进 Top 5 仓位吗？流动性 + 确定性双高？" },
+      { key: "managementLongTerm", label: "管理层长期可信", weight: 0.15, description: "管理层是否专注主业、不乱并购、不掏空公司" },
+      { key: "valueRationality", label: "估值合理性", weight: 0.15, description: "5-10 年视角的估值是否合理（不是 PE 几倍这种短期看法）" },
+    ],
+    redFlags: [
+      { key: "industry_no_space", label: "行业空间不足", trigger: "5 年内行业空间 < 1.5 倍当前", severity: "veto" },
+      { key: "untrusted_mgmt", label: "管理层不可信", trigger: "管理层评分 ≤ 2", severity: "veto" },
+      { key: "short_term_hot", label: "短期热点", trigger: "近期热门赛道 + 估值高位", severity: "major" },
+      { key: "low_liquidity", label: "流动性不足", trigger: "市值 < 100 亿", severity: "warning" },
+    ],
+    bonus: [
+      "5 年内空间至少翻倍",
+      "ROIC 长期 > 15%",
+      "创始人/核心团队稳定 10 年以上",
+      "集中市场 (CR5 > 60%)",
+    ],
+    quotes: [
+      "重仓是因为研究透了，不是因为情绪。",
+      "5 年看不清的公司不在我们的组合里。",
+      "投资是少数人的游戏，越拥挤越没价值。",
+      "护城河不是静态的，看它怎么演变才是关键。",
+    ],
+    misuseWarnings: [
+      "小盘股：风和规模大，<100 亿市值不进入视野。",
+      "高频博弈：5-10 年视角不适合短线。",
+      "新兴科技：5 年看不清的颠覆性技术，风和保守。",
+    ],
+    complementarySages: ["feng-liu", "duan-yongping"],
+    avatar: "FH",
+    color: "#0E7490",
+    accentColor: "#67E8F9",
+  },
+  {
+    id: "deng-xiaofeng",
+    name: "邓晓峰",
+    title: "高毅资产首席投资官 · 深度研究派代表",
+    era: "2002-至今",
+    tier: "insider",
+    school: "value",
+    philosophy:
+      "投资是赚生意的钱，不是赚博弈的钱。前博时基金明星基金经理，2014 加入高毅。跟冯柳同事但风格完全相反——冯柳逆向抄底，邓晓峰深度研究持有龙头。圈内被称为'A 股最深的研究'。",
+    coreLine: "我赚的是生意的钱，时间是我的朋友。",
+    bookOrSource: "高毅资产季报 · 邓晓峰投资人交流纪要 / 雪球访谈",
+    representativeTrades: [
+      "招商银行长期重仓（10 年以上）",
+      "海康威视 2014 起持有",
+      "贵州茅台早期重仓",
+      "伊利股份长期",
+      "中国神华 / 紫金矿业（资源股深度研究后买入）",
+    ],
+    dimensions: [
+      { key: "industryPosition", label: "行业地位", weight: 0.30, description: "公司是行业第一/第二吗？市占率 + 利润占比" },
+      { key: "longTermRoe", label: "长期 ROE 稳定", weight: 0.25, description: "10 年 ROE 平均 > 15% 且方差小" },
+      { key: "managementQuality", label: "管理层质量", weight: 0.20, description: "战略稳定 + 资本配置理性 + 不折腾" },
+      { key: "valuation", label: "估值合理", weight: 0.15, description: "PE/PB 在历史区间合理位置" },
+      { key: "concentrationDiscipline", label: "持仓集中度", weight: 0.10, description: "值得放进核心 10 只？" },
+    ],
+    redFlags: [
+      { key: "marginal_industry", label: "行业地位边缘", trigger: "市占率 < 15% 且无追赶趋势", severity: "veto" },
+      { key: "biz_thrash", label: "频繁折腾业务", trigger: "管理层评分 ≤ 2", severity: "major" },
+      { key: "fcf_unstable", label: "现金流不稳", trigger: "FCF/Net Income < 0.6", severity: "major" },
+    ],
+    bonus: [
+      "行业第一或第二",
+      "长期 ROE > 20% 稳定",
+      "主营聚焦不乱并购",
+      "现金分红 > 30%",
+    ],
+    quotes: [
+      "生意的钱才是真钱。",
+      "深度研究是投资唯一的护城河。",
+      "我宁愿错过 10 个机会，也不愿乱买 1 个。",
+      "时间是优秀公司最忠实的朋友。",
+      "组合的超额收益来自少数几个深度研究的标的。",
+    ],
+    misuseWarnings: [
+      "高速成长但短期亏损：邓晓峰要求长期 ROE 稳定，对成长期亏损公司保守。",
+      "强周期早期：周期股需要时点把握，邓晓峰更稳健。",
+      "中小盘股：偏好流动性好的龙头。",
+    ],
+    complementarySages: ["feng-liu", "fenghe-wu"],
+    avatar: "DXF",
+    color: "#15803D",
+    accentColor: "#86EFAC",
+  },
+  {
+    id: "zhao-jun",
+    name: "赵军",
+    title: "淡水泉投资董事长 · 逆向 + Fundamental 派",
+    era: "2007-至今",
+    tier: "insider",
+    school: "reverse",
+    philosophy:
+      "逆向投资但建立在 fundamental 改变之上。跟冯柳的弱者体系区别：冯柳侧重'被市场抛弃的好公司'，赵军侧重'业绩拐点 + 管理层变革 + 行业 fundamental 反转'。圈内称作'A 股最纪律化的逆向投资'。",
+    coreLine: "便宜不是理由，便宜 + 业绩拐点才是。",
+    bookOrSource: "淡水泉年度致投资人信 / 雪球深度访谈",
+    representativeTrades: [
+      "2014 年医药股低位抄底",
+      "2018-2019 家电消费抄底",
+      "重仓海康威视 + 苏泊尔",
+      "白酒 2014 戴维斯双击前布局",
+    ],
+    dimensions: [
+      { key: "earningsTurning", label: "业绩拐点信号", weight: 0.30, description: "未来 12-24 个月业绩有明确反转信号？(订单/产能/毛利改善)" },
+      { key: "mgmtChange", label: "管理层变革", weight: 0.20, description: "新 CEO/COO 就任 / 战略转型 / 治理改善" },
+      { key: "valueBottom", label: "估值底部", weight: 0.20, description: "PE/PB 在历史 20 分位以下" },
+      { key: "industryFundamental", label: "行业 fundamental", weight: 0.20, description: "行业本身是否触底回升？(竞争出清/政策转向)" },
+      { key: "timing", label: "时点选择", weight: 0.10, description: "是否在情绪极端低点（不是中性区间）" },
+    ],
+    redFlags: [
+      { key: "no_turning_signal", label: "无业绩拐点信号", trigger: "业绩持续恶化无反转", severity: "veto" },
+      { key: "governance_decline", label: "公司治理恶化", trigger: "管理层评分 ≤ 2", severity: "major" },
+      { key: "industry_decline", label: "行业持续恶化", trigger: "行业空间收缩 + 无政策反转", severity: "major" },
+    ],
+    bonus: [
+      "新管理层就任 + 战略清晰",
+      "ROE 见底回升 (前低 + 当期反转)",
+      "PE/PB 历史 20 分位以下",
+      "行业出清 (竞争对手退出)",
+    ],
+    quotes: [
+      "逆向不是抗市场，是抗共识。",
+      "业绩拐点比估值更重要。",
+      "管理层变革是最大的 alpha。",
+      "我们买的是改变，不是便宜。",
+      "等业绩兑现再买，已经晚了。",
+    ],
+    misuseWarnings: [
+      "高位优质股：赵军不参与共识看好的高位股。",
+      "纯成长股：淡水泉偏好困境反转，不是高速成长。",
+      "短期趋势：业绩拐点需要 12-24 个月兑现，不适合短线。",
+    ],
+    complementarySages: ["feng-liu", "deng-xiaofeng"],
+    avatar: "ZJ",
+    color: "#9333EA",
+    accentColor: "#C4B5FD",
+  },
+  {
+    id: "jiang-jinzhi",
+    name: "蒋锦志（景林）",
+    title: "景林资产创始人 · 中国版 PIMCO · 圈内全球派",
+    era: "2004-至今",
+    tier: "insider",
+    school: "value",
+    philosophy:
+      "全球视野的长期价值投资。专注海外中概 + 中国消费品 + 全球科技龙头。圈内被誉为'中国最国际化的对冲基金'，2024 资产管理规模超 800 亿美元。**几乎从不公开露面**，每年只通过年度致投资人信对外发声。",
+    coreLine: "在全球化视野下找最有定价权的中国资产。",
+    bookOrSource: "景林资产年度致投资人信 / 海外机构投资者深度访谈",
+    representativeTrades: [
+      "2010s 早期重仓拼多多 (Pre-IPO + IPO 后)",
+      "贵州茅台核心持仓 10 年+",
+      "海外大消费股 (LVMH / Hermès / Costco)",
+      "中概互联深度配置 (腾讯 + 阿里历史持仓)",
+    ],
+    dimensions: [
+      { key: "globalCompetitiveness", label: "全球竞争力", weight: 0.30, description: "公司是否在全球市场有定价权？" },
+      { key: "consumerBrand", label: "消费品牌力", weight: 0.25, description: "品牌是否有跨国/跨周期的持久性" },
+      { key: "longTermFcf", label: "长期自由现金流", weight: 0.20, description: "未来 10 年 FCF 增长可见性" },
+      { key: "macroAlignment", label: "宏观契合度", weight: 0.15, description: "公司业务是否搭乘长期宏观趋势" },
+      { key: "valuation", label: "估值合理", weight: 0.10, description: "全球可比估值水平" },
+    ],
+    redFlags: [
+      { key: "weak_global_position", label: "全球地位弱", trigger: "纯本土+无国际化空间", severity: "major" },
+      { key: "tech_disruption_high", label: "技术替代风险", trigger: "5 年内被颠覆可能性高", severity: "major" },
+      { key: "fcf_uncertain", label: "现金流不可见", trigger: "FCF 历史波动大", severity: "major" },
+    ],
+    bonus: [
+      "全球 Top 3 行业地位",
+      "海外业务占比 > 30%",
+      "消费品牌跨周期 (10 年+)",
+      "现金流稳健",
+    ],
+    quotes: [
+      "在全球化视野下找最有定价权的中国资产。",
+      "本土第一不够，全球第一才是真正的护城河。",
+      "便宜不是关键，确定性才是。",
+      "宏观是背景，公司是主角。",
+    ],
+    misuseWarnings: [
+      "纯本土小公司：景林偏好全球可比的龙头，本土小盘不在视野。",
+      "强周期股：景林追求穿越周期的稳定生意。",
+      "短期博弈：持有期 5-10 年，不适合短线。",
+    ],
+    complementarySages: ["feng-liu", "zhao-jun"],
+    avatar: "JJZ",
+    color: "#1E40AF",
+    accentColor: "#93C5FD",
+  },
+  {
+    id: "wang-yawei",
+    name: "王亚伟",
+    title: "千合资本创始人 · 公募一哥转私募传奇",
+    era: "1995-至今",
+    tier: "insider",
+    school: "growth",
+    philosophy:
+      "前华夏大盘精选基金经理（2005-2012），公募时代连续 7 年战胜大盘。2012 年创立千合资本后**几乎完全淡出公众视野**。投资风格：自下而上选股 + 重仓黑马 + 看重管理层与战略。圈内称为'A 股最敏感的选股嗅觉'。",
+    coreLine: "找别人没看到的好公司，比追大众已知的好公司更赚钱。",
+    bookOrSource: "华夏大盘精选历史业绩报告 / 千合资本季报 / 早期媒体访谈",
+    representativeTrades: [
+      "2007 年布局重组股（多次精准押中）",
+      "华夏大盘精选 7 年年化 49%",
+      "2010 年重仓中小创成长股",
+      "千合资本旗下产品长期跑赢大盘",
+    ],
+    dimensions: [
+      { key: "uniqueOpportunity", label: "独特机会", weight: 0.30, description: "是否是市场尚未充分认知的标的（非热门股）" },
+      { key: "managementVision", label: "管理层格局", weight: 0.25, description: "管理层是否有清晰的中长期战略 + 执行力" },
+      { key: "growthCatalyst", label: "成长催化剂", weight: 0.20, description: "未来 12-36 个月有明确的业绩催化" },
+      { key: "valuationAsymmetry", label: "估值不对称", weight: 0.15, description: "下跌空间 vs 上涨空间是否极不对称" },
+      { key: "industryTailwind", label: "行业顺风", weight: 0.10, description: "行业是否处于景气周期的早期" },
+    ],
+    redFlags: [
+      { key: "consensus_already", label: "已成共识", trigger: "标的已被市场充分认知 + 高估", severity: "major" },
+      { key: "no_catalyst", label: "无催化剂", trigger: "12 个月内无明确业绩拐点", severity: "major" },
+      { key: "weak_mgmt", label: "管理层平庸", trigger: "管理层评分 ≤ 2", severity: "major" },
+    ],
+    bonus: [
+      "市场覆盖率低 (卖方很少 cover)",
+      "管理层有明确转型 / 扩张计划",
+      "新业务占比上升",
+      "估值在历史 30 分位以下",
+    ],
+    quotes: [
+      "找别人没看到的好公司，比追大众已知的好公司更赚钱。",
+      "重仓黑马的前提是你比市场早看到。",
+      "管理层是最大的变量。",
+      "估值不对称比绝对低估更重要。",
+    ],
+    misuseWarnings: [
+      "稳定龙头：王亚伟更看重黑马转身，对成熟龙头评分保守。",
+      "强周期股：王亚伟偏好成长股，不是周期反转。",
+      "国企蓝筹：相对青睐有改革催化的标的。",
+    ],
+    complementarySages: ["zhang-kun", "buffett"],
+    avatar: "WYW",
+    color: "#B91C1C",
+    accentColor: "#FCA5A5",
+  },
+];
+
+export const SAGE_BY_ID = Object.fromEntries(SAGES.map((s) => [s.id, s]));
