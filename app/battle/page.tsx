@@ -114,6 +114,8 @@ interface Msg {
   followups?: string[];
   loading?: boolean;
   multiReplies?: MultiReply[];
+  verdict?: string;          // 陪审团判决书
+  verdictLoading?: boolean;
   ts: number;
 }
 
@@ -263,6 +265,30 @@ export default function BattlePage() {
       streamOneSage(s.slug, text, [], patch => updateMulti(s.slug, patch))
         .catch(e => updateMulti(s.slug, { content: `Error: ${e.message}`, loading: false }))
     ));
+
+    // ⭐ 4 个 sage 答完后请求陪审团判决书
+    const updateVerdict = (patch: Partial<Msg>) => setMessages(prev => {
+      const arr = [...prev]; arr[arr.length - 1] = { ...arr[arr.length - 1], ...patch }; return arr;
+    });
+    updateVerdict({ verdictLoading: true });
+    try {
+      // 拿到当前 multiReplies 内容
+      const finalReplies = await new Promise<MultiReply[]>(resolve => {
+        setMessages(prev => { resolve((prev[prev.length - 1].multiReplies || [])); return prev; });
+      });
+      const vRes = await fetch("/api/battle/verdict", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: text,
+          replies: finalReplies.map(r => ({ sage_name: r.sage_name, content: r.content })),
+        }),
+      });
+      const vJson = await vRes.json();
+      updateVerdict({ verdict: vJson.verdict || `生成失败: ${vJson.error}`, verdictLoading: false });
+    } catch (e: any) {
+      updateVerdict({ verdict: `生成判决失败: ${e.message}`, verdictLoading: false });
+    }
+
     setLoading(false);
   };
 
@@ -559,6 +585,23 @@ export default function BattlePage() {
                   <Sparkles className="h-3.5 w-3.5 text-blue-600" />
                   <span className="font-medium">{m.multiReplies.length} 位大佬同时回答 · 看共识与分歧</span>
                 </div>
+                {/* ⭐ 陪审团判决书 — 4 个 sage 答完后的总结 */}
+                {(m.verdict || m.verdictLoading) && (
+                  <div className="rounded-2xl border-2 border-blue-300 bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50/60 p-5 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">⚖️</span>
+                      <span className="text-xs font-mono uppercase tracking-wider text-indigo-700 font-semibold">陪审团判决书</span>
+                      {m.verdictLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-500" />}
+                    </div>
+                    {m.verdict ? (
+                      <div className="prose prose-sm max-w-none whitespace-pre-wrap text-[14px] leading-[1.7] text-slate-800">
+                        {m.verdict}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-indigo-600 italic">正在综合 {m.multiReplies.length} 位大佬的观点 · 提炼共识与分歧...</p>
+                    )}
+                  </div>
+                )}
                 <div className={cn("grid gap-3", m.multiReplies.length <= 2 ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2")}>
                   {m.multiReplies.map(rep => (
                     <div key={rep.sage_id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">

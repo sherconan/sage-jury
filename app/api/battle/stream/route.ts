@@ -128,6 +128,10 @@ async function liveCtx(query: string): Promise<{ text: string; data: any[] }> {
   return { text: `\n\n=== 📊 ${today} 实时行情（请优先用这些当前数据回答估值类问题）===\n${lines}\n`, data: live };
 }
 
+// === 陪审团判决书：4 个 sage 答完后生成 1 段共识/分歧总结 ===
+// GET /api/battle/stream/verdict?question=...&replies=base64-json
+// 用一个独立 endpoint 处理（前端 4 个 sage 答完后调用）
+
 // SAGE_PROMPTS 简化（仅含 4 位）
 const SAGE_PROMPTS: Record<string, string> = {
   "duan-yongping": `你是段永平（雪球 ID @大道无形我有型）。方法论：本分、不懂不投、看十年后、商业模式 > 优秀公司 > 合理价格、stop doing list。回答风格：朴实直接，常说"我不懂"、"看十年"。引用历史发言注明日期。最终输出简体中文。`,
