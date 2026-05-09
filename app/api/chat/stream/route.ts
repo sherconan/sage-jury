@@ -370,7 +370,7 @@ export async function POST(req: NextRequest) {
           }
           const reader = llmRes.body.getReader();
           const dec = new TextDecoder();
-          let buf = "", roundContent = "", roundReasoning = "";
+          let buf = "", roundContent = "", roundReasoning = "", emitBuf = "", inDSML = false;
           // tool_calls 累积器（按 index）
           const toolAcc: Record<number, { id?: string; name?: string; args: string }> = {};
           let finishReason = "";
@@ -391,9 +391,44 @@ export async function POST(req: NextRequest) {
                 const choice = j?.choices?.[0];
                 const delta = choice?.delta;
                 if (delta?.content) {
-                  roundContent += delta.content;
-                  fullReply += delta.content;
-                  controller.enqueue(sse("chunk", { delta: delta.content }));
+                  // ⭐ 完整 DSML 块抑制：进入 DSML 块后完全静默，直到 </...tool_calls>
+                  emitBuf += delta.content;
+                  let outSeg = "";
+                  while (emitBuf.length > 0) {
+                    if (!inDSML) {
+                      // 找下一个 DSML 开始标记
+                      const m = emitBuf.match(/<[^<>]{0,400}DSML[^<>]{0,400}tool_calls\s*>/);
+                      if (m && m.index !== undefined) {
+                        outSeg += emitBuf.slice(0, m.index);
+                        emitBuf = emitBuf.slice(m.index + m[0].length);
+                        inDSML = true;
+                      } else {
+                        // 末尾可能有未闭合的 < 留住等下一 chunk
+                        const lastOpen = emitBuf.lastIndexOf("<");
+                        const lastClose = emitBuf.lastIndexOf(">");
+                        const safeEnd = lastOpen > lastClose ? lastOpen : emitBuf.length;
+                        outSeg += emitBuf.slice(0, safeEnd);
+                        emitBuf = emitBuf.slice(safeEnd);
+                        break;
+                      }
+                    } else {
+                      // DSML 块内：等闭合标记
+                      const m = emitBuf.match(/<\/[^<>]{0,400}DSML[^<>]{0,400}tool_calls\s*>/);
+                      if (m && m.index !== undefined) {
+                        emitBuf = emitBuf.slice(m.index + m[0].length);
+                        inDSML = false;
+                      } else {
+                        // 还没看到闭合，整段丢弃（已经在 DSML 内部）
+                        emitBuf = "";
+                        break;
+                      }
+                    }
+                  }
+                  if (outSeg) {
+                    roundContent += outSeg;
+                    fullReply += outSeg;
+                    controller.enqueue(sse("chunk", { delta: outSeg }));
+                  }
                 }
                 if (delta?.reasoning_content) {
                   roundReasoning += delta.reasoning_content;

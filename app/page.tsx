@@ -77,6 +77,16 @@ function saveSessions(s: Session[]) {
   try { localStorage.setItem(SESS_KEY, JSON.stringify(s.slice(0, 100))); } catch {}
 }
 function genId() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+// 客户端兜底过滤 DSML 内部标签（防 server 漏过滤）
+function cleanDSML(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/<[^<>\n]{0,200}DSML[^<>\n]{0,200}>/g, "")
+    .replace(/<\/?\s*(invoke|parameter|tool_calls)[^>]*>/gi, "")
+    .replace(/name="[a-z_]+"\s+string="(true|false)"\s*>/g, "")
+    .replace(/^\s+|\s+$/g, "");
+}
+
 function fmtTime(ts: number) {
   const d = new Date(ts);
   const now = Date.now();
@@ -99,9 +109,21 @@ export default function ChatPage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Hydrate from localStorage
+  // Hydrate from localStorage + 一次性清洗已存的 DSML 污染
   useEffect(() => {
-    const s = loadSessions();
+    let s = loadSessions();
+    let needSave = false;
+    s = s.map(sess => {
+      const cleaned = sess.msgs.map(m => {
+        if (m.role === "sage" && m.content && /DSML|name="[a-z_]+" string=/.test(m.content)) {
+          needSave = true;
+          return { ...m, content: cleanDSML(m.content) };
+        }
+        return m;
+      });
+      return cleaned !== sess.msgs ? { ...sess, msgs: cleaned } : sess;
+    });
+    if (needSave) saveSessions(s);
     setSessions(s);
     const last = typeof window !== "undefined" ? localStorage.getItem(ACTIVE_KEY) : null;
     if (last && s.find(x => x.id === last)) {
@@ -232,7 +254,10 @@ export default function ChatPage() {
           if (!line.startsWith("data: ")) continue;
           let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
           if (evt === "quotes") updateLastMsg({ quotes: data || [], loading: true });
-          else if (evt === "chunk" && data.delta) { accumulated += data.delta; updateLastMsg({ content: accumulated, loading: false }); }
+          else if (evt === "chunk" && data.delta) {
+            const clean = cleanDSML(data.delta);
+            if (clean) { accumulated += clean; updateLastMsg({ content: accumulated, loading: false }); }
+          }
           else if (evt === "tool_call") {
             setSessions(prev => prev.map(s => {
               if (s.id !== sessId) return s;
@@ -254,7 +279,7 @@ export default function ChatPage() {
             }));
           }
           else if (evt === "done") {
-            updateLastMsg({ content: accumulated || data.fullReply || "", followups: data.followups || [], loading: false });
+            updateLastMsg({ content: cleanDSML(accumulated || data.fullReply || ""), followups: data.followups || [], loading: false });
             // 首轮回答完成 → 生成标题
             const sess = sessions.find(s => s.id === sessId);
             const turns = sess ? sess.msgs.filter(m => m.role === "user").length + 1 : 1;
@@ -394,7 +419,7 @@ export default function ChatPage() {
             })}
           </div>
           <div className="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-400 text-center">
-            数据本地存储 · 4 sage · 5 工具
+            数据本地存储 · 4 sage · 4 工具
           </div>
         </aside>
 
@@ -422,7 +447,7 @@ export default function ChatPage() {
               )}
               <span className="hidden md:flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[10px] text-emerald-700 font-medium">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Agent · 5 tools
+                Agent · 4 tools
               </span>
             </div>
           </header>
@@ -435,7 +460,7 @@ export default function ChatPage() {
                   activeSage.gradient)}>{activeSage.initials}</div>
                 <h2 className="mt-5 text-2xl font-semibold text-slate-900">和 {activeSage.display} 对话</h2>
                 <p className="mt-2 text-sm text-slate-500">{activeSage.philosophy}</p>
-                <p className="mt-1 text-xs text-slate-400">5 工具 (网搜 · 实时行情 · K 线 · 财报 · 历史发言语义搜)</p>
+                <p className="mt-1 text-xs text-slate-400">4 工具 (历史发言语义搜 · 网搜 · 实时行情 · K 线)</p>
                 <div className="mt-7 flex flex-wrap justify-center gap-2 max-w-xl">
                   {(STARTERS[activeSage.slug] || []).map(s => (
                     <button key={s} onClick={() => submit(s)}
