@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Send, Loader2, MessageSquarePlus, Trash2, Download, Sparkles, ExternalLink,
   Hash, Twitter, Menu, X, ChevronDown, Wrench,
@@ -512,9 +514,13 @@ export default function ChatPage() {
                     </div>
                   ) : (
                     <>
-                      <div className={cn("prose prose-sm max-w-none whitespace-pre-wrap text-[14.5px] leading-[1.7]",
+                      <div className={cn("prose prose-sm max-w-none text-[14.5px] leading-[1.7] prose-p:my-2 prose-headings:my-3 prose-table:text-xs prose-th:bg-slate-100 prose-td:py-1 prose-td:px-2 prose-th:py-1.5 prose-th:px-2 prose-blockquote:border-l-2 prose-blockquote:border-slate-300 prose-blockquote:text-slate-600 prose-blockquote:italic",
                         m.role === "user" ? "text-white prose-invert" : "text-slate-800")}>
-                        {m.content}
+                        {m.role === "user" ? (
+                          <p className="whitespace-pre-wrap m-0">{m.content}</p>
+                        ) : (
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                        )}
                         {m.role === "sage" && loading && messages[messages.length - 1] === m && (
                           <span className="inline-block w-0.5 h-4 ml-0.5 bg-blue-500 align-middle animate-pulse" />
                         )}
