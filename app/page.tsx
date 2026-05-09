@@ -1,564 +1,556 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
-import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Gavel, Scale, Users, BookOpen, Sparkles, ChevronRight, ArrowDown, ExternalLink, Menu, X } from "lucide-react";
-import { evaluate } from "@/lib/engine";
-import { SAGES } from "@/data/sages";
-import { PRESET_CASES } from "@/data/cases";
-import type { CaseInput, JuryReport } from "@/types";
-import { CaseInputForm } from "@/components/CaseInputForm";
-import { SageVerdictCard } from "@/components/SageVerdictCard";
-import { JuryReportPanel } from "@/components/JuryReportPanel";
-import { SageAvatar } from "@/components/SageAvatar";
-import { ShareBar } from "@/components/ShareBar";
-import { RetrospectiveTable } from "@/components/RetrospectiveTable";
-import { TodayHotCases } from "@/components/TodayHotCases";
-import { QuickVerdict } from "@/components/QuickVerdict";
-import { decodeCase } from "@/lib/share";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import {
+  Send, Loader2, MessageSquarePlus, Trash2, Download, Sparkles, ExternalLink,
+  Hash, Twitter, Menu, X, ChevronDown, Wrench,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function HomePage() {
-  const [report, setReport] = useState<JuryReport | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [expandedSages, setExpandedSages] = useState<Set<string>>(new Set());
-  const [presetInput, setPresetInput] = useState<Partial<CaseInput> | undefined>(undefined);
-  const reportRef = useRef<HTMLDivElement | null>(null);
-  const formRef = useRef<HTMLDivElement | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+// =================== Types ===================
+interface QuoteRef { date: string; text: string; likes: number; url: string; }
+interface ToolCall { name: string; args: any; id?: string; result?: string; }
+interface Msg {
+  role: "user" | "sage";
+  content: string;
+  quotes?: QuoteRef[];
+  followups?: string[];
+  toolCalls?: ToolCall[];
+  loading?: boolean;
+  ts: number;
+}
+interface Session {
+  id: string;
+  sage_id: string;
+  title: string;
+  msgs: Msg[];
+  ts_created: number;
+  ts_updated: number;
+}
+interface SageOption {
+  slug: string; display: string; alias: string;
+  philosophy: string; total_posts: number;
+  initials: string; gradient: string;
+}
 
-  // Load shared case from URL (?case=hash)
+// =================== Static Config ===================
+const SAGES: SageOption[] = [
+  { slug: "duan-yongping", display: "段永平", alias: "大道无形我有型",
+    philosophy: "本分 · 不懂不投 · 看十年后", total_posts: 10497,
+    initials: "DYP", gradient: "from-blue-500 to-indigo-600" },
+  { slug: "guan-wo-cai", display: "管我财", alias: "管我财",
+    philosophy: "低估逆向平均赢 · 排雷胜选股", total_posts: 33853,
+    initials: "GWC", gradient: "from-emerald-500 to-teal-600" },
+  { slug: "dan-bin", display: "但斌", alias: "但斌",
+    philosophy: "时间的玫瑰 · 长期持有伟大公司", total_posts: 597,
+    initials: "DB", gradient: "from-amber-500 to-orange-600" },
+  { slug: "lao-tang", display: "唐朝", alias: "老唐",
+    philosophy: "老唐估值法 · 三年一倍 · 守正用奇", total_posts: 116,
+    initials: "LT", gradient: "from-violet-500 to-purple-600" },
+];
+
+const STARTERS: Record<string, string[]> = {
+  "duan-yongping": ["你为什么换神华去泡泡玛特？", "苹果还能拿吗？", "拼多多怎么看？"],
+  "guan-wo-cai":   ["腾讯能买吗？", "招行 PE 历史什么分位？", "26 年荒岛策略选什么？"],
+  "lao-tang":      ["茅台老唐估值法多少？", "腾讯三年合理估值？", "洋河怎么看？"],
+  "dan-bin":       ["英伟达还能拿吗？", "茅台拿 20 年还成立吗？", "特斯拉怎么看？"],
+};
+
+const STOCK_SUGGESTIONS = [
+  "茅台", "五粮液", "汾酒", "泸州老窖", "洋河", "海天", "伊利", "片仔癀",
+  "招商银行", "中国平安", "工商银行", "宁德时代", "比亚迪", "中国中免",
+  "腾讯", "阿里", "美团", "京东", "拼多多", "网易", "小米", "泡泡玛特", "神华",
+  "苹果 AAPL", "英伟达 NVDA", "特斯拉 TSLA", "亚马逊 AMZN", "谷歌 GOOGL", "Meta",
+];
+
+const SESS_KEY = "sj_chat_sessions_v1";
+const ACTIVE_KEY = "sj_chat_active_session_v1";
+
+// =================== Helpers ===================
+function loadSessions(): Session[] {
+  if (typeof window === "undefined") return [];
+  try { const raw = localStorage.getItem(SESS_KEY); return raw ? JSON.parse(raw) : []; }
+  catch { return []; }
+}
+function saveSessions(s: Session[]) {
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem(SESS_KEY, JSON.stringify(s.slice(0, 100))); } catch {}
+}
+function genId() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+function fmtTime(ts: number) {
+  const d = new Date(ts);
+  const now = Date.now();
+  const diff = now - ts;
+  if (diff < 60_000) return "刚刚";
+  if (diff < 3600_000) return `${Math.floor(diff/60_000)} 分钟前`;
+  if (diff < 86400_000) return `${Math.floor(diff/3600_000)} 小时前`;
+  return d.toISOString().slice(5, 10).replace("-", "/");
+}
+
+// =================== Component ===================
+export default function ChatPage() {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeSage, setActiveSage] = useState<SageOption>(SAGES[0]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sagePickerOpen, setSagePickerOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Hydrate from localStorage
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const hash = params.get("case");
-    if (!hash) return;
-    const decoded = decodeCase(hash);
-    if (decoded && decoded.name) {
-      setPresetInput(decoded);
-      setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+    const s = loadSessions();
+    setSessions(s);
+    const last = typeof window !== "undefined" ? localStorage.getItem(ACTIVE_KEY) : null;
+    if (last && s.find(x => x.id === last)) {
+      setActiveId(last);
+      const sess = s.find(x => x.id === last);
+      if (sess) {
+        const sage = SAGES.find(x => x.slug === sess.sage_id);
+        if (sage) setActiveSage(sage);
+      }
     }
   }, []);
 
-  const handleSubmit = (input: CaseInput) => {
-    setLoading(true);
-    setExpandedSages(new Set());
-    setTimeout(() => {
-      const r = evaluate(input);
-      setReport(r);
-      setLoading(false);
-      setTimeout(() => reportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-    }, 600);
-  };
+  // Persist
+  useEffect(() => { if (sessions.length) saveSessions(sessions); }, [sessions]);
+  useEffect(() => {
+    if (activeId && typeof window !== "undefined") localStorage.setItem(ACTIVE_KEY, activeId);
+  }, [activeId]);
 
-  const loadPreset = (presetId: string) => {
-    const p = PRESET_CASES.find(p => p.id === presetId);
-    if (!p) return;
-    setPresetInput({ ...p.input });
-    setReport(null);
-    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-  };
+  const activeSession = useMemo(() => sessions.find(s => s.id === activeId) || null, [sessions, activeId]);
+  const messages = activeSession?.msgs || [];
 
-  const toggleSage = (id: string) => {
-    setExpandedSages(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages]);
+
+  // Create new session bound to current activeSage
+  const newSession = useCallback((sage?: SageOption) => {
+    const target = sage || activeSage;
+    const ns: Session = {
+      id: genId(),
+      sage_id: target.slug,
+      title: "新对话",
+      msgs: [],
+      ts_created: Date.now(),
+      ts_updated: Date.now(),
+    };
+    setSessions(prev => [ns, ...prev]);
+    setActiveId(ns.id);
+    setActiveSage(target);
+    setSidebarOpen(false);
+    setTimeout(() => inputRef.current?.focus(), 100);
+  }, [activeSage]);
+
+  const switchSession = useCallback((id: string) => {
+    const sess = sessions.find(s => s.id === id);
+    if (!sess) return;
+    setActiveId(id);
+    const sage = SAGES.find(x => x.slug === sess.sage_id);
+    if (sage) setActiveSage(sage);
+    setSidebarOpen(false);
+  }, [sessions]);
+
+  const deleteSession = useCallback((id: string) => {
+    if (!confirm("确认删除这个对话？")) return;
+    setSessions(prev => {
+      const filtered = prev.filter(s => s.id !== id);
+      saveSessions(filtered);
+      return filtered;
     });
+    if (activeId === id) setActiveId(null);
+  }, [activeId]);
+
+  const updateActiveSession = useCallback((patch: Partial<Session>) => {
+    setSessions(prev => prev.map(s => s.id === activeId ? { ...s, ...patch, ts_updated: Date.now() } : s));
+  }, [activeId]);
+
+  const updateLastMsg = useCallback((patch: Partial<Msg>) => {
+    setSessions(prev => prev.map(s => {
+      if (s.id !== activeId) return s;
+      const msgs = [...s.msgs];
+      if (msgs.length === 0) return s;
+      msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], ...patch };
+      return { ...s, msgs, ts_updated: Date.now() };
+    }));
+  }, [activeId]);
+
+  // Generate title after first turn complete
+  const generateTitle = async (sessId: string, userMsg: string, sageReply: string) => {
+    try {
+      const r = await fetch("/api/chat/title", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: userMsg, reply: sageReply.slice(0, 400) }),
+      });
+      if (!r.ok) return;
+      const { title } = await r.json();
+      if (title) setSessions(prev => prev.map(s => s.id === sessId ? { ...s, title: title.slice(0, 30) } : s));
+    } catch {}
+  };
+
+  const submit = async (overrideText?: string) => {
+    if (loading) return;
+    const text = (overrideText !== undefined ? overrideText : input).trim();
+    if (!text) return;
+
+    // 确保有 active session
+    let sessId = activeId;
+    if (!sessId) {
+      const ns: Session = { id: genId(), sage_id: activeSage.slug, title: "新对话", msgs: [], ts_created: Date.now(), ts_updated: Date.now() };
+      setSessions(prev => [ns, ...prev]);
+      setActiveId(ns.id);
+      sessId = ns.id;
+    }
+
+    setInput(""); setLoading(true);
+
+    // 推 user msg + loading sage placeholder（使用最新 history 调用）
+    const histPayload = messages.filter(m => !m.loading && m.content).map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
+    setSessions(prev => prev.map(s => {
+      if (s.id !== sessId) return s;
+      return { ...s, msgs: [...s.msgs,
+        { role: "user", content: text, ts: Date.now() },
+        { role: "sage", content: "", loading: true, ts: Date.now() + 1 },
+      ], ts_updated: Date.now() };
+    }));
+
+    try {
+      const res = await fetch("/api/chat/stream", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sage_id: activeSage.slug, message: text, history: histPayload }),
+      });
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = "", evt = "", accumulated = "";
+      const processLines = (lines: string[]) => {
+        for (const line of lines) {
+          if (line.startsWith("event: ")) { evt = line.slice(7).trim(); continue; }
+          if (!line.startsWith("data: ")) continue;
+          let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
+          if (evt === "quotes") updateLastMsg({ quotes: data || [], loading: true });
+          else if (evt === "chunk" && data.delta) { accumulated += data.delta; updateLastMsg({ content: accumulated, loading: false }); }
+          else if (evt === "tool_call") {
+            setSessions(prev => prev.map(s => {
+              if (s.id !== sessId) return s;
+              const msgs = [...s.msgs];
+              const last = { ...msgs[msgs.length - 1] };
+              last.toolCalls = [...(last.toolCalls || []), { name: data.name, args: data.args, id: data.id }];
+              msgs[msgs.length - 1] = last;
+              return { ...s, msgs };
+            }));
+          }
+          else if (evt === "tool_result") {
+            setSessions(prev => prev.map(s => {
+              if (s.id !== sessId) return s;
+              const msgs = [...s.msgs];
+              const last = { ...msgs[msgs.length - 1] };
+              last.toolCalls = (last.toolCalls || []).map(tc => tc.id === data.id ? { ...tc, result: data.result } : tc);
+              msgs[msgs.length - 1] = last;
+              return { ...s, msgs };
+            }));
+          }
+          else if (evt === "done") {
+            updateLastMsg({ content: accumulated || data.fullReply || "", followups: data.followups || [], loading: false });
+            // 首轮回答完成 → 生成标题
+            const sess = sessions.find(s => s.id === sessId);
+            const turns = sess ? sess.msgs.filter(m => m.role === "user").length + 1 : 1;
+            if (turns === 1) {
+              setTimeout(() => generateTitle(sessId!, text, accumulated || data.fullReply || ""), 100);
+            }
+          }
+          else if (evt === "error") updateLastMsg({ content: `Error: ${data.message}`, loading: false });
+        }
+      };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) { if (buf) processLines(buf.split("\n")); break; }
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        processLines(lines);
+      }
+    } catch (e: any) {
+      updateLastMsg({ content: `Error: ${e.message}`, loading: false });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportMarkdown = () => {
+    if (!activeSession || !messages.length) return;
+    const today = new Date().toISOString().slice(0, 19).replace("T", " ");
+    const lines: string[] = [
+      `# ${activeSage.display} · ${activeSession.title}`, ``,
+      `> 导出: ${today}`,
+      `> Sage: ${activeSage.display} (${activeSage.alias})`,
+      `> 来源: https://sage-jury.vercel.app/`, ``, `---`, ``,
+    ];
+    for (const m of messages) {
+      if (m.role === "user") lines.push(`### 🧑 你`, ``, m.content, ``);
+      else {
+        lines.push(`### 🎩 ${activeSage.display}`, ``, m.content, ``);
+        if (m.quotes?.length) {
+          lines.push(`<details><summary>引用 ${m.quotes.length} 条原帖</summary>`, ``);
+          m.quotes.forEach((q, i) => lines.push(`${i+1}. [${q.date} 👍${q.likes}](${q.url}) ${q.text.slice(0, 120)}`));
+          lines.push(`</details>`, ``);
+        }
+        if (m.followups?.length) lines.push(`**跟进**: ${m.followups.map(f => `\`${f}\``).join(" · ")}`, ``);
+      }
+      lines.push(`---`, ``);
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url;
+    a.download = `${activeSage.slug}-${activeSession.title}-${today.slice(0,10)}.md`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <main className="min-h-screen">
-      {/* Top Bar */}
-      <nav className="sticky top-0 z-30 border-b border-ink-200/60 bg-cream-50/85 backdrop-blur-md">
-        <div className="relative">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md border border-gold-400 bg-navy-700">
-              <Gavel className="h-5 w-5 text-gold-300" />
-            </div>
-            <div>
-              <h1 className="font-serif text-lg font-bold leading-none text-navy-700">大佬陪审团</h1>
-              <p className="text-[10px] font-mono uppercase tracking-widest text-ink-500">Sage Jury · v1</p>
-            </div>
+    <main className="h-screen overflow-hidden bg-slate-50 text-slate-900"
+      style={{ fontFamily: "ui-sans-serif, -apple-system, 'Inter', 'PingFang SC', system-ui, sans-serif" }}>
+      <div className="grid h-full" style={{ gridTemplateColumns: "0 1fr" }}>
+        {/* === SIDEBAR (sessions) === */}
+        <aside className={cn("fixed inset-y-0 left-0 z-30 w-72 border-r border-slate-200 bg-white transition-transform md:static md:translate-x-0 md:w-72 md:grid",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0")}
+          style={{ display: "flex", flexDirection: "column" }}>
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+            <span className="font-semibold text-slate-900 flex items-center gap-2">
+              <span className="text-base">🎩</span>
+              <span>Sage Chat</span>
+            </span>
+            <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 hover:bg-slate-100 rounded">
+              <X className="h-4 w-4 text-slate-500" />
+            </button>
           </div>
-          <div className="hidden items-center gap-5 text-sm md:flex">
-            <a href="#jury" className="text-ink-700 hover:text-navy-700">陪审员</a>
-            <a href="#cases" className="text-ink-700 hover:text-navy-700">历史案卷</a>
-            <a href="/quotes" className="text-ink-700 hover:text-navy-700">金句墙</a>
-            <a href="/about" className="text-ink-700 hover:text-navy-700">为什么是这 15 位</a>
-            <a href="/heatmap" className="text-ink-700 hover:text-navy-700">🔥 热力图</a>
-            <a href="/dynamics" className="text-ink-700 hover:text-navy-700">相关性</a>
-            <a href="/market" className="text-ink-700 hover:text-navy-700">市场扫描</a>
-            <a href="/timemachine" className="text-ink-700 hover:text-navy-700">时光机</a>
-            <a href="/watchlist" className="text-ink-700 hover:text-navy-700">自选股</a>
-            <a href="/diff" className="text-ink-700 hover:text-navy-700">对比</a>
-            <a href="/faq" className="text-ink-700 hover:text-navy-700">FAQ</a>
-            <a href="/battle" className="text-ink-700 hover:text-navy-700">⚔️ 交易对线</a>
-            <a href="/cli" className="text-ink-700 hover:text-navy-700">CLI</a>
-            <a href="/embed" className="text-ink-700 hover:text-navy-700">Embed</a>
-            <a href="/leaderboard" className="text-ink-700 hover:text-navy-700">榜单</a>
-            <a href="#methodology" className="text-ink-700 hover:text-navy-700">方法论</a>
-            <a href="#input" className="rounded-md bg-navy-700 px-3 py-1.5 text-cream-50 hover:bg-navy-800">提交案卷</a>
+          <div className="px-3 py-3 border-b border-slate-100">
+            <button onClick={() => newSession()}
+              className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white px-3 py-2.5 text-sm font-medium hover:shadow-md transition">
+              <MessageSquarePlus className="h-4 w-4" /> 新对话
+            </button>
           </div>
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="rounded-md p-2 text-ink-700 hover:bg-cream-100 md:hidden"
-            aria-label="切换菜单"
-          >
-            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-        {menuOpen && (
-          <div className="border-t border-ink-200/60 bg-cream-50 md:hidden">
-            <div className="flex flex-col gap-2 px-5 py-3 text-sm">
-              {[
-                { href: "#jury", label: "陪审员" },
-                { href: "#cases", label: "历史案卷" },
-                { href: "/quotes", label: "金句墙" },
-                { href: "/about", label: "为什么是这 15 位" },
-                { href: "/dynamics", label: "陪审员相关性" },
-                { href: "#methodology", label: "方法论" },
-              ].map((l) => (
-                <a key={l.href} href={l.href} onClick={() => setMenuOpen(false)} className="rounded-md px-3 py-2 text-ink-700 hover:bg-cream-100">
-                  {l.label}
-                </a>
-              ))}
-              <a href="#input" onClick={() => setMenuOpen(false)} className="rounded-md bg-navy-700 px-3 py-2 text-center font-medium text-cream-50">
-                提交案卷
-              </a>
-            </div>
-          </div>
-        )}
-        </div>
-      </nav>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-ink-200/60">
-        <div className="absolute inset-0 bg-gavel-rays opacity-70" />
-        <div className="relative mx-auto max-w-7xl px-5 py-12 md:py-20">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="ornament-line mx-auto mb-5 max-w-xs text-[11px] font-mono uppercase tracking-[0.4em] text-gold-600 animate-fadeUp" style={{ animationDelay: '0.05s' }}>
-              <span>The Court of Investment</span>
-            </div>
-            <h1 className="font-serif text-4xl font-bold leading-tight text-navy-700 sm:text-5xl md:text-7xl animate-fadeUp" style={{ animationDelay: '0.1s' }}>
-              让 15 位投资大佬<br />
-              <span className="text-navy-700">替你审判</span>
-              <span className="relative inline-block">
-                <span className="relative z-10">每一笔交易</span>
-                <span className="absolute -bottom-1 left-0 right-0 h-3 bg-gold-300/55" />
-              </span>
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl font-serif text-base text-ink-700 sm:text-lg md:text-xl animate-fadeUp" style={{ animationDelay: '0.2s' }}>
-              段永平、冯柳、但斌、林园、张坤、巴菲特——把你的交易决策提交给陪审团。
-              他们用各自的方法论独立评分，给出一份结构化的判决书。
-            </p>
-
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-3 animate-fadeUp" style={{ animationDelay: '0.3s' }}>
-              {SAGES.map((s, i) => (
-                <div key={s.id} className="group relative">
-                  <SageAvatar initials={s.avatar} bgColor={s.color} accentColor={s.accentColor} size="lg" />
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md border border-ink-200 bg-cream-50 px-2 py-0.5 text-xs font-medium text-ink-700 shadow-sm">
-                    {s.name}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-14 flex flex-col items-center gap-3 animate-fadeUp" style={{ animationDelay: '0.5s' }}>
-              <div className="flex flex-wrap items-center justify-center gap-3">
-                <a href="#input" className="btn-primary">
-                  <Gavel className="h-5 w-5" />
-                  提交我的交易决策
-                </a>
-                <button
-                  onClick={() => loadPreset("moutai-2003")}
-                  className="rounded-lg border border-ink-300 bg-cream-50 px-5 py-3 font-serif text-base font-medium text-ink-800 transition-all hover:border-gold-500 hover:bg-cream-100 hover:shadow-bench"
-                >
-                  🍶 试一下"茅台 2003"
-                </button>
+          {/* sage picker */}
+          <div className="px-3 py-2 border-b border-slate-100">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-2 px-1">当前 Sage</div>
+            <button onClick={() => setSagePickerOpen(!sagePickerOpen)}
+              className={cn("w-full flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-left hover:border-slate-300 transition",
+                "bg-white")}>
+              <div className={cn("h-7 w-7 shrink-0 flex items-center justify-center rounded-lg bg-gradient-to-br text-white font-mono text-[10px] font-bold",
+                activeSage.gradient)}>{activeSage.initials}</div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900 truncate">{activeSage.display}</p>
+                <p className="text-[10px] text-slate-500 truncate">@{activeSage.alias}</p>
               </div>
-              <a href="#cases" className="text-sm text-ink-600 hover:text-navy-700">
-                或浏览 11 个历史案例 ↓
-              </a>
-            </div>
-
-            <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-center animate-fadeUp" style={{ animationDelay: '0.7s' }}>
-              {[
-                { num: 6, label: "位陪审员" },
-                { num: 11, label: "历史案卷" },
-                { num: 48, label: "句金句箴言" },
-                { num: "71%", label: "时光机命中率" },
-              ].map((s) => (
-                <div key={s.label} className="min-w-[80px]">
-                  <p className="font-serif text-3xl font-bold text-navy-700 md:text-4xl">{s.num}</p>
-                  <p className="text-xs text-ink-500">{s.label}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-2 animate-fadeUp" style={{ animationDelay: '0.85s' }}>
-              {[
-                { href: "/market", label: "📊 市场扫描", desc: "12 只 A 股实时" },
-                { href: "/timemachine", label: "⏱️ 时光机", desc: "命中率 71%" },
-                { href: "/watchlist", label: "📋 自选股", desc: "批量审议" },
-                { href: "/diff?a=600519&b=000858", label: "⚖️ 对比", desc: "茅台 vs 五粮液" },
-                { href: "/stock/600519", label: "📑 个股深度", desc: "茅台示例" },
-              ].map((l) => (
-                <Link key={l.href} href={l.href}
-                  className="rounded-lg border border-ink-300 bg-cream-50 px-3 py-1.5 text-xs text-ink-700 transition-all hover:border-gold-400 hover:bg-gold-50 hover:text-gold-700"
-                  title={l.desc}>
-                  {l.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Verdict — 3 秒看陪审团 (Hero 紧下方，第一交互入口) */}
-      <QuickVerdict
-        onPickCase={(input) => {
-          setPresetInput(input);
-          setReport(null);
-          setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-        }}
-      />
-
-      {/* Jury intro - 12 sages 分两组：大众派 + 圈内派 */}
-      <section id="jury" className="border-b border-ink-200/60 bg-cream-50/40">
-        <div className="mx-auto max-w-7xl px-5 py-16">
-          <div className="mb-10 text-center">
-            <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-              <span>Meet the Jury · 12 Justices</span>
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">十五位陪审员 · 大众 6 + 圈内 9</h2>
-            <p className="mx-auto mt-2 max-w-2xl text-ink-600">
-              <span className="font-mono text-xs uppercase tracking-widest text-amber-700">大众派 (6)</span> 段永平 / 冯柳 / 张坤 / 巴菲特 / 邱国鹭 / 唐朝
-              <br />
-              <span className="font-mono text-xs uppercase tracking-widest text-emerald-700">圈内派 (9)</span> <span className="font-bold">李录</span>（喜马拉雅）/ <span className="font-bold">胡猛</span>（风和亚洲）/ <span className="font-bold">马自铭</span>（雪湖资本）/ <span className="font-bold">邓晓峰</span>（高毅 CIO）/ <span className="font-bold">赵军</span>（淡水泉）/ <span className="font-bold">蒋锦志</span>（景林）/ <span className="font-bold">陈光明</span>（睿远）/ <span className="font-bold">谢治宇</span>（兴证全球）/ <span className="font-bold">杨东</span>（宁泉）
-              <br />
-              <span className="text-xs text-ink-500 italic">已移除：但斌、林园、王亚伟（翻车 / 大众化）</span>
-            </p>
-            <Link href="/about" className="mt-3 inline-block text-sm text-gold-700 underline hover:text-navy-700">
-              为什么换人 / 为什么是这 14 位？→
-            </Link>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {SAGES.map((s, i) => (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Link
-                  href={`/sage/${s.id}`}
-                  className="court-card group block p-5 transition-all hover:shadow-gold"
-                  style={{ borderTopColor: s.accentColor, borderTopWidth: 3 }}
-                >
-                  <div className="flex items-start gap-3">
-                    <SageAvatar initials={s.avatar} bgColor={s.color} accentColor={s.accentColor} size="md" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <h3 className="font-serif text-lg font-bold text-ink-900 group-hover:text-navy-700">{s.name}</h3>
-                        {s.tier === "insider" && (
-                          <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-emerald-700 border border-emerald-300">圈内</span>
-                        )}
-                      </div>
-                      <p className="text-xs text-ink-500">{s.title}</p>
+              <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition", sagePickerOpen && "rotate-180")} />
+            </button>
+            {sagePickerOpen && (
+              <div className="mt-2 space-y-1">
+                {SAGES.map(s => (
+                  <button key={s.slug} onClick={() => { newSession(s); setSagePickerOpen(false); }}
+                    className={cn("w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition",
+                      s.slug === activeSage.slug ? "bg-slate-100" : "hover:bg-slate-50")}>
+                    <div className={cn("h-6 w-6 shrink-0 flex items-center justify-center rounded bg-gradient-to-br text-white font-mono text-[9px] font-bold", s.gradient)}>{s.initials}</div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{s.display}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{s.philosophy.slice(0, 18)}</p>
                     </div>
-                    <span className="nameplate text-[10px]">{s.school}</span>
-                  </div>
-                  <p className="mt-3 font-serif italic text-ink-700">"{s.coreLine}"</p>
-                  <div className="mt-3 space-y-1 text-xs text-ink-500">
-                    {s.dimensions.slice(0, 3).map(d => (
-                      <div key={d.key} className="flex justify-between">
-                        <span>{d.label}</span>
-                        <span className="font-mono">{(d.weight * 100).toFixed(0)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-3 flex items-center justify-end gap-1 text-xs font-medium text-navy-700 opacity-0 transition-opacity group-hover:opacity-100">
-                    查看完整方法论 <ChevronRight className="h-3 w-3" />
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Today Hot Cases — 实战 demo */}
-      <section id="today" className="border-b border-ink-200/60 bg-cream-50/40">
-        <div className="mx-auto max-w-6xl px-5 py-16">
-          <div className="mb-10 text-center">
-            <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-              <span>Today on the Docket</span>
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">今日热点案件 · 陪审团已审议</h2>
-            <p className="mx-auto mt-2 max-w-2xl text-ink-600">
-              4 个当下市场最受关注的标的——英伟达、比亚迪、拼多多、中科曙光。
-              这是陪审团**实时跑分**的真实输出，不是预设。点击任一卡片展开完整判决书。
-            </p>
-          </div>
-          <TodayHotCases onLoadCase={(input) => {
-            setPresetInput(input);
-            setReport(null);
-            setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-          }} />
-        </div>
-      </section>
-
-      {/* Preset cases */}
-      <section id="cases" className="border-b border-ink-200/60">
-        <div className="mx-auto max-w-7xl px-5 py-16">
-          <div className="mb-10 text-center">
-            <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-              <span>Historical Case Files</span>
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">历史案卷 · 一键审议</h2>
-            <p className="mx-auto mt-2 max-w-2xl text-ink-600">
-              选一个真实案例，看 15 位陪审员的判断 vs 历史结果。最好的检验是回到当年。
-            </p>
-            <Link href="/dynamics" className="mt-3 inline-block text-sm text-gold-700 underline hover:text-navy-700">
-              查看陪审员相关性热点 →
-            </Link>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {PRESET_CASES.map((c, i) => (
-              <motion.button
-                key={c.id}
-                onClick={() => loadPreset(c.id)}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                whileHover={{ y: -3 }}
-                className="court-card group cursor-pointer overflow-hidden p-5 text-left transition-all hover:shadow-gold"
-              >
-                <div className="mb-2 flex items-start justify-between">
-                  <span className="text-3xl">{c.emojiTag}</span>
-                  <span className="nameplate">{c.era}</span>
-                </div>
-                <h3 className="font-serif text-xl font-bold text-ink-900">{c.title}</h3>
-                <p className="text-sm font-medium text-gold-600">{c.subtitle}</p>
-                <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-ink-600">{c.summary}</p>
-                <div className="gold-rule my-3" />
-                <p className="text-xs text-ink-500">
-                  <span className="font-mono uppercase">结果：</span>{c.outcome}
-                </p>
-                <p className="text-xs text-ink-500">
-                  <span className="font-mono uppercase">下注者：</span>{c.whoBet}
-                </p>
-                <div className="mt-3 flex items-center justify-end gap-1 text-sm font-medium text-navy-700 opacity-0 transition-opacity group-hover:opacity-100">
-                  立即审议 <ChevronRight className="h-4 w-4" />
-                </div>
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Retrospective Table */}
-      <section className="border-b border-ink-200/60">
-        <div className="mx-auto max-w-6xl px-5 py-12">
-          <div className="mb-6 text-center">
-            <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-              <span>Verdict vs History</span>
-            </p>
-            <h2 className="mt-3 font-serif text-2xl font-bold text-navy-700 md:text-3xl">陪审团判决 vs 历史结局</h2>
-            <p className="mx-auto mt-2 max-w-2xl text-sm text-ink-600">
-              如果你不相信方法论拟合的合理性——看这张表。陪审团对 11 个真实案例的预判，对照实际结局。
-            </p>
-          </div>
-          <RetrospectiveTable />
-          <p className="mt-3 text-center text-xs text-ink-500">
-            注：&ldquo;方法论命中&rdquo;徽章基于陪审团多数意见与历史结局的方向是否一致。
-          </p>
-        </div>
-      </section>
-
-      {/* Input form */}
-      <section id="input" className="border-b border-ink-200/60 bg-cream-50/40">
-        <div className="mx-auto max-w-4xl px-5 py-16">
-          <div className="mb-10 text-center">
-            <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-              <span>Submit Your Case</span>
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">把你的交易决策交给陪审团</h2>
-          </div>
-          <div ref={formRef}>
-            <CaseInputForm key={presetInput ? JSON.stringify(presetInput).slice(0, 50) : "blank"} onSubmit={handleSubmit} loading={loading} initial={presetInput} />
-          </div>
-        </div>
-      </section>
-
-      {/* Report */}
-      <AnimatePresence>
-        {report && (
-          <motion.section
-            ref={reportRef}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="border-b border-ink-200/60 bg-cream-100/40"
-          >
-            <div className="mx-auto max-w-7xl space-y-6 px-5 py-16">
-              <JuryReportPanel report={report} />
-
-              <div className="flex justify-center">
-                <ShareBar input={report.caseInput} />
-              </div>
-
-              <div className="ornament-line text-xs font-mono uppercase tracking-[0.3em] text-ink-500">
-                <span>陪审员逐一意见 · {report.verdicts.length} Justices</span>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {report.verdicts.map((v, i) => (
-                  <SageVerdictCard
-                    key={v.sageId}
-                    verdict={v}
-                    index={i}
-                    expanded={expandedSages.has(v.sageId)}
-                    onToggle={() => toggleSage(v.sageId)}
-                  />
+                  </button>
                 ))}
               </div>
+            )}
+          </div>
+          {/* sessions list */}
+          <div className="flex-1 overflow-y-auto px-2 py-2">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-2 px-2">历史对话 ({sessions.length})</div>
+            {sessions.length === 0 ? (
+              <p className="text-xs text-slate-400 text-center py-8 px-3">还没有对话<br/>点上面「新对话」开始</p>
+            ) : sessions.map(s => {
+              const sage = SAGES.find(x => x.slug === s.sage_id);
+              return (
+                <div key={s.id} className={cn("group rounded-lg px-2 py-2 mb-1 cursor-pointer transition",
+                  s.id === activeId ? "bg-slate-100" : "hover:bg-slate-50")}
+                  onClick={() => switchSession(s.id)}>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("h-1.5 w-1.5 rounded-full bg-gradient-to-br shrink-0", sage?.gradient || "bg-slate-300")} />
+                    <span className="flex-1 truncate text-sm text-slate-800">{s.title}</span>
+                    <button onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 hover:text-rose-600 rounded transition">
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1 mt-0.5 ml-3.5 text-[10px] text-slate-400">
+                    <span>{sage?.display}</span>
+                    <span>·</span>
+                    <span>{s.msgs.filter(m => m.role === "user").length} 轮</span>
+                    <span>·</span>
+                    <span>{fmtTime(s.ts_updated)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-400 text-center">
+            数据本地存储 · 4 sage · 5 工具
+          </div>
+        </aside>
 
-              <div className="text-center">
-                <button
-                  onClick={() => setExpandedSages(prev => prev.size === report.verdicts.length ? new Set() : new Set(report.verdicts.map(v => v.sageId)))}
-                  className="btn-ghost"
-                >
-                  {expandedSages.size === report.verdicts.length ? "全部收起" : "展开全部陪审员详情"}
+        {/* === MAIN (chat) === */}
+        <section className="relative flex flex-col h-screen overflow-hidden">
+          {/* Top bar */}
+          <header className="flex items-center justify-between border-b border-slate-200 bg-white/90 backdrop-blur px-4 md:px-6 py-3">
+            <div className="flex items-center gap-2 md:gap-3">
+              <button onClick={() => setSidebarOpen(true)} className="md:hidden p-1.5 hover:bg-slate-100 rounded">
+                <Menu className="h-5 w-5 text-slate-600" />
+              </button>
+              <div className={cn("h-8 w-8 flex items-center justify-center rounded-lg bg-gradient-to-br text-white font-mono text-[11px] font-bold shadow-sm",
+                activeSage.gradient)}>{activeSage.initials}</div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{activeSession?.title || "和 " + activeSage.display + " 对话"}</p>
+                <p className="text-[11px] text-slate-500">{activeSage.philosophy} · 基于 {activeSage.total_posts.toLocaleString()} 条雪球发言</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {messages.length > 0 && (
+                <button onClick={exportMarkdown} title="导出对话为 Markdown"
+                  className="flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 transition">
+                  <Download className="h-3 w-3" /> 导出
                 </button>
-              </div>
+              )}
+              <span className="hidden md:flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[10px] text-emerald-700 font-medium">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Agent · 5 tools
+              </span>
             </div>
-          </motion.section>
-        )}
-      </AnimatePresence>
+          </header>
 
-      {/* Use cases */}
-      <section className="border-b border-ink-200/60 bg-cream-50/40">
-        <div className="mx-auto max-w-5xl px-5 py-16">
-          <div className="mb-10 text-center">
-            <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-              <span>When to Convene</span>
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">什么时候召开陪审团？</h2>
-          </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {[
-              { icon: "🤔", t: "犹豫不决时", d: "重仓买入前，让 6 套方法论替你做最后一次结构化检查——避免因信念偏差错过红旗。" },
-              { icon: "🔥", t: "市场狂热时", d: "热门赛道 + 共识看好时，用冯柳的弱者体系给自己一盆冷水——共识本身就是风险。" },
-              { icon: "💔", t: "深度回撤时", d: "持仓被腰斩时，用陪审团重新审视投资逻辑——是基本面坏了还是情绪过头？" },
-              { icon: "🎯", t: "测试一个想法", d: "把朋友推荐 / 大 V 喊单 / 自己研究的标的丢进来，6 张评分卡一目了然。" },
-              { icon: "📚", t: "学习方法论时", d: "对比同一笔交易在不同方法论下的评分差异，比读书更直观地理解每位大佬的世界观。" },
-              { icon: "🪞", t: "复盘交易时", d: "回到当年的茅台 / 海康 / 网易，看陪审团的方法论拟合是否站得住——你的判断在哪一派？" },
-            ].map((u, i) => (
-              <div key={u.t} className="court-card p-5">
-                <div className="text-3xl">{u.icon}</div>
-                <h3 className="mt-2 font-serif text-lg font-bold text-ink-900">{u.t}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-ink-700">{u.d}</p>
+          {/* Messages */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-5 bg-gradient-to-br from-slate-50 to-blue-50/30">
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full text-center max-w-2xl mx-auto">
+                <div className={cn("h-16 w-16 flex items-center justify-center rounded-2xl bg-gradient-to-br text-white text-xl font-bold shadow-md",
+                  activeSage.gradient)}>{activeSage.initials}</div>
+                <h2 className="mt-5 text-2xl font-semibold text-slate-900">和 {activeSage.display} 对话</h2>
+                <p className="mt-2 text-sm text-slate-500">{activeSage.philosophy}</p>
+                <p className="mt-1 text-xs text-slate-400">5 工具 (网搜 · 实时行情 · K 线 · 财报 · 历史发言语义搜)</p>
+                <div className="mt-7 flex flex-wrap justify-center gap-2 max-w-xl">
+                  {(STARTERS[activeSage.slug] || []).map(s => (
+                    <button key={s} onClick={() => submit(s)}
+                      className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition shadow-sm">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {messages.map((m, mi) => (
+              <div key={m.ts} className={cn("flex gap-3", m.role === "user" ? "flex-row-reverse" : "flex-row")}>
+                <div className={cn("h-9 w-9 shrink-0 flex items-center justify-center rounded-xl font-mono text-[10px] font-bold shadow-sm",
+                  m.role === "user" ? "bg-slate-900 text-white" : `bg-gradient-to-br ${activeSage.gradient} text-white`)}>
+                  {m.role === "user" ? "你" : activeSage.initials}
+                </div>
+                <div className={cn("max-w-[78%] rounded-2xl px-5 py-3.5 shadow-sm",
+                  m.role === "user" ? "bg-slate-900 text-white" : "bg-white border border-slate-200")}>
+                  {/* tool calls */}
+                  {m.role === "sage" && m.toolCalls && m.toolCalls.length > 0 && (
+                    <div className="mb-3 space-y-2">
+                      {m.toolCalls.map((tc, ti) => (
+                        <details key={ti} open={!tc.result}
+                          className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-xs">
+                          <summary className="cursor-pointer flex items-center gap-1.5 text-amber-800 font-medium">
+                            <Wrench className="h-3 w-3 text-amber-600" />
+                            <span className="font-mono">{tc.name}</span>
+                            <span className="font-mono text-[10px] text-amber-600 truncate flex-1">({JSON.stringify(tc.args).slice(0, 60)})</span>
+                            {!tc.result && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
+                            {tc.result && <span className="text-[10px] text-emerald-700">✓</span>}
+                          </summary>
+                          {tc.result && (
+                            <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-[11px] text-slate-700 bg-white/70 p-2 rounded">{tc.result.slice(0, 800)}{tc.result.length > 800 ? '...' : ''}</pre>
+                          )}
+                        </details>
+                      ))}
+                    </div>
+                  )}
+                  {m.loading && !m.content && !m.toolCalls?.length ? (
+                    <div className="flex items-center gap-2 text-slate-500 text-sm">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>{activeSage.display} 正在思考...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={cn("prose prose-sm max-w-none whitespace-pre-wrap text-[14.5px] leading-[1.7]",
+                        m.role === "user" ? "text-white prose-invert" : "text-slate-800")}>
+                        {m.content}
+                        {m.role === "sage" && loading && messages[messages.length - 1] === m && (
+                          <span className="inline-block w-0.5 h-4 ml-0.5 bg-blue-500 align-middle animate-pulse" />
+                        )}
+                      </div>
+                      {m.role === "sage" && m.followups && m.followups.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {m.followups.map((q, k) => (
+                            <button key={k} onClick={() => submit(q)}
+                              className="group flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50/80 px-3 py-1.5 text-xs text-blue-800 hover:bg-blue-100 hover:border-blue-300 transition shadow-sm">
+                              <Sparkles className="h-3 w-3 text-blue-500 group-hover:scale-110 transition" />
+                              {q}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {m.quotes && m.quotes.length > 0 && (
+                        <details className="mt-4 border-t border-slate-100 pt-3">
+                          <summary className="cursor-pointer flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-400 hover:text-slate-600">
+                            <Hash className="h-3 w-3" /> 引用 {m.quotes.length} 条历史原帖
+                          </summary>
+                          <ul className="mt-2.5 space-y-2">
+                            {m.quotes.map((q, j) => (
+                              <li key={j} className="rounded-xl border border-slate-200 bg-sky-50/60 px-3.5 py-2.5 text-xs">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <Twitter className="h-3 w-3 text-sky-500" />
+                                  <span className="font-medium text-slate-600">雪球</span>
+                                  <span className="text-slate-300">·</span>
+                                  <a href={q.url} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-600 transition">{q.date} · 👍{q.likes}</a>
+                                  <ExternalLink className="h-3 w-3 text-slate-400" />
+                                </div>
+                                <p className="text-slate-700 line-clamp-2 leading-relaxed">{q.text}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* Methodology */}
-      <section id="methodology" className="border-b border-ink-200/60">
-        <div className="mx-auto max-w-4xl px-5 py-16">
-          <div className="mb-10 text-center">
-            <p className="ornament-line mx-auto max-w-xs text-[11px] font-mono uppercase tracking-[0.3em] text-ink-500">
-              <span>How the Jury Works</span>
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-bold text-navy-700 md:text-4xl">陪审团是怎么打分的？</h2>
+          {/* Input */}
+          <div className="border-t border-slate-200 bg-white p-3 md:p-4">
+            <div className="flex gap-2 max-w-4xl mx-auto">
+              <datalist id="stockSugList">{STOCK_SUGGESTIONS.map(s => <option key={s} value={s} />)}</datalist>
+              <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} list="stockSugList"
+                onKeyDown={e => e.key === "Enter" && !loading && submit()}
+                placeholder={`问 ${activeSage.display}...`}
+                className="flex-1 rounded-full border border-slate-200 bg-slate-50/50 px-5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-50 transition"
+                disabled={loading} />
+              <button onClick={() => submit()} disabled={loading || !input.trim()}
+                className={cn("flex items-center gap-1.5 rounded-full px-5 text-sm font-medium text-white shadow-md hover:shadow-lg disabled:opacity-30 transition",
+                  `bg-gradient-to-br ${activeSage.gradient}`)}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                发送
+              </button>
+            </div>
           </div>
-          <div className="space-y-6">
-            {[
-              {
-                t: "结构化方法论",
-                d: "每位大佬基于其公开著作 / 访谈 / 季报 / 投资案例提炼出 5 个评分维度 + 加权权重。比如段永平的 35% 权重在'商业模式'，冯柳的 30% 权重在'预期差'。",
-              },
-              {
-                t: "红旗一票否决",
-                d: "每位大佬有自己的 deal-breaker。段永平的'超出能力圈'、张坤的'自由现金流为负'，触发即直接顶格扣分——这模拟了真实的投资纪律。",
-              },
-              {
-                t: "加分项",
-                d: "符合大佬偏好的特征（如毛利 > 60%、上市 20 年仍增长、高分红）会带来额外加分，让评分更接近大佬的真实判断。",
-              },
-              {
-                t: "综合判决与共识等级",
-                d: "15 位评分加权平均生成综合分，并标注'一致裁决 / 多数意见 / 严重分歧'。注意：完全的一致是危险信号——冯柳就是教你警惕共识的那个。",
-              },
-              {
-                t: "本地运行 · 不上传数据",
-                d: "整套引擎用 TypeScript 写在客户端，输入数据完全在你的浏览器内计算，不发送到任何服务器。",
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={item.t}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06 }}
-                className="flex gap-4"
-              >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-gold-400 bg-cream-50 font-serif text-base font-bold text-gold-600">
-                  {i + 1}
-                </div>
-                <div>
-                  <h3 className="font-serif text-lg font-bold text-ink-900">{item.t}</h3>
-                  <p className="mt-1 text-ink-700">{item.d}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
-      {/* Footer */}
-      <footer className="border-t border-ink-200/60 bg-navy-700 text-cream-100">
-        <div className="mx-auto max-w-7xl px-5 py-10">
-          <div className="grid gap-6 md:grid-cols-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Gavel className="h-5 w-5 text-gold-300" />
-                <span className="font-serif text-lg font-bold">大佬陪审团</span>
-              </div>
-              <p className="mt-2 text-sm text-cream-200">
-                这是一个把投资大佬方法论结构化的工具——不是投资建议，更不是预测。
-                所有评分基于公开方法论的拟合，最终决策权在你手上。
-              </p>
-            </div>
-            <div>
-              <p className="mb-2 font-mono text-xs uppercase tracking-widest text-gold-300">免责声明</p>
-              <p className="text-sm text-cream-200">
-                本工具不构成投资建议。所有投资有风险，请独立判断。大佬观点为基于公开资料的方法论拟合，不代表其本人的真实判断。
-              </p>
-            </div>
-            <div>
-              <p className="mb-2 font-mono text-xs uppercase tracking-widest text-gold-300">页面索引</p>
-              <ul className="space-y-1 text-sm text-cream-200">
-                <li><Link href="/about" className="hover:text-gold-300">为什么是这 15 位 →</Link></li>
-                <li><Link href="/dynamics" className="hover:text-gold-300">陪审员相关性 →</Link></li>
-                <li><Link href="/quotes" className="hover:text-gold-300">48 句金句墙 →</Link></li>
-                <li><a href="/api/evaluate" target="_blank" rel="noreferrer" className="hover:text-gold-300">⚡ 评估 API（POST JSON）→</a></li>
-              </ul>
-              <p className="mt-3 text-xs text-cream-300/60">
-                Next.js 14 · TypeScript · Tailwind · 部署于 Vercel · © 2026 Sage Jury
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/30 z-20 md:hidden" />
+      )}
     </main>
   );
 }
