@@ -97,6 +97,12 @@ interface QuoteRef {
   date: string; text: string; likes: number;
   url: string; concepts?: string; type?: string; source?: string;
 }
+interface ToolCall {
+  name: string;
+  args: any;
+  id?: string;
+  result?: string;
+}
 interface MultiReply {
   sage_id: string;
   sage_name: string;
@@ -106,6 +112,7 @@ interface MultiReply {
   quotes?: QuoteRef[];
   followups?: string[];
   loading?: boolean;
+  toolCalls?: ToolCall[];
 }
 interface Msg {
   role: "user" | "sage" | "multi";
@@ -114,6 +121,7 @@ interface Msg {
   quotes?: QuoteRef[];
   followups?: string[];
   loading?: boolean;
+  toolCalls?: ToolCall[];    // 单 sage 调用的工具
   multiReplies?: MultiReply[];
   verdict?: string;          // 陪审团判决书
   verdictLoading?: boolean;
@@ -227,6 +235,8 @@ export default function BattlePage() {
         let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
         if (evt === "quotes") onUpdate({ quotes: (data || []).map((q: any) => ({ ...q, source: q.source || "xueqiu" })), loading: true });
         else if (evt === "chunk" && data.delta) { accumulated += data.delta; onUpdate({ content: accumulated, loading: false }); }
+        else if (evt === "tool_call") onUpdate({ _toolCallEvent: data } as any);
+        else if (evt === "tool_result") onUpdate({ _toolResultEvent: data } as any);
         else if (evt === "done") onUpdate({ content: accumulated || data.fullReply || "", followups: data.followups || [], loading: false });
         else if (evt === "error") onUpdate({ content: `Error: ${data.message}`, loading: false });
       }
@@ -331,6 +341,18 @@ export default function BattlePage() {
           } else if (evt === "chunk" && data.delta) {
             accumulated += data.delta;
             updateLast({ content: accumulated, loading: false });
+          } else if (evt === "tool_call") {
+            setMessages(prev => {
+              const arr = [...prev]; const last = { ...arr[arr.length - 1] };
+              last.toolCalls = [...(last.toolCalls || []), { name: data.name, args: data.args, id: data.id }];
+              arr[arr.length - 1] = last; return arr;
+            });
+          } else if (evt === "tool_result") {
+            setMessages(prev => {
+              const arr = [...prev]; const last = { ...arr[arr.length - 1] };
+              last.toolCalls = (last.toolCalls || []).map(tc => tc.id === data.id ? { ...tc, result: data.result } : tc);
+              arr[arr.length - 1] = last; return arr;
+            });
           } else if (evt === "done") {
             updateLast({ content: accumulated || data.fullReply || "", followups: data.followups || [], loading: false });
           } else if (evt === "error") {
@@ -712,6 +734,27 @@ export default function BattlePage() {
                     </div>
                   ) : (
                     <>
+                      {/* ⭐ Agent 工具调用展示 */}
+                      {m.role === "sage" && m.toolCalls && m.toolCalls.length > 0 && (
+                        <div className="mb-3 space-y-2">
+                          {m.toolCalls.map((tc, ti) => (
+                            <details key={ti} open={!tc.result} className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-xs">
+                              <summary className="cursor-pointer flex items-center gap-1.5 text-amber-800 font-medium">
+                                <span className="text-amber-600">🛠️</span>
+                                <span className="font-mono">{tc.name}</span>
+                                <span className="text-amber-700">(</span>
+                                <span className="font-mono text-amber-900 text-[11px]">{JSON.stringify(tc.args).slice(0, 80)}</span>
+                                <span className="text-amber-700">)</span>
+                                {!tc.result && <Loader2 className="ml-auto h-3 w-3 animate-spin text-amber-500" />}
+                                {tc.result && <span className="ml-auto text-[10px] text-emerald-700">✓ 完成</span>}
+                              </summary>
+                              {tc.result && (
+                                <pre className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap break-all text-[11px] text-slate-700 bg-white/60 p-2 rounded">{tc.result.slice(0, 800)}{tc.result.length > 800 ? '...' : ''}</pre>
+                              )}
+                            </details>
+                          ))}
+                        </div>
+                      )}
                       <div className={cn("prose prose-sm max-w-none whitespace-pre-wrap text-[14.5px] leading-[1.7]",
                         m.role === "user" ? "text-white prose-invert" : "text-slate-800")}>
                         {m.content}
