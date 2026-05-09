@@ -1,0 +1,26 @@
+<view class="container">
+  <view class="topbar">
+    <view class="text-md font-semibold text-slate-900">历史对话 ({{sessions.length}})</view>
+    <button class="header-btn" bindtap="onClearAll" hover-class="hover" wx:if="{{sessions.length > 0}}">清空全部</button>
+  </view>
+
+  <view wx:if="{{sessions.length === 0}}" class="empty-state">
+    <view class="empty-icon">💬</view>
+    <view class="text-md text-slate-600">还没有历史对话</view>
+    <view class="text-xs text-slate-400" style="margin-top: 12rpx;">回到对话页问 sage 一个问题就会自动建</view>
+    <button class="primary-btn" bindtap="onBack" style="margin-top: 32rpx;">返回对话</button>
+  </view>
+
+  <scroll-view scroll-y class="list" wx:else>
+    <view wx:for="{{sessions}}" wx:key="id" class="sess-item" data-id="{{item.id}}" bindtap="onOpen">
+      <view class="sess-dot" style="background:{{item.sage_color}}"></view>
+      <view class="flex-1">
+        <view class="text-sm font-semibold text-slate-900">{{item.title}}</view>
+        <view class="text-xs text-slate-500" style="margin-top: 4rpx;">
+          {{item.sage_name}} · {{item.userTurnCount}} 轮 · {{item.timeFmt}}
+        </view>
+      </view>
+      <button class="del-btn" data-id="{{item.id}}" catchtap="onDelete">删</button>
+    </view>
+  </scroll-view>
+</view>

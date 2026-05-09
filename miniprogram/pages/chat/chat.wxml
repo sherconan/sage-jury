@@ -1,0 +1,90 @@
+<view class="container">
+  <!-- TOP: sage 选择 + sessions 入口 -->
+  <view class="header">
+    <view class="header-left" bindtap="onSagePickerToggle">
+      <view class="sage-avatar" style="background:{{activeSage.color}}">{{activeSage.initials}}</view>
+      <view>
+        <view class="text-md font-semibold text-slate-900">{{activeSession.title || ('和 ' + activeSage.display + ' 对话')}}</view>
+        <view class="text-xs text-slate-500">{{activeSage.philosophy}}</view>
+      </view>
+      <view class="header-arrow">{{sagePickerOpen ? '▲' : '▼'}}</view>
+    </view>
+    <view class="header-right">
+      <button class="header-btn" bindtap="onNewSession" hover-class="hover">+ 新对话</button>
+      <button class="header-btn" bindtap="onGoSessions" hover-class="hover">历史</button>
+    </view>
+  </view>
+
+  <!-- Sage picker dropdown -->
+  <view wx:if="{{sagePickerOpen}}" class="sage-picker">
+    <view wx:for="{{sages}}" wx:key="slug" class="sage-pick-item {{item.slug === activeSage.slug ? 'active' : ''}}"
+      data-slug="{{item.slug}}" bindtap="onSelectSage">
+      <view class="sage-avatar" style="background:{{item.color}}">{{item.initials}}</view>
+      <view class="flex-1">
+        <view class="text-sm font-semibold">{{item.display}}</view>
+        <view class="text-xs text-slate-500">{{item.philosophy}}</view>
+      </view>
+      <view wx:if="{{item.slug === activeSage.slug}}" class="text-xs text-blue-600">✓</view>
+    </view>
+  </view>
+
+  <!-- Messages 区域 -->
+  <scroll-view class="messages" scroll-y scroll-into-view="{{scrollTo}}" enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{messages.length === 0}}" class="empty">
+      <view class="empty-avatar" style="background:{{activeSage.color}}">{{activeSage.initials}}</view>
+      <view class="empty-title">和 {{activeSage.display}} 对话</view>
+      <view class="empty-subtitle">{{activeSage.philosophy}}</view>
+      <view class="empty-meta">基于 {{activeSage.total_posts}} 条真实雪球发言 · 4 工具 (语义搜/网搜/实时行情/K线)</view>
+      <view class="starters">
+        <view wx:for="{{starters}}" wx:key="*this" class="starter-chip" data-q="{{item}}" bindtap="onStarter">{{item}}</view>
+      </view>
+    </view>
+
+    <view wx:for="{{messages}}" wx:key="ts" id="m{{index}}" class="msg-row {{item.role === 'user' ? 'msg-user' : 'msg-sage'}}">
+      <view class="msg-avatar {{item.role === 'user' ? 'avatar-user' : ''}}" style="{{item.role === 'sage' ? ('background:' + activeSage.color) : ''}}">
+        {{item.role === 'user' ? '你' : activeSage.initials}}
+      </view>
+      <view class="msg-bubble {{item.role === 'user' ? 'bubble-user' : 'bubble-sage'}}">
+        <!-- tool calls -->
+        <view wx:if="{{item.role === 'sage' && item.toolCalls && item.toolCalls.length > 0}}" class="tool-calls">
+          <view wx:for="{{item.toolCalls}}" wx:for-item="tc" wx:key="id" class="tool-card">
+            <view class="tool-head">
+              <text class="tool-icon">🛠️</text>
+              <text class="tool-name font-mono">{{tc.name}}</text>
+              <text wx:if="{{tc.result}}" class="text-xs" style="color:#059669">✓</text>
+              <text wx:else class="text-xs text-amber-700">…</text>
+            </view>
+            <view wx:if="{{tc.result}}" class="tool-result">{{tc.resultPreview}}</view>
+          </view>
+        </view>
+        <!-- main content -->
+        <view wx:if="{{item.loading && !item.content}}" class="loading-text">{{activeSage.display}} 正在思考...</view>
+        <view wx:else class="msg-content">{{item.content}}</view>
+        <!-- followups -->
+        <view wx:if="{{item.followups && item.followups.length > 0}}" class="followups">
+          <view wx:for="{{item.followups}}" wx:for-item="fp" wx:key="*this" class="followup-chip" data-q="{{fp}}" bindtap="onStarter">
+            <text>✨ {{fp}}</text>
+          </view>
+        </view>
+        <!-- quotes -->
+        <view wx:if="{{item.quotes && item.quotes.length > 0}}" class="quotes">
+          <view class="quotes-label">引用 {{item.quotes.length}} 条历史原帖</view>
+          <view wx:for="{{item.quotes}}" wx:for-item="q" wx:key="url" class="quote-item">
+            <view class="quote-meta">{{q.date}} 👍{{q.likes}}</view>
+            <view class="quote-text">{{q.textPreview}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 输入区 -->
+  <view class="input-bar">
+    <input class="input" placeholder="问 {{activeSage.display}}..." value="{{input}}"
+      bindinput="onInputChange" confirm-type="send" bindconfirm="onSubmit" disabled="{{loading}}" />
+    <button class="send-btn" style="background:{{activeSage.color}}" bindtap="onSubmit"
+      disabled="{{loading || !input}}" loading="{{loading}}">
+      {{loading ? '发送中' : '发送'}}
+    </button>
+  </view>
+</view>
