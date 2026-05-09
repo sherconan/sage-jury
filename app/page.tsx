@@ -338,7 +338,7 @@ export default function ChatPage() {
   return (
     <main className="h-screen overflow-hidden bg-slate-50 text-slate-900"
       style={{ fontFamily: "ui-sans-serif, -apple-system, 'Inter', 'PingFang SC', system-ui, sans-serif" }}>
-      <div className="grid h-full" style={{ gridTemplateColumns: "0 1fr" }}>
+      <div className="grid h-full grid-cols-1 md:grid-cols-[288px_1fr]">
         {/* === SIDEBAR (sessions) === */}
         <aside className={cn("fixed inset-y-0 left-0 z-30 w-72 border-r border-slate-200 bg-white transition-transform md:static md:translate-x-0 md:w-72 md:grid",
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0")}
