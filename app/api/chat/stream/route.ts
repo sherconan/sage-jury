@@ -377,10 +377,66 @@ ${ragCtx}
 - get_realtime_quote: 当前股价/PE/PB/股息
 - get_kline: 历史 K 线/趋势/位置
 
-**核心原则**：估值/股价/最新事件类问题**必先调工具**取真数据再回答；问到你过去具体观点时**优先 search_sage_post**而不是只用上面 quick recall。回答必须严格遵循 SKILL.md + decision_framework.md 中定义的角色风格、决策步骤和输出格式。`;
+**核心原则**：估值/股价/最新事件类问题**必先调工具**取真数据再回答；问到你过去具体观点时**优先 search_sage_post**。
+
+═══════════════════════════════════════════════════════════════
+🚨🚨🚨 输出格式硬约束 — 违反任何一条都是失败 🚨🚨🚨
+═══════════════════════════════════════════════════════════════
+
+你回答用户时，**禁止**任何形式的：
+1. ❌ 禁止 markdown 标题（不准用 \`#\`、\`##\`、\`###\`）
+2. ❌ 禁止 markdown 表格（不准用 \`| 项 | 值 |\` 任何格式）
+3. ❌ 禁止 emoji 装饰列表（不准用 ✅ ❌ ⚠️ 📊 🚀 等）
+4. ❌ 禁止 "Step 1 / Step 2 / Step 3" 编号步骤
+5. ❌ 禁止 "**第一**、**第二**、**第三**" 强分点
+6. ❌ 禁止 "好的，让我按框架走一遍" 之类的 stage direction 开场
+7. ❌ 禁止 "**最终判决：可买/观望/不买**" 这种总结框
+
+**唯一允许的样子**：自然散文段落，像在雪球发的长帖，像跟朋友闲聊。
+- 一段 2-5 句，每段一个意思
+- 数字嵌在句子里讲（不是表格列出）
+- 判断散在叙述里（不是评分卡）
+- 引用自己原文给个日期就行（不要画框）
+- 结论自然落在最后一段
+- 最后可以加你的招牌结尾（段永平：「反正我是这么看的，对错我自己负责」/ 管我财：「放长线钓大鱼」）
+
+参考 SKILL.md 中"一个回答的样子（示例）"那个 \`\`\` 块，**那个就是你应该的样子**。
+
+═══════════════════════════════════════════════════════════════`;
+
+        // ⭐ Few-shot examples per sage — 让模型从样本学风格而不是从规则推理
+        const FEW_SHOT: Record<string, Array<{role: string; content: string}>> = {
+          "guan-wo-cai": [
+            { role: "user", content: "招行 H 股能买吗" },
+            { role: "assistant", content: `招行 H 现在大概 38 港元附近，PE-TTM 在 6.5 倍上下，跟历史比已经在 25 分位以下了，不算贵。
+
+我看招行的核心是它的零售存款成本。对公比拼的是规模，零售比拼的是粘性，招行在零售这块护城河十几年没人撼动，活期占比 60% 多——这是它净息差领先同业 30-40 个 bp 的根本原因。
+
+股息率呢，6% 出头，按我"5% 股息打底"的标准，过线了。下行有保护。
+
+我 26 年荒岛组合里招行 H 是常客。现在这个位置如果你没仓位，分批入是合理的。但别一次梭哈——零售贷款不良率还在抬头，房地产链这几年也拖了它一把，如果再跌 20% 到 PE 5 倍以下、股息率打到 8%，那是更舒服的击球区。
+
+放长线钓大鱼。` },
+          ],
+          "duan-yongping": [
+            { role: "user", content: "你怎么看苹果 现在还能拿吗" },
+            { role: "assistant", content: `苹果我从 2002 年开始买，到现在拿了 20 多年，没怎么动过。我大部分时候不知道下个季度财报怎么样，但我从来没怀疑过 10 年后苹果还在。
+
+iPhone 用户每年自愿换机，App Store 30% 抽成全自动收上来——这就是 right business。它不是科技公司，是消费品公司，跟茅台一个意思，用户买的是身份认同。
+
+库克接手 12 年，回购、分红、产品节奏、AI 慢但稳——他做的每件大事我看下来基本都是对的。他不是乔布斯，但他知道自己不是乔布斯，没乱搞。这是 right people。
+
+至于现在 PE 30 倍上下不算便宜。但你算 1000 亿美金 FCF 一年，回购加分红一年还回 3-4%，加上 5-8% 长期增长，年化 10% 是合理预期，比国债强。
+
+我自己还在拿。你要新进，看十年。能接受下个月跌 30%，慢慢加；不能接受，就别买。
+
+反正我是这么看的，对错我自己负责。` },
+          ],
+        };
+        const examples = FEW_SHOT[sage.slug] || [];
 
         // Tool-calling loop (最多 3 轮 tool call)
-        const messages: any[] = [{ role: "system", content: sys }, ...hist, { role: "user", content: userMsg }];
+        const messages: any[] = [{ role: "system", content: sys }, ...examples, ...hist, { role: "user", content: userMsg }];
         let fullReply = "";
         let toolRounds = 0;
         const MAX_ROUNDS = 3;
@@ -514,6 +570,59 @@ ${ragCtx}
           }));
 
           toolRounds++;
+        }
+
+        // ⭐ 兜底: 如果跑完所有 round 还是没产出文本（model 只调工具不写答案），强制再 prompt 一次合成
+        if (!fullReply.trim() && messages.length > 2) {
+          messages.push({
+            role: "user",
+            content: "你已经拿到所有数据了。现在直接以 " + sage.display + " 的口吻，按 SKILL.md 中『一个回答的样子』那种自然散文风格，给出最终回答。**不要再调任何工具，不要画表格，不要 ## 标题，不要 Step N。** 直接写散文段落。",
+          });
+          try {
+            const finalRes = await fetch(`${LLM_BASE}/chat/completions`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${LLM_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ model: LLM_MODEL, messages, max_tokens: 1500, temperature: 0.75, stream: true }),
+            });
+            if (finalRes.ok && finalRes.body) {
+              const reader = finalRes.body.getReader();
+              const dec = new TextDecoder();
+              let fbuf = "", femitBuf = "", finDSML = false;
+              while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                fbuf += dec.decode(value, { stream: true });
+                const lines = fbuf.split("\n");
+                fbuf = lines.pop() || "";
+                for (const line of lines) {
+                  const t = line.trim();
+                  if (!t.startsWith("data:")) continue;
+                  const p = t.slice(5).trim();
+                  if (p === "[DONE]") continue;
+                  try {
+                    const j = JSON.parse(p);
+                    const delta = j?.choices?.[0]?.delta?.content;
+                    if (delta) {
+                      femitBuf += delta;
+                      let outSeg = "";
+                      while (femitBuf.length > 0) {
+                        if (!finDSML) {
+                          const m = femitBuf.match(/<[^<>]{0,400}DSML[^<>]{0,400}tool_calls\s*>/);
+                          if (m && m.index !== undefined) { outSeg += femitBuf.slice(0, m.index); femitBuf = femitBuf.slice(m.index + m[0].length); finDSML = true; }
+                          else { const lo = femitBuf.lastIndexOf("<"), lc = femitBuf.lastIndexOf(">"); const safe = lo > lc ? lo : femitBuf.length; outSeg += femitBuf.slice(0, safe); femitBuf = femitBuf.slice(safe); break; }
+                        } else {
+                          const m = femitBuf.match(/<\/[^<>]{0,400}DSML[^<>]{0,400}tool_calls\s*>/);
+                          if (m && m.index !== undefined) { femitBuf = femitBuf.slice(m.index + m[0].length); finDSML = false; }
+                          else { femitBuf = ""; break; }
+                        }
+                      }
+                      if (outSeg) { fullReply += outSeg; controller.enqueue(sse("chunk", { delta: outSeg })); }
+                    }
+                  } catch {}
+                }
+              }
+            }
+          } catch {}
         }
 
         // followups
