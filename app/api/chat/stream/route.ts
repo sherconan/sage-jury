@@ -34,6 +34,25 @@ async function loadSage(slug: string, req: NextRequest): Promise<SageData | null
   } catch { return null; }
 }
 
+// ⭐ 加载 sage skill 文件（持久化的 persona）
+// /public/sages/<slug>/SKILL.md + methodology + decision_framework + voice_samples + classic_holdings + triggers
+const SAGE_SKILL_FILES = ["SKILL.md", "methodology.md", "decision_framework.md", "voice_samples.md", "classic_holdings.md", "triggers.md"];
+async function loadSageSkill(slug: string, req: NextRequest): Promise<string> {
+  const parts: string[] = [];
+  // 串行 fetch（保证文件顺序在 prompt 里稳定）
+  for (const fn of SAGE_SKILL_FILES) {
+    try {
+      const url = new URL(`/sages/${slug}/${fn}`, req.url);
+      const r = await fetch(url.toString(), { cache: "force-cache" });
+      if (r.ok) {
+        const text = await r.text();
+        if (text && text.length > 100) parts.push(`\n\n========= [${fn}] =========\n${text}`);
+      }
+    } catch {}
+  }
+  return parts.join("");
+}
+
 const HK_TO_M: Array<[string,string]> = [["點解","为什么"],["嘅","的"],["咗","了"],["喺","在"],["啲","些"],["冇","没"],["畀","给"],["俾","给"],["咁","这么"],["咩","什么"],["邊","哪"],["唔","不"],["睇","看"],["識","会"]];
 function normalize(s: string): string { if (!s) return ""; for (const [h,m] of HK_TO_M) s = s.split(h).join(m); return s; }
 const STOPWORDS = new Set("的了是在我你他她它们也都这那".split(""));
@@ -333,14 +352,32 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       try {
         // === Prefetch 环境信息（不分类，无脑准备）===
-        // 1. RAG 召回该 sage 历史发言（quick BM25 from local data）
-        const quotes = findRelevant(sage, userMsg, 5);
+        const [quotes, sageSkill] = await Promise.all([
+          Promise.resolve(findRelevant(sage, userMsg, 5)),
+          loadSageSkill(sage.slug, req),  // 加载 6-file sage skill 作为 persona
+        ]);
         controller.enqueue(sse("quotes", quotes));
 
         const executeTool = makeExecuteTool(sage);
         const ragCtx = buildRagContext(quotes);
-        const sys = (SAGE_PROMPTS[sage.slug] || `你是${sage.display}。`) +
-          `\n\n=== 你过去在雪球上的部分相关发言（仅 quick recall，需要更深可调用 search_sage_post 工具）===\n${ragCtx}\n\n你有 4 个工具：\n- search_sage_post: 在自己历史发言里语义搜（BM25+rerank, 比 quick recall 更准）\n- web_search: 联网搜最新事件/政策/新闻\n- get_realtime_quote: 当前股价/PE/PB/股息\n- get_kline: 历史 K 线/趋势/位置\n\n**核心原则**：估值/股价/最新事件类问题**必先调工具**取真数据再回答；问到你过去具体观点时**优先 search_sage_post**而不是只用上面 quick recall。`;
+        // ⭐ 系统 prompt 由三层组成:
+        // 1. sage skill 文件包 (SKILL.md + methodology + decision_framework + voice_samples + classic_holdings + triggers)
+        // 2. 本轮 quick RAG 召回的 5 条历史发言 (动态)
+        // 3. 工具使用规则
+        const sageSkillBlock = sageSkill || (SAGE_PROMPTS[sage.slug] || `你是${sage.display}。`);
+        const sys = `${sageSkillBlock}
+
+=== 本轮 quick RAG 召回的相关历史发言（如不够深可调 search_sage_post 工具）===
+${ragCtx}
+
+=== 工具使用规则 ===
+你有 4 个工具：
+- search_sage_post: 在自己历史发言里语义搜（BM25+rerank, 比 quick recall 更准）
+- web_search: 联网搜最新事件/政策/新闻
+- get_realtime_quote: 当前股价/PE/PB/股息
+- get_kline: 历史 K 线/趋势/位置
+
+**核心原则**：估值/股价/最新事件类问题**必先调工具**取真数据再回答；问到你过去具体观点时**优先 search_sage_post**而不是只用上面 quick recall。回答必须严格遵循 SKILL.md + decision_framework.md 中定义的角色风格、决策步骤和输出格式。`;
 
         // Tool-calling loop (最多 3 轮 tool call)
         const messages: any[] = [{ role: "system", content: sys }, ...hist, { role: "user", content: userMsg }];
