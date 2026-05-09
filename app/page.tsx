@@ -248,46 +248,47 @@ export default function ChatPage() {
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let buf = "", evt = "", accumulated = "";
+      // ⭐ 用本地 sessId 直接 patch, 不依赖 activeId 闭包（修race condition）
+      const patchLast = (patch: Partial<Msg>) => setSessions(prev => prev.map(s => {
+        if (s.id !== sessId) return s;
+        const msgs = [...s.msgs];
+        if (msgs.length === 0) return s;
+        msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], ...patch };
+        return { ...s, msgs, ts_updated: Date.now() };
+      }));
       const processLines = (lines: string[]) => {
         for (const line of lines) {
           if (line.startsWith("event: ")) { evt = line.slice(7).trim(); continue; }
           if (!line.startsWith("data: ")) continue;
           let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
-          if (evt === "quotes") updateLastMsg({ quotes: data || [], loading: true });
+          if (evt === "quotes") patchLast({ quotes: data || [], loading: true });
           else if (evt === "chunk" && data.delta) {
             const clean = cleanDSML(data.delta);
-            if (clean) { accumulated += clean; updateLastMsg({ content: accumulated, loading: false }); }
+            if (clean) { accumulated += clean; patchLast({ content: accumulated, loading: false }); }
           }
-          else if (evt === "tool_call") {
-            setSessions(prev => prev.map(s => {
-              if (s.id !== sessId) return s;
-              const msgs = [...s.msgs];
-              const last = { ...msgs[msgs.length - 1] };
-              last.toolCalls = [...(last.toolCalls || []), { name: data.name, args: data.args, id: data.id }];
-              msgs[msgs.length - 1] = last;
-              return { ...s, msgs };
-            }));
-          }
-          else if (evt === "tool_result") {
-            setSessions(prev => prev.map(s => {
-              if (s.id !== sessId) return s;
-              const msgs = [...s.msgs];
-              const last = { ...msgs[msgs.length - 1] };
-              last.toolCalls = (last.toolCalls || []).map(tc => tc.id === data.id ? { ...tc, result: data.result } : tc);
-              msgs[msgs.length - 1] = last;
-              return { ...s, msgs };
-            }));
-          }
+          else if (evt === "tool_call") setSessions(prev => prev.map(s => {
+            if (s.id !== sessId) return s;
+            const msgs = [...s.msgs];
+            const last = { ...msgs[msgs.length - 1] };
+            last.toolCalls = [...(last.toolCalls || []), { name: data.name, args: data.args, id: data.id }];
+            msgs[msgs.length - 1] = last;
+            return { ...s, msgs };
+          }));
+          else if (evt === "tool_result") setSessions(prev => prev.map(s => {
+            if (s.id !== sessId) return s;
+            const msgs = [...s.msgs];
+            const last = { ...msgs[msgs.length - 1] };
+            last.toolCalls = (last.toolCalls || []).map(tc => tc.id === data.id ? { ...tc, result: data.result } : tc);
+            msgs[msgs.length - 1] = last;
+            return { ...s, msgs };
+          }));
           else if (evt === "done") {
-            updateLastMsg({ content: cleanDSML(accumulated || data.fullReply || ""), followups: data.followups || [], loading: false });
-            // 首轮回答完成 → 生成标题
+            patchLast({ content: cleanDSML(accumulated || data.fullReply || ""), followups: data.followups || [], loading: false });
             const sess = sessions.find(s => s.id === sessId);
             const turns = sess ? sess.msgs.filter(m => m.role === "user").length + 1 : 1;
-            if (turns === 1) {
-              setTimeout(() => generateTitle(sessId!, text, accumulated || data.fullReply || ""), 100);
-            }
+            if (turns === 1) setTimeout(() => generateTitle(sessId!, text, accumulated || data.fullReply || ""), 100);
           }
-          else if (evt === "error") updateLastMsg({ content: `Error: ${data.message}`, loading: false });
+          else if (evt === "error") patchLast({ content: `Error: ${data.message}`, loading: false });
         }
       };
       while (true) {
@@ -299,7 +300,12 @@ export default function ChatPage() {
         processLines(lines);
       }
     } catch (e: any) {
-      updateLastMsg({ content: `Error: ${e.message}`, loading: false });
+      setSessions(prev => prev.map(s => {
+        if (s.id !== sessId) return s;
+        const msgs = [...s.msgs];
+        if (msgs.length > 0) msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: `Error: ${e.message}`, loading: false };
+        return { ...s, msgs };
+      }));
     } finally {
       setLoading(false);
     }
