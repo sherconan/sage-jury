@@ -6,6 +6,7 @@
 //   - get_company_news: 个股公司层面新闻（博查站内 site: 限定）
 
 import { NextRequest } from "next/server";
+import { SAGE_BY_ID } from "@/data/sages";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -36,12 +37,78 @@ const SAGE_FILES: Record<string, string> = {
 };
 
 async function loadSage(slug: string, req: NextRequest): Promise<SageData | null> {
-  try {
-    const url = new URL(`/sages-quotes/${SAGE_FILES[slug] || `${slug}.json`}`, req.url);
-    const r = await fetch(url.toString(), { cache: "no-store" });
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; }
+  // 1) 有 corpus 的 sage（duan/guan）走 json 数据文件
+  if (SAGE_FILES[slug]) {
+    try {
+      const url = new URL(`/sages-quotes/${SAGE_FILES[slug]}`, req.url);
+      const r = await fetch(url.toString(), { cache: "no-store" });
+      if (r.ok) return await r.json();
+    } catch {}
+  }
+  // 2) v60.4.7 fallback：从 SAGES_RAW metadata 拼合成 SageData
+  //    用途：feng-liu / zhang-kun / buffett / 等没 xueqiu corpus 的 13 个 popular/insider sage
+  //    high_quality_originals 等数组为空 → RAG 召回返回 0 条 → LLM 不能引用历史发言
+  //    但仍可以靠 dimensions/quotes/coreLine 做角色扮演
+  const meta = SAGE_BY_ID[slug];
+  if (!meta) return null;
+  return {
+    slug,
+    display: meta.name,
+    alias: '',
+    philosophy: meta.philosophy,
+    total_posts: 0,
+    high_quality_originals: [],
+    recent_originals: [],
+    position_changes: [],
+    deep_analysis_originals: [],
+    by_stock: {},
+    by_concept: {},
+  } as SageData;
+}
+
+// v60.4.7: 给没 SKILL.md 文件的 sage 用 SAGES_RAW metadata 兜底
+function buildFallbackSkillBlock(meta: any): string {
+  const dimensions = (meta.dimensions || []).map((d: any) =>
+    `  - ${d.label} (${Math.round((d.weight || 0) * 100)}%): ${d.description}`).join('\n');
+  const redFlags = (meta.redFlags || []).map((r: any) =>
+    `  - ${r.label}（${r.severity}）: ${r.trigger}`).join('\n');
+  const quotes = (meta.quotes || []).slice(0, 5).map((q: string) => `  • ${q}`).join('\n');
+  const trades = (meta.representativeTrades || []).slice(0, 4).map((t: string) => `  • ${t}`).join('\n');
+  const misuse = (meta.misuseWarnings || []).slice(0, 3).map((m: string) => `  • ${m}`).join('\n');
+  return `你是【${meta.name}】（${meta.title}）。流派：${meta.school}，活跃期 ${meta.era || ''}。
+
+## 你的投资哲学
+${meta.philosophy}
+
+## 你的招牌核心句
+"${meta.coreLine || ''}"
+
+## 你的评分维度（按权重）
+${dimensions || '  （无）'}
+
+## 你绝不碰的红旗
+${redFlags || '  （无）'}
+
+## 你的代表性交易
+${trades || '  （无）'}
+
+## 你常说的话（口头禅）
+${quotes || '  （无）'}
+
+## 你的能力圈/误用提醒
+${misuse || '  （无）'}
+
+## 资料来源
+${meta.bookOrSource || '公开资料'}
+
+⚠️ **重要约束（与有 corpus 的 sage 不同）**：
+- 你**没有**雪球公开发言 corpus，所以**不要**假装"我 2023 年说过 XX"
+- 用户问"你过去具体对 X 怎么看"时，承认"我没有公开发言记录可查，但按我的方法论应该是 ..."
+- 工具可调用：web_search（查公开新闻）、get_realtime_quote（拿当前数据）、get_financials
+- **不要**调 search_sage_post（你的数据池是空的，会返回 0 条）
+- 仍保持口吻和方法论一致
+
+最终输出简体中文散文体，5-7 段，每段 2-4 句，段间空行。`;
 }
 
 // ⭐ 加载 sage skill 文件（持久化的 persona）
@@ -677,7 +744,9 @@ function makeExecuteTool(sage: SageData) {
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { sage_id, message, history } = body;
-  if (!sage_id || !SAGE_FILES[sage_id]) return new Response("Unknown sage", { status: 400 });
+  if (!sage_id || (!SAGE_FILES[sage_id] && !SAGE_BY_ID[sage_id])) {
+    return new Response("Unknown sage", { status: 400 });
+  }
   const sage = await loadSage(sage_id, req);
   if (!sage) return new Response("Failed to load sage data", { status: 500 });
   const userMsg = String(message || "").trim();
@@ -700,7 +769,9 @@ export async function POST(req: NextRequest) {
         // 1. sage skill 文件包 (SKILL.md + methodology + decision_framework + voice_samples + classic_holdings + triggers)
         // 2. 本轮 quick RAG 召回的 5 条历史发言 (动态)
         // 3. 工具使用规则
-        const sageSkillBlock = sageSkill || (SAGE_PROMPTS[sage.slug] || `你是${sage.display}。`);
+        const sageSkillBlock = sageSkill
+          || SAGE_PROMPTS[sage.slug]
+          || (SAGE_BY_ID[sage.slug] ? buildFallbackSkillBlock(SAGE_BY_ID[sage.slug]) : `你是${sage.display}。`);
         const sys = `${sageSkillBlock}
 
 === 本轮 quick RAG 召回的相关历史发言（如不够深可调 search_sage_post 工具）===
