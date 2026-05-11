@@ -1,6 +1,7 @@
 // chat.js
 const app = getApp();
 const { callChatStream, decorateToolCall, parseCitationSegments, decorateQuote } = require('../../utils/api');
+const { parseMarkdown } = require('../../utils/markdown');
 const sess = require('../../utils/sessions');
 
 // v60.4: starters 仅保留 v60 quality 的两位 sage
@@ -73,8 +74,9 @@ Page({
           out.toolCalls = out.toolCalls.map(decorateToolCall);
           out.toolsAllDone = out.toolCalls.every(tc => !!tc.result);
         }
-        // v54: 把 content 切成 cite-aware segments
-        if (out.content) out.contentSegments = parseCitationSegments(out.content);
+        // v60.4-mp.3: markdown blocks（替代 v54 contentSegments）
+        if (out.content) out.contentBlocks = parseMarkdown(out.content);
+        if (out.analystThinking) out.analystBlocks = parseMarkdown(out.analystThinking);
         // v57.2: quote 卡装饰
         if (Array.isArray(out.quotes) && out.quotes.length) {
           out.quotes = out.quotes.map(decorateQuote);
@@ -160,9 +162,9 @@ Page({
     const sageMsg = {
       role: 'sage', content: '', loading: true, ts: Date.now() + 1,
       toolCalls: [], quotes: [], followups: [],
-      contentSegments: [], // v54
+      contentBlocks: [], // v60.4-mp.3 markdown
       // v60.1
-      analystThinking: '', analystDone: false, writerStarted: false,
+      analystThinking: '', analystBlocks: [], analystDone: false, writerStarted: false,
       // UI 折叠状态：tool 默认折叠（视觉干净），analyst 默认展开（实时看思考）
       toolsOpen: false, analystOpen: true, toolsAllDone: false,
     };
@@ -199,7 +201,7 @@ Page({
       _pendingPatch = {};
       if (p.content !== undefined) {
         sd[`messages[${lastIdx}].content`] = p.content;
-        sd[`messages[${lastIdx}].contentSegments`] = parseCitationSegments(p.content);
+        sd[`messages[${lastIdx}].contentBlocks`] = parseMarkdown(p.content);
         sd[`messages[${lastIdx}].loading`] = false;
       }
       if (p.quotes !== undefined) sd[`messages[${lastIdx}].quotes`] = p.quotes.map(decorateQuote);
@@ -211,6 +213,7 @@ Page({
       if (p.followups !== undefined) sd[`messages[${lastIdx}].followups`] = p.followups;
       if (p.analystThinking !== undefined) {
         sd[`messages[${lastIdx}].analystThinking`] = p.analystThinking;
+        sd[`messages[${lastIdx}].analystBlocks`] = parseMarkdown(p.analystThinking);
         sd[`messages[${lastIdx}].loading`] = false;
       }
       if (p.analystDone !== undefined) sd[`messages[${lastIdx}].analystDone`] = p.analystDone;
@@ -234,7 +237,7 @@ Page({
           const last = { ...msgs[msgs.length - 1] };
           if (patch.content !== undefined) {
             last.content = patch.content;
-            last.contentSegments = parseCitationSegments(patch.content);
+            last.contentBlocks = parseMarkdown(patch.content);
           }
           if (patch.quotes !== undefined) last.quotes = patch.quotes.map(decorateQuote);
           if (patch.toolCalls !== undefined) {
@@ -242,7 +245,10 @@ Page({
             last.toolsAllDone = last.toolCalls.every(tc => !!tc.result);
           }
           if (patch.followups !== undefined) last.followups = patch.followups;
-          if (patch.analystThinking !== undefined) last.analystThinking = patch.analystThinking;
+          if (patch.analystThinking !== undefined) {
+            last.analystThinking = patch.analystThinking;
+            last.analystBlocks = parseMarkdown(patch.analystThinking);
+          }
           if (patch.analystDone !== undefined) last.analystDone = patch.analystDone;
           if (patch.writerStarted !== undefined) { last.writerStarted = patch.writerStarted; last.analystOpen = false; }
           msgs[msgs.length - 1] = last;
@@ -276,7 +282,7 @@ Page({
       const last = { ...msgs[msgs.length - 1], loading: false };
       if (result && result.reply) {
         last.content = result.reply;
-        last.contentSegments = parseCitationSegments(result.reply);
+        last.contentBlocks = parseMarkdown(result.reply);
       }
       if (result && result.quotes && result.quotes.length) last.quotes = result.quotes.map(decorateQuote);
       if (result && result.toolCalls && result.toolCalls.length) {
@@ -284,7 +290,10 @@ Page({
         last.toolsAllDone = last.toolCalls.every(tc => !!tc.result);
       }
       if (result && result.followups && result.followups.length) last.followups = result.followups;
-      if (result && result.analystThinking) last.analystThinking = result.analystThinking;
+      if (result && result.analystThinking) {
+        last.analystThinking = result.analystThinking;
+        last.analystBlocks = parseMarkdown(result.analystThinking);
+      }
       if (result) { last.analystDone = true; last.writerStarted = true; last.analystOpen = false; }
       msgs[msgs.length - 1] = last;
       session.msgs = msgs;
@@ -302,7 +311,7 @@ Page({
       msgs[msgs.length - 1] = {
         ...msgs[msgs.length - 1],
         content: 'Error: ' + (e.errMsg || e.message || JSON.stringify(e)),
-        contentSegments: [{ type: 'text', text: 'Error: ' + (e.errMsg || e.message || '请求失败') }],
+        contentBlocks: [{ type: 'p', inlines: [{ type: 'text', text: 'Error: ' + (e.errMsg || e.message || '请求失败') }] }],
         loading: false,
         errorState: true,
       };
