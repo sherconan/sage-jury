@@ -3,11 +3,10 @@ const app = getApp();
 const { callChatStream, decorateToolCall, parseCitationSegments, decorateQuote } = require('../../utils/api');
 const sess = require('../../utils/sessions');
 
+// v60.4: starters 仅保留 v60 quality 的两位 sage
 const STARTERS = {
   'duan-yongping': ['段大你为什么换神华去泡泡玛特？', '苹果还能拿吗？', '拼多多怎么看？'],
   'guan-wo-cai':   ['腾讯能买吗？', '招行 PE 历史什么分位？', '26 年荒岛策略选什么？'],
-  'lao-tang':      ['茅台老唐估值法多少？', '腾讯三年合理估值？', '洋河怎么看？'],
-  'dan-bin':       ['英伟达还能拿吗？', '茅台拿 20 年还成立吗？', '特斯拉怎么看？'],
 };
 
 Page({
@@ -147,6 +146,9 @@ Page({
       sess.save(all);
       sess.setActiveId(session.id);
     }
+    // v56: 全局注册 streaming，sessions 页面可见 session 正在跑
+    app.globalData.streamingIds = app.globalData.streamingIds || {};
+    app.globalData.streamingIds[session.id] = true;
 
     // history (取已完成的 user/sage msgs)
     const histPayload = (session.msgs || [])
@@ -158,6 +160,7 @@ Page({
     const sageMsg = {
       role: 'sage', content: '', loading: true, ts: Date.now() + 1,
       toolCalls: [], quotes: [], followups: [],
+      contentSegments: [], // v54
       // v60.1
       analystThinking: '', analystDone: false, writerStarted: false,
       // UI 折叠状态：tool 默认折叠（视觉干净），analyst 默认展开（实时看思考）
@@ -171,6 +174,31 @@ Page({
 
     try {
       const onProgress = (patch) => {
+        // v56: 若用户已经切到别的 session（或新建对话清空），仍要更新 storage，但跳过 setData
+        const stillActive = this.data.activeSession && this.data.activeSession.id === session.id;
+        if (!stillActive) {
+          // 累积进 storage 里的 session（无 UI 反馈也要持久化）
+          const msgs = (session.msgs || []).slice();
+          const last = { ...msgs[msgs.length - 1] };
+          if (patch.content !== undefined) {
+            last.content = patch.content;
+            last.contentSegments = parseCitationSegments(patch.content);
+          }
+          if (patch.quotes !== undefined) last.quotes = patch.quotes.map(decorateQuote);
+          if (patch.toolCalls !== undefined) {
+            last.toolCalls = patch.toolCalls.map(decorateToolCall);
+            last.toolsAllDone = last.toolCalls.every(tc => !!tc.result);
+          }
+          if (patch.followups !== undefined) last.followups = patch.followups;
+          if (patch.analystThinking !== undefined) last.analystThinking = patch.analystThinking;
+          if (patch.analystDone !== undefined) last.analystDone = patch.analystDone;
+          if (patch.writerStarted !== undefined) { last.writerStarted = patch.writerStarted; last.analystOpen = false; }
+          msgs[msgs.length - 1] = last;
+          session.msgs = msgs;
+          session.ts_updated = Date.now();
+          this.persistSession(session);
+          return;
+        }
         const msgs = this.data.messages;
         const last = { ...msgs[msgs.length - 1] };
         if (patch.content !== undefined) {
@@ -230,11 +258,36 @@ Page({
       if (turns === 1) this.fetchTitle(session.id, text, last.content);
     } catch (e) {
       const msgs = this.data.messages;
-      msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: 'Error: ' + (e.errMsg || e.message || JSON.stringify(e)), loading: false };
+      msgs[msgs.length - 1] = {
+        ...msgs[msgs.length - 1],
+        content: 'Error: ' + (e.errMsg || e.message || JSON.stringify(e)),
+        contentSegments: [{ type: 'text', text: 'Error: ' + (e.errMsg || e.message || '请求失败') }],
+        loading: false,
+        errorState: true,
+      };
       session.msgs = msgs;
       this.persistSession(session);
       this.setData({ activeSession: session, messages: [...msgs], loading: false });
+    } finally {
+      // v56: 解除 streaming 注册
+      if (app.globalData.streamingIds) delete app.globalData.streamingIds[session.id];
     }
+  },
+
+  // v60.4-mp.1: 重试上一条失败的 sage 回复
+  onRetry(e) {
+    const idx = Number(e.currentTarget.dataset.idx);
+    const msgs = this.data.messages;
+    // 找该 sage msg 的前一条 user msg
+    if (!msgs[idx] || msgs[idx].role !== 'sage') return;
+    const userMsg = msgs[idx - 1];
+    if (!userMsg || userMsg.role !== 'user') return;
+    // 删除失败的 sage msg + 触发重试
+    const trimmed = msgs.slice(0, idx);
+    const session = { ...this.data.activeSession, msgs: trimmed };
+    this.persistSession(session);
+    this.setData({ activeSession: session, messages: trimmed });
+    this.submit(userMsg.content);
   },
 
   // v58/v60.1: 折叠面板切换
@@ -253,6 +306,51 @@ Page({
       msgs[mi] = { ...msgs[mi], analystOpen: !msgs[mi].analystOpen };
       this.setData({ messages: [...msgs] });
     }
+  },
+
+  // v54: 点击文中 #N chip → 滚到对应 quote 卡 + 闪烁高亮
+  onCiteTap(e) {
+    const mi = Number(e.currentTarget.dataset.mi);
+    const n = Number(e.currentTarget.dataset.n);
+    if (!Number.isFinite(mi) || !Number.isFinite(n)) return;
+    const msgs = this.data.messages;
+    const target = msgs[mi];
+    if (!target || !target.quotes || n < 1 || n > target.quotes.length) {
+      wx.showToast({ title: '该引用不存在', icon: 'none', duration: 1200 });
+      return;
+    }
+    const scrollId = 'q-' + target.ts + '-' + n;
+    // 先设 highlight 标记，再 setScroll
+    msgs[mi] = {
+      ...target,
+      quotes: target.quotes.map((q, i) => i === n - 1 ? { ...q, highlight: true } : { ...q, highlight: false }),
+    };
+    this.setData({ messages: [...msgs], scrollTo: scrollId });
+    // 1.5s 后撤掉高亮
+    setTimeout(() => {
+      const cur = this.data.messages;
+      if (!cur[mi]) return;
+      cur[mi] = { ...cur[mi], quotes: (cur[mi].quotes || []).map(q => ({ ...q, highlight: false })) };
+      this.setData({ messages: [...cur] });
+    }, 1500);
+  },
+
+  // v56: 打开 quote 链接（外部跳转，小程序限制 webview 域名，先 copy）
+  onCopyQuoteUrl(e) {
+    const url = e.currentTarget.dataset.url;
+    if (!url) return;
+    wx.setClipboardData({ data: url, success: () => wx.showToast({ title: '链接已复制', icon: 'success', duration: 1000 }) });
+  },
+
+  // v60.4: 长按消息复制
+  onLongPressMsg(e) {
+    const idx = e.currentTarget.dataset.idx;
+    const msg = this.data.messages[idx];
+    if (!msg || !msg.content) return;
+    wx.setClipboardData({
+      data: msg.content,
+      success: () => wx.showToast({ title: '已复制', icon: 'success', duration: 800 }),
+    });
   },
 
   fetchTitle(sessId, user, reply) {

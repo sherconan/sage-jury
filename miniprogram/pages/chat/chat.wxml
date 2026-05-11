@@ -93,18 +93,39 @@
 
         <!-- main content -->
         <view wx:if="{{item.loading && !item.content && !item.analystThinking}}" class="loading-text">{{activeSage.display}} 正在思考...</view>
-        <view wx:elif="{{item.content}}" class="msg-content">{{item.content}}</view>
+        <view wx:elif="{{item.content}}" class="msg-content" data-idx="{{index}}" bindlongpress="onLongPressMsg">
+          <!-- v54: 切段渲染 [原文 N] 为可点击 chip -->
+          <block wx:if="{{item.role === 'sage' && item.contentSegments && item.contentSegments.length}}">
+            <block wx:for="{{item.contentSegments}}" wx:for-item="seg" wx:key="index" wx:for-index="si">
+              <text wx:if="{{seg.type === 'text'}}" class="msg-text">{{seg.text}}</text>
+              <text wx:elif="{{seg.type === 'cite'}}" class="cite-chip" data-mi="{{index}}" data-n="{{seg.n}}" bindtap="onCiteTap">#{{seg.n}}</text>
+            </block>
+          </block>
+          <text wx:else class="msg-text">{{item.content}}</text>
+        </view>
+        <!-- v60.4-mp: 错误态重试 -->
+        <view wx:if="{{item.role === 'sage' && item.errorState}}" class="error-row">
+          <text class="retry-btn" data-idx="{{index}}" bindtap="onRetry" hover-class="retry-btn-hover">↻ 重试</text>
+        </view>
         <!-- followups -->
         <view wx:if="{{item.followups && item.followups.length > 0}}" class="followups">
           <view wx:for="{{item.followups}}" wx:for-item="fp" wx:key="*this" class="followup-chip" data-q="{{fp}}" bindtap="onStarter">
             <text>✨ {{fp}}</text>
           </view>
         </view>
-        <!-- quotes -->
+        <!-- quotes (v57.2: 含 score badges; v54: scroll target id) -->
         <view wx:if="{{item.quotes && item.quotes.length > 0}}" class="quotes">
-          <view class="quotes-label">引用 {{item.quotes.length}} 条历史原帖</view>
-          <view wx:for="{{item.quotes}}" wx:for-item="q" wx:key="url" class="quote-item">
-            <view class="quote-meta">{{q.date}} 👍{{q.likes}}</view>
+          <view class="quotes-label">引用 {{item.quotes.length}} 条历史原帖 · 点正文 #N 跳转</view>
+          <view wx:for="{{item.quotes}}" wx:for-item="q" wx:for-index="qi" wx:key="qi"
+            id="q-{{item.ts}}-{{qi+1}}"
+            class="quote-item {{q.highlight ? 'quote-flash' : ''}}"
+            data-url="{{q.url}}" bindlongpress="onCopyQuoteUrl">
+            <view class="quote-head">
+              <view class="quote-num">#{{qi+1}}</view>
+              <view class="quote-meta">{{q.date}} · 👍 {{q.likes}}</view>
+              <view wx:if="{{q.relLabel}}" class="badge badge-rel badge-rel-{{q.relTone}}">{{q.relLabel}}</view>
+              <view wx:if="{{q.recLabel}}" class="badge badge-rec badge-rec-{{q.recTone}}">{{q.recLabel}}</view>
+            </view>
             <view class="quote-text">{{q.textPreview}}</view>
           </view>
         </view>

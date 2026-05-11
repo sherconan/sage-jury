@@ -1,26 +1,51 @@
 <view class="container">
   <view class="topbar">
-    <view class="text-md font-semibold text-slate-900">历史对话 ({{sessions.length}})</view>
-    <button class="header-btn" bindtap="onClearAll" hover-class="hover" wx:if="{{sessions.length > 0}}">清空全部</button>
+    <view class="topbar-title">历史对话 <text class="topbar-count">{{totalCount}}</text></view>
+    <button class="header-btn header-btn-danger" bindtap="onClearAll" hover-class="hover" wx:if="{{totalCount > 0}}">清空</button>
   </view>
 
-  <view wx:if="{{sessions.length === 0}}" class="empty-state">
+  <!-- v60.4-mp: 搜索框 -->
+  <view wx:if="{{totalCount > 3}}" class="search-bar">
+    <text class="search-icon">🔍</text>
+    <input class="search-input" placeholder="搜索标题 / 内容 / sage..." value="{{searchQuery}}" bindinput="onSearchInput" />
+    <text wx:if="{{searchQuery}}" class="search-clear" bindtap="onSearchClear">✕</text>
+  </view>
+
+  <view wx:if="{{totalCount === 0}}" class="empty-state">
     <view class="empty-icon">💬</view>
-    <view class="text-md text-slate-600">还没有历史对话</view>
-    <view class="text-xs text-slate-400" style="margin-top: 12rpx;">回到对话页问 sage 一个问题就会自动建</view>
-    <button class="primary-btn" bindtap="onBack" style="margin-top: 32rpx;">返回对话</button>
+    <view class="empty-title">还没有历史对话</view>
+    <view class="empty-sub">回到对话页问 sage 一个问题就会自动建</view>
+    <button class="primary-btn" bindtap="onBack">返回对话</button>
+  </view>
+
+  <view wx:elif="{{sessions.length === 0}}" class="empty-state">
+    <view class="empty-icon">🔎</view>
+    <view class="empty-title">没有匹配的对话</view>
+    <view class="empty-sub">试试别的关键词</view>
+    <button class="primary-btn" bindtap="onSearchClear">清除搜索</button>
   </view>
 
   <scroll-view scroll-y class="list" wx:else>
-    <view wx:for="{{sessions}}" wx:key="id" class="sess-item" data-id="{{item.id}}" bindtap="onOpen">
-      <view class="sess-dot" style="background:{{item.sage_color}}"></view>
-      <view class="flex-1">
-        <view class="text-sm font-semibold text-slate-900">{{item.title}}</view>
-        <view class="text-xs text-slate-500" style="margin-top: 4rpx;">
-          {{item.sage_name}} · {{item.userTurnCount}} 轮 · {{item.timeFmt}}
+    <view wx:for="{{sessions}}" wx:key="id" class="sess-item {{item.streaming ? 'sess-item-streaming' : ''}}"
+      data-id="{{item.id}}" bindtap="onOpen" hover-class="sess-item-hover">
+      <!-- Sage 头像（带渐变背景 + 首字母） -->
+      <view class="sess-avatar" style="background:{{item.sage_color}}">{{item.sage_initials}}</view>
+      <view class="sess-body">
+        <view class="sess-title-row">
+          <view class="sess-title">{{item.title}}</view>
+          <view wx:if="{{item.streaming}}" class="sess-streaming-dot"></view>
+        </view>
+        <view wx:if="{{item.preview}}" class="sess-preview">{{item.preview}}</view>
+        <view class="sess-meta">
+          <text class="sess-sage">{{item.sage_name}}</text>
+          <text class="sess-sep">·</text>
+          <text>{{item.userTurnCount}} 轮</text>
+          <text class="sess-sep">·</text>
+          <text>{{item.timeFmt}}</text>
+          <text wx:if="{{item.streaming}}" class="sess-streaming-label">· 生成中…</text>
         </view>
       </view>
-      <button class="del-btn" data-id="{{item.id}}" catchtap="onDelete">删</button>
+      <view class="del-btn" data-id="{{item.id}}" catchtap="onDelete">×</view>
     </view>
   </scroll-view>
 </view>
