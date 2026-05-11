@@ -1,3 +1,43 @@
+<!-- v60.4-mp.3: 复用 inline 渲染 -->
+<template name="md-inlines">
+  <block wx:for="{{inlines}}" wx:for-item="seg" wx:key="index">
+    <text wx:if="{{seg.type === 'text'}}" class="md-text">{{seg.text}}</text>
+    <text wx:elif="{{seg.type === 'bold'}}" class="md-bold">{{seg.text}}</text>
+    <text wx:elif="{{seg.type === 'italic'}}" class="md-italic">{{seg.text}}</text>
+    <text wx:elif="{{seg.type === 'code'}}" class="md-inline-code">{{seg.text}}</text>
+    <text wx:elif="{{seg.type === 'cite'}}" class="cite-chip" data-mi="{{mi}}" data-n="{{seg.n}}" bindtap="onCiteTap">#{{seg.n}}</text>
+  </block>
+</template>
+
+<!-- v60.4-mp.3: 复用 block 渲染（heading / p / ul / ol / quote / code / hr） -->
+<template name="md-blocks">
+  <block wx:for="{{blocks}}" wx:for-item="b" wx:key="index">
+    <view wx:if="{{b.type === 'heading'}}" class="md-h md-h{{b.level}}">
+      <template is="md-inlines" data="{{inlines: b.inlines, mi: mi}}" />
+    </view>
+    <view wx:elif="{{b.type === 'p'}}" class="md-p">
+      <template is="md-inlines" data="{{inlines: b.inlines, mi: mi}}" />
+    </view>
+    <view wx:elif="{{b.type === 'ul'}}" class="md-ul">
+      <view wx:for="{{b.items}}" wx:for-item="li" wx:for-index="lii" wx:key="lii" class="md-li">
+        <text class="md-bullet">•</text>
+        <view class="md-li-body"><template is="md-inlines" data="{{inlines: li.inlines, mi: mi}}" /></view>
+      </view>
+    </view>
+    <view wx:elif="{{b.type === 'ol'}}" class="md-ol">
+      <view wx:for="{{b.items}}" wx:for-item="li" wx:for-index="lii" wx:key="lii" class="md-li">
+        <text class="md-num">{{li.num}}.</text>
+        <view class="md-li-body"><template is="md-inlines" data="{{inlines: li.inlines, mi: mi}}" /></view>
+      </view>
+    </view>
+    <view wx:elif="{{b.type === 'quote'}}" class="md-quote">
+      <template is="md-inlines" data="{{inlines: b.inlines, mi: mi}}" />
+    </view>
+    <view wx:elif="{{b.type === 'code'}}" class="md-code-block">{{b.text}}</view>
+    <view wx:elif="{{b.type === 'hr'}}" class="md-hr"></view>
+  </block>
+</template>
+
 <view class="container">
   <!-- TOP: sage 选择 + sessions 入口 -->
   <view class="header">
@@ -65,7 +105,11 @@
             <text wx:if="{{item.analystDone}}" class="analyst-check">✓</text>
             <text class="analyst-arrow {{item.analystOpen ? 'open' : ''}}">⌄</text>
           </view>
-          <view wx:if="{{item.analystOpen}}" class="analyst-body">{{item.analystThinking}}</view>
+          <view wx:if="{{item.analystOpen}}" class="analyst-body">
+            <template wx:if="{{item.analystBlocks && item.analystBlocks.length}}"
+                      is="md-blocks" data="{{blocks: item.analystBlocks, mi: index}}" />
+            <text wx:else>{{item.analystThinking}}</text>
+          </view>
         </view>
 
         <!-- v58: tool calls 折叠 pill（人话标签 + 紧凑） -->
@@ -91,16 +135,11 @@
           </view>
         </view>
 
-        <!-- main content -->
+        <!-- main content (v60.4-mp.3: markdown blocks + inlines) -->
         <view wx:if="{{item.loading && !item.content && !item.analystThinking}}" class="loading-text">{{activeSage.display}} 正在思考...</view>
         <view wx:elif="{{item.content}}" class="msg-content" data-idx="{{index}}" bindlongpress="onLongPressMsg">
-          <!-- v54: 切段渲染 [原文 N] 为可点击 chip -->
-          <block wx:if="{{item.role === 'sage' && item.contentSegments && item.contentSegments.length}}">
-            <block wx:for="{{item.contentSegments}}" wx:for-item="seg" wx:key="index" wx:for-index="si">
-              <text wx:if="{{seg.type === 'text'}}" class="msg-text">{{seg.text}}</text>
-              <text wx:elif="{{seg.type === 'cite'}}" class="cite-chip" data-mi="{{index}}" data-n="{{seg.n}}" bindtap="onCiteTap">#{{seg.n}}</text>
-            </block>
-          </block>
+          <template wx:if="{{item.role === 'sage' && item.contentBlocks && item.contentBlocks.length}}"
+                    is="md-blocks" data="{{blocks: item.contentBlocks, mi: index}}" />
           <text wx:else class="msg-text">{{item.content}}</text>
         </view>
         <!-- v60.4-mp: 错误态重试 -->
