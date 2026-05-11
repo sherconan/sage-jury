@@ -201,12 +201,13 @@
   <!-- v60.5-mp.1: scroll-to-bottom 浮按钮 -->
   <view wx:if="{{showScrollBottom}}" class="scroll-bottom-btn" bindtap="onScrollToBottom" hover-class="scroll-bottom-btn-hover">↓</view>
 
-  <!-- 输入区 (v60.4-mp.4 polished) -->
+  <!-- 输入区 (v60.5-mp.1: textarea 多行 + 字数计) -->
   <view class="input-bar">
     <view class="input-wrap">
-      <input class="input" placeholder="问 {{activeSage.display}}..." value="{{input}}"
-        bindinput="onInputChange" confirm-type="send" bindconfirm="onSubmit"
-        disabled="{{loading}}" maxlength="500" cursor-spacing="20" />
+      <textarea class="input" placeholder="问 {{activeSage.display}}..." value="{{input}}"
+        bindinput="onInputChange" disabled="{{loading}}" maxlength="500"
+        auto-height adjust-position cursor-spacing="20"
+        show-confirm-bar="{{false}}" placeholder-class="input-ph" />
       <text wx:if="{{input.length > 0}}" class="input-counter {{input.length > 450 ? 'input-counter-warn' : ''}}">{{input.length}}/500</text>
     </view>
     <button class="send-btn {{loading ? 'send-btn-loading' : ''}}" style="background:{{activeSage.color}}"

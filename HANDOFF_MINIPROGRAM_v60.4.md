@@ -46,27 +46,25 @@ analyst_chunk / analyst_done / phase / citation_audit
 
 ## 已知限制（按优先级）
 
-### 🟡 P1（值得做但非阻塞）
+### ✅ v60.5-mp.1 已修（HANDOFF v60.4 P1）
 
-1. **markdown bold/italic 内嵌 cite 不递归**
-   - 现象：`**重点 [原文 2]**` 整段当 bold，cite 不可点
-   - 修法：parseInlines 在 bold/italic 节点里再 parseInlines 一次（递归）
-   - wxml: 让 template 支持嵌套 inlines（注意 mp template 不能直接递归，需手工拆两层）
+1. ~~bold/italic 内嵌 cite 不递归~~ → **markdown.js parseInlines 递归 + wxml md-inline-child template 嵌套** ✓
+2. ~~scroll-to-bottom 浮按钮缺失~~ → **chat.js onMessagesScroll + 浮按钮 wxml/wxss** ✓
+3. ~~DSML body 状态机硬化~~ → **utils/dsml.js stripDSML 状态机 + api.cleanDSML 走它** ✓
+4. **回归脚本固化** → **scripts/lint-miniprogram.js (41 pass)** ✓
 
-2. **scroll-to-bottom 浮按钮缺失**
-   - 现象：长 session 用户向上翻看历史时，没有"回底"快捷
-   - 修法：scroll-view 加 bindscroll，记录 scrollTop。如果 distance > 200px 且未在底部，显示浮按钮
-   - 注意 throttle scroll event 避免性能问题
+### 🟡 P1 (v60.5+ 新发现)
 
-3. **DSML body 状态机硬化**
-   - 现象：client 兜底只剥标签，不吞 body 文本（v60.2+ server 已守住但 client 是兜底）
-   - 修法：把 `app/api/chat/stream/route.ts:431-460` 的 `inDSML` 状态机抽到 `utils/dsml.js`，server + miniprogram 共用
+### 🟡 P1 (v60.5+ 新发现)
+
+1. **input 多行支持**：当前 `<input>` 单行，长文输入不便。改 `<textarea>` 需注意 z-index 和键盘弹起。
+2. **流中切 session 的视觉**：当前 stillActive 兜底逻辑保证 storage 持久化，但用户切回 streaming session 时不会自动续 streaming UI 闪烁；可在 onShow 时检查 `app.globalData.streamingIds[id]` 显示 "继续生成中" 占位。
 
 ### 🟢 P2
 
-4. **markdown 表格降级**：当前直接 skip 表格行，无降级展示
-5. **长按 quote 卡复制 URL**：已实现 `onCopyQuoteUrl`，但当前 wxml 直接绑 longpress 到 quote-item，体验可改成 ActionSheet
-6. **sage picker 列表二级展开** 当前用 dropdown，无视觉指引指向 empty state 的横排卡
+3. **markdown 表格降级**：当前直接 skip 表格行，无降级展示
+4. **长按 quote 卡复制 URL**：已实现 `onCopyQuoteUrl`，但当前 wxml 直接绑 longpress 到 quote-item，体验可改成 ActionSheet
+5. **sage picker 列表二级展开** 当前用 dropdown，无视觉指引指向 empty state 的横排卡
 
 ### 🔴 阻塞但非小程序代码
 
