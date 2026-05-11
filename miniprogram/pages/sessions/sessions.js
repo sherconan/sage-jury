@@ -118,4 +118,10 @@ Page({
   },
 
   onBack() { wx.navigateBack().catch(() => {}); },
+
+  // v60.5-mp.5: 下拉刷新列表（streaming 状态自动反映）
+  onPullDownRefresh() {
+    this.refresh();
+    setTimeout(() => wx.stopPullDownRefresh(), 300);
+  },
 });
