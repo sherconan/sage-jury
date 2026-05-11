@@ -40,26 +40,20 @@ interface SageOption {
 }
 
 // =================== Static Config ===================
+// v60.4.8: 与 SAGES_RAW.tier 对齐——dan-bin/lao-tang 是 tier=removed，下线
+// 完整 15 个 sage（含 fallback 路径）见 /sage/[id] 单独页；主聊页保留有 corpus 的 2 位
 const SAGES: SageOption[] = [
   { slug: "duan-yongping", display: "段永平", alias: "大道无形我有型",
     philosophy: "本分 · 不懂不投 · 看十年后", total_posts: 10497,
     initials: "DYP", gradient: "from-blue-500 to-indigo-600" },
   { slug: "guan-wo-cai", display: "管我财", alias: "管我财",
-    philosophy: "低估逆向平均赢 · 排雷胜选股", total_posts: 33853,
+    philosophy: "低估逆向平均赢 · 排雷胜选股", total_posts: 33877,
     initials: "GWC", gradient: "from-emerald-500 to-teal-600" },
-  { slug: "dan-bin", display: "但斌", alias: "但斌",
-    philosophy: "时间的玫瑰 · 长期持有伟大公司", total_posts: 597,
-    initials: "DB", gradient: "from-amber-500 to-orange-600" },
-  { slug: "lao-tang", display: "唐朝", alias: "老唐",
-    philosophy: "老唐估值法 · 三年一倍 · 守正用奇", total_posts: 116,
-    initials: "LT", gradient: "from-violet-500 to-purple-600" },
 ];
 
 const STARTERS: Record<string, string[]> = {
   "duan-yongping": ["你为什么换神华去泡泡玛特？", "苹果还能拿吗？", "拼多多怎么看？"],
   "guan-wo-cai":   ["腾讯能买吗？", "招行 PE 历史什么分位？", "26 年荒岛策略选什么？"],
-  "lao-tang":      ["茅台老唐估值法多少？", "腾讯三年合理估值？", "洋河怎么看？"],
-  "dan-bin":       ["英伟达还能拿吗？", "茅台拿 20 年还成立吗？", "特斯拉怎么看？"],
 };
 
 const STOCK_SUGGESTIONS = [
