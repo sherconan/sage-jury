@@ -167,16 +167,19 @@ export default function ChatPage() {
       });
       return cleaned !== sess.msgs ? { ...sess, msgs: cleaned } : sess;
     });
+    // v59: 清掉所有空 session（之前每次点"新对话"按钮都会留下空壳，本版本起 lazy 创建不再产生）
+    const before = s.length;
+    s = s.filter(sess => sess.msgs && sess.msgs.length > 0);
+    if (s.length !== before) needSave = true;
     if (needSave) saveSessions(s);
     setSessions(s);
+    // v59: 只有当 lastActive 指向真有内容的 session 时才 restore，否则进入空状态引导
     const last = typeof window !== "undefined" ? localStorage.getItem(ACTIVE_KEY) : null;
-    if (last && s.find(x => x.id === last)) {
+    const lastSess = last ? s.find(x => x.id === last) : null;
+    if (lastSess && lastSess.msgs.length > 0) {
       setActiveId(last);
-      const sess = s.find(x => x.id === last);
-      if (sess) {
-        const sage = SAGES.find(x => x.slug === sess.sage_id);
-        if (sage) setActiveSage(sage);
-      }
+      const sage = SAGES.find(x => x.slug === lastSess.sage_id);
+      if (sage) setActiveSage(sage);
     }
   }, []);
 
@@ -193,20 +196,13 @@ export default function ChatPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Create new session bound to current activeSage
+  // v59: "新对话" 改为 lazy —— 不立即创建 session 实体，只是清空 active + 聚焦 input
+  // 真正的 session 会在用户提交第一条消息时由 submit() 创建（已有 inline 逻辑）
   const newSession = useCallback((sage?: SageOption) => {
     const target = sage || activeSage;
-    const ns: Session = {
-      id: genId(),
-      sage_id: target.slug,
-      title: "新对话",
-      msgs: [],
-      ts_created: Date.now(),
-      ts_updated: Date.now(),
-    };
-    setSessions(prev => [ns, ...prev]);
-    setActiveId(ns.id);
-    setActiveSage(target);
+    if (target.slug !== activeSage.slug) setActiveSage(target);
+    setActiveId(null);   // 主区域进入空状态引导（v59 新增的 EmptyState）
+    setInput("");
     setSidebarOpen(false);
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [activeSage]);
