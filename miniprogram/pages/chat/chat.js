@@ -172,9 +172,61 @@ Page({
     this.persistSession(session);
     this.setData({ activeSession: session, messages: newMsgs, scrollTo: 'm' + (newMsgs.length - 1) });
 
+    // v60.4-mp.2: throttle + precise setData
+    // - analyst_chunk/content delta 高频，60ms 内合并；setData 用精准路径 messages[lastIdx].field
+    // - 其他事件（quotes/toolCalls/followups/done）低频，立即 flush
+    // - 防止 race: lastIdx 在 setData 时取自当时 this.data.messages.length-1
+    let _pendingPatch = {};
+    let _flushTimer = null;
+    let _scrollDirty = false;
+    const FLUSH_INTERVAL_MS = 60;
+    const _doFlush = () => {
+      _flushTimer = null;
+      if (!_pendingPatch || Object.keys(_pendingPatch).length === 0) return;
+      const stillActive = this.data.activeSession && this.data.activeSession.id === session.id;
+      if (!stillActive) {
+        // 不在当前会话视图，跳过 setData，仅累积进 storage（通过下一次 flush 也无意义；丢弃 _pendingPatch）
+        _pendingPatch = {};
+        _scrollDirty = false;
+        return;
+      }
+      const msgs = this.data.messages;
+      const lastIdx = msgs.length - 1;
+      if (lastIdx < 0) { _pendingPatch = {}; return; }
+      // 构建 precise setData payload
+      const sd = {};
+      const p = _pendingPatch;
+      _pendingPatch = {};
+      if (p.content !== undefined) {
+        sd[`messages[${lastIdx}].content`] = p.content;
+        sd[`messages[${lastIdx}].contentSegments`] = parseCitationSegments(p.content);
+        sd[`messages[${lastIdx}].loading`] = false;
+      }
+      if (p.quotes !== undefined) sd[`messages[${lastIdx}].quotes`] = p.quotes.map(decorateQuote);
+      if (p.toolCalls !== undefined) {
+        const decorated = p.toolCalls.map(decorateToolCall);
+        sd[`messages[${lastIdx}].toolCalls`] = decorated;
+        sd[`messages[${lastIdx}].toolsAllDone`] = decorated.every(tc => !!tc.result);
+      }
+      if (p.followups !== undefined) sd[`messages[${lastIdx}].followups`] = p.followups;
+      if (p.analystThinking !== undefined) {
+        sd[`messages[${lastIdx}].analystThinking`] = p.analystThinking;
+        sd[`messages[${lastIdx}].loading`] = false;
+      }
+      if (p.analystDone !== undefined) sd[`messages[${lastIdx}].analystDone`] = p.analystDone;
+      if (p.writerStarted !== undefined) {
+        sd[`messages[${lastIdx}].writerStarted`] = p.writerStarted;
+        sd[`messages[${lastIdx}].analystOpen`] = false;
+      }
+      if (_scrollDirty) {
+        sd.scrollTo = 'm' + lastIdx;
+        _scrollDirty = false;
+      }
+      this.setData(sd);
+    };
+
     try {
       const onProgress = (patch) => {
-        // v56: 若用户已经切到别的 session（或新建对话清空），仍要更新 storage，但跳过 setData
         const stillActive = this.data.activeSession && this.data.activeSession.id === session.id;
         if (!stillActive) {
           // 累积进 storage 里的 session（无 UI 反馈也要持久化）
@@ -199,32 +251,17 @@ Page({
           this.persistSession(session);
           return;
         }
-        const msgs = this.data.messages;
-        const last = { ...msgs[msgs.length - 1] };
-        if (patch.content !== undefined) {
-          last.content = patch.content;
-          last.contentSegments = parseCitationSegments(patch.content);
-        }
-        if (patch.quotes !== undefined) last.quotes = patch.quotes.map(decorateQuote);
-        if (patch.toolCalls !== undefined) {
-          last.toolCalls = patch.toolCalls.map(decorateToolCall);
-          last.toolsAllDone = last.toolCalls.every(tc => !!tc.result);
-        }
-        if (patch.followups !== undefined) last.followups = patch.followups;
-        // v60.1
-        if (patch.analystThinking !== undefined) {
-          last.analystThinking = patch.analystThinking;
-          last.loading = false;
-        }
-        if (patch.analystDone !== undefined) last.analystDone = patch.analystDone;
-        if (patch.writerStarted !== undefined) {
-          last.writerStarted = patch.writerStarted;
-          // writer 一开始就自动折叠 analyst 卡（与 web 端 details open={!writerStarted} 等价）
-          last.analystOpen = false;
-        }
-        if (patch.content) last.loading = false;
-        msgs[msgs.length - 1] = last;
-        this.setData({ messages: [...msgs], scrollTo: 'm' + (msgs.length - 1) });
+        // 合并到 _pendingPatch（覆盖前值；后到的 chunk 累积值已经在 makeStreamState 里）
+        if (patch.content !== undefined) { _pendingPatch.content = patch.content; _scrollDirty = true; }
+        if (patch.analystThinking !== undefined) { _pendingPatch.analystThinking = patch.analystThinking; _scrollDirty = true; }
+        if (patch.quotes !== undefined) _pendingPatch.quotes = patch.quotes;
+        if (patch.toolCalls !== undefined) _pendingPatch.toolCalls = patch.toolCalls;
+        if (patch.followups !== undefined) _pendingPatch.followups = patch.followups;
+        if (patch.analystDone !== undefined) _pendingPatch.analystDone = patch.analystDone;
+        if (patch.writerStarted !== undefined) _pendingPatch.writerStarted = patch.writerStarted;
+        // 高频字段（content / analystThinking）走 60ms throttle；
+        // 低频字段（done/writerStarted/quotes/toolCalls）也合到同窗口里一起刷
+        if (_flushTimer == null) _flushTimer = setTimeout(_doFlush, FLUSH_INTERVAL_MS);
       };
       const result = await callChatStream({
         sage_id: this.data.activeSage.slug,
@@ -232,7 +269,9 @@ Page({
         history: histPayload,
       }, onProgress);
 
-      // 完成
+      // 完成：取消挂起的 throttle flush（避免覆盖 final state）
+      if (_flushTimer != null) { clearTimeout(_flushTimer); _flushTimer = null; _pendingPatch = {}; }
+
       const msgs = this.data.messages;
       const last = { ...msgs[msgs.length - 1], loading: false };
       if (result && result.reply) {
@@ -257,6 +296,8 @@ Page({
       const turns = msgs.filter(m => m.role === 'user').length;
       if (turns === 1) this.fetchTitle(session.id, text, last.content);
     } catch (e) {
+      // 取消挂起 flush
+      if (_flushTimer != null) { clearTimeout(_flushTimer); _flushTimer = null; _pendingPatch = {}; }
       const msgs = this.data.messages;
       msgs[msgs.length - 1] = {
         ...msgs[msgs.length - 1],
