@@ -57,13 +57,21 @@ Page({
       if (activeSession) {
         const sages = this.data.sages;
         const activeSage = sages.find(s => s.slug === activeSession.sage_id) || sages[0];
+        // v60.5-mp.3: 切回的 session 如果还在 streaming（onChunkReceived 仍在累积 storage），
+        // page-level loading=true，让 UI 显示"继续生成中"占位
+        const isStreaming = !!((app.globalData.streamingIds || {})[activeId]);
         this.setData({
           activeSage, activeSession,
           messages: this.hydrateMessages(activeSession.msgs || []),
           starters: STARTERS[activeSage.slug] || [],
+          loading: isStreaming,
         });
         this.scrollBottom();
       }
+    } else if (this.data.activeSession) {
+      // 同一 session 切回：若 streamingIds 仍有该 id，保持 loading 视觉
+      const isStreaming = !!((app.globalData.streamingIds || {})[this.data.activeSession.id]);
+      if (isStreaming !== this.data.loading) this.setData({ loading: isStreaming });
     }
   },
 
@@ -228,7 +236,19 @@ Page({
         _scrollDirty = false;
       }
       this.setData(sd);
+      // v60.5-mp.3: 把最新状态写回 storage —— 用户切走再切回时不会丢 streaming 进度
+      // 仅每 5 次 flush 持久化一次，控本（典型流式 600 chunks → 10 次 persist）
+      _flushSeq++;
+      if (_flushSeq % 5 === 0) {
+        const cur = this.data.messages;
+        if (cur && cur.length > 0) {
+          session.msgs = cur.slice();
+          session.ts_updated = Date.now();
+          this.persistSession(session);
+        }
+      }
     };
+    let _flushSeq = 0;
 
     try {
       const onProgress = (patch) => {
