@@ -8,6 +8,7 @@ import {
   Hash, Twitter, Menu, X, ChevronDown, Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SAGES as SAGES_RAW } from "@/data/sages";
 
 // =================== Types ===================
 interface QuoteRef { date: string; text: string; likes: number; url: string; _rel_score?: number; _rec_mul?: number; _final_score?: number; }
@@ -37,23 +38,86 @@ interface SageOption {
   slug: string; display: string; alias: string;
   philosophy: string; total_posts: number;
   initials: string; gradient: string;
+  tier: "popular" | "insider";
+  hasCorpus: boolean;
 }
 
 // =================== Static Config ===================
-// v60.4.8: 与 SAGES_RAW.tier 对齐——dan-bin/lao-tang 是 tier=removed，下线
-// 完整 15 个 sage（含 fallback 路径）见 /sage/[id] 单独页；主聊页保留有 corpus 的 2 位
-const SAGES: SageOption[] = [
-  { slug: "duan-yongping", display: "段永平", alias: "大道无形我有型",
-    philosophy: "本分 · 不懂不投 · 看十年后", total_posts: 10497,
-    initials: "DYP", gradient: "from-blue-500 to-indigo-600" },
-  { slug: "guan-wo-cai", display: "管我财", alias: "管我财",
-    philosophy: "低估逆向平均赢 · 排雷胜选股", total_posts: 33877,
-    initials: "GWC", gradient: "from-emerald-500 to-teal-600" },
-];
+// v60.4.9: 从 SAGES_RAW 动态生成 15 sage 列表（v60.4.7 backend 已支持 fallback）
+// - 有 corpus 的 2 位（duan/guan）：full v60 quality，能 search_sage_post
+// - 13 位 fallback：靠 SAGES_RAW metadata 角色扮演，工具仍可用
+
+// 有 corpus 的 sage 静态额外信息（total_posts + gradient + initials）
+const CORPUS_INFO: Record<string, { total_posts: number; gradient: string; initials: string; alias: string }> = {
+  "duan-yongping": { total_posts: 10497, gradient: "from-blue-500 to-indigo-600", initials: "DYP", alias: "大道无形我有型" },
+  "guan-wo-cai":   { total_posts: 33877, gradient: "from-emerald-500 to-teal-600", initials: "GWC", alias: "管我财" },
+};
+
+// 13 个 fallback sage 的 gradient 预设（按 SAGES_RAW.color hex 映射）
+function gradientForSage(slug: string, hex: string): string {
+  if (CORPUS_INFO[slug]) return CORPUS_INFO[slug].gradient;
+  // value/reverse/consumer/growth/moat/concentration 对应不同色系
+  const map: Record<string, string> = {
+    "feng-liu":         "from-rose-500 to-pink-600",
+    "zhang-kun":        "from-fuchsia-500 to-purple-600",
+    "buffett":          "from-yellow-500 to-amber-600",
+    "qiu-guolu":        "from-cyan-500 to-blue-600",
+    "li-lu":            "from-red-500 to-rose-600",
+    "fenghe-wu":        "from-lime-500 to-green-600",
+    "deng-xiaofeng":    "from-teal-500 to-cyan-600",
+    "zhao-jun":         "from-indigo-500 to-violet-600",
+    "jiang-jinzhi":     "from-stone-500 to-zinc-600",
+    "chen-guangming":   "from-emerald-600 to-green-700",
+    "xie-zhiyu":        "from-orange-500 to-amber-600",
+    "ma-zibing":        "from-blue-600 to-cyan-700",
+    "yang-dong":        "from-purple-500 to-fuchsia-600",
+  };
+  return map[slug] || "from-slate-500 to-gray-600";
+}
+
+// 派生 SAGES：popular 在前，insider 在后，每组内 corpus 优先
+const SAGES: SageOption[] = SAGES_RAW
+  .map(s => {
+    const info = CORPUS_INFO[s.id];
+    const hasCorpus = !!info;
+    return {
+      slug: s.id,
+      display: s.name,
+      alias: info?.alias || s.title.split(" · ")[0] || s.name,
+      philosophy: s.coreLine || s.philosophy.slice(0, 40),
+      total_posts: info?.total_posts ?? 0,
+      initials: info?.initials || s.avatar,
+      gradient: gradientForSage(s.id, s.color),
+      tier: (s.tier === "insider" ? "insider" : "popular") as "popular" | "insider",
+      hasCorpus,
+    };
+  })
+  .sort((a, b) => {
+    // popular 前；同 tier 内 corpus 优先
+    if (a.tier !== b.tier) return a.tier === "popular" ? -1 : 1;
+    if (a.hasCorpus !== b.hasCorpus) return a.hasCorpus ? -1 : 1;
+    return 0;
+  });
 
 const STARTERS: Record<string, string[]> = {
   "duan-yongping": ["你为什么换神华去泡泡玛特？", "苹果还能拿吗？", "拼多多怎么看？"],
   "guan-wo-cai":   ["腾讯能买吗？", "招行 PE 历史什么分位？", "26 年荒岛策略选什么？"],
+};
+// fallback sage 通用 starters（每个 sage 1 个，按风格选）
+const STARTERS_FALLBACK: Record<string, string[]> = {
+  "feng-liu":       ["医药 CXO 现在是逆向机会吗？", "你看好哪个被市场打到底的板块？"],
+  "zhang-kun":      ["茅台还能拿吗？", "高端消费品长期还成立吗？"],
+  "buffett":        ["伯克希尔现金仓位你怎么解读？", "美股泡沫到顶了吗？"],
+  "qiu-guolu":      ["怎么用'四种思维'看现在 A 股？", "便宜的好公司去哪找？"],
+  "li-lu":          ["格雷厄姆框架对中国市场还适用吗？", "怎么找到下一个 BYD？"],
+  "fenghe-wu":      ["亚洲市场被低估的好生意？", "怎么看中国房地产周期？"],
+  "deng-xiaofeng":  ["现在 A 股最大的预期差在哪？", "周期股何时翻身？"],
+  "zhao-jun":       ["专精特新还能不能买？", "高股息策略未来 3 年怎么看？"],
+  "jiang-jinzhi":   ["景林投资框架核心是什么？", "你怎么挑选成长股？"],
+  "chen-guangming": ["睿远价值理念怎么用在现在 A 股？", "好行业好公司好价格怎么三者兼得？"],
+  "xie-zhiyu":      ["TMT 板块现在的机会？", "你怎么平衡价值与成长？"],
+  "ma-zibing":      ["雪湖资本怎么投港股？", "新经济股的估值锚怎么定？"],
+  "yang-dong":      ["你现在最看好的领域？", "重仓股的退出节奏怎么把握？"],
 };
 
 const STOCK_SUGGESTIONS = [
@@ -133,6 +197,26 @@ function fmtTime(ts: number) {
   if (diff < 3600_000) return `${Math.floor(diff/60_000)} 分钟前`;
   if (diff < 86400_000) return `${Math.floor(diff/3600_000)} 小时前`;
   return d.toISOString().slice(5, 10).replace("-", "/");
+}
+
+// =================== Sub-components ===================
+function SagePickerRow({ s, active, onPick }: { s: SageOption; active: boolean; onPick: () => void }) {
+  return (
+    <button onClick={onPick}
+      className={cn("w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition",
+        active ? "bg-slate-100" : "hover:bg-slate-50")}>
+      <div className={cn("h-6 w-6 shrink-0 flex items-center justify-center rounded bg-gradient-to-br text-white font-mono text-[9px] font-bold", s.gradient)}>{s.initials}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-slate-900 truncate">{s.display}</p>
+        <p className="text-[10px] text-slate-500 truncate">{s.philosophy.slice(0, 22)}</p>
+      </div>
+      {!s.hasCorpus && (
+        <span className="shrink-0 text-[9px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded-full" title="无雪球 corpus，靠 metadata 角色扮演">
+          元
+        </span>
+      )}
+    </button>
+  );
 }
 
 // =================== Component ===================
@@ -451,17 +535,24 @@ export default function ChatPage() {
               <ChevronDown className={cn("h-3.5 w-3.5 text-slate-400 transition", sagePickerOpen && "rotate-180")} />
             </button>
             {sagePickerOpen && (
-              <div className="mt-2 space-y-1">
-                {SAGES.map(s => (
-                  <button key={s.slug} onClick={() => { newSession(s); setSagePickerOpen(false); }}
-                    className={cn("w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition",
-                      s.slug === activeSage.slug ? "bg-slate-100" : "hover:bg-slate-50")}>
-                    <div className={cn("h-6 w-6 shrink-0 flex items-center justify-center rounded bg-gradient-to-br text-white font-mono text-[9px] font-bold", s.gradient)}>{s.initials}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-slate-900 truncate">{s.display}</p>
-                      <p className="text-[10px] text-slate-500 truncate">{s.philosophy.slice(0, 18)}</p>
-                    </div>
-                  </button>
+              <div className="mt-2 space-y-2 max-h-[420px] overflow-y-auto">
+                {/* 大众派 with corpus */}
+                <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 px-3 pt-1">大众派 · 有 corpus</div>
+                {SAGES.filter(s => s.tier === "popular" && s.hasCorpus).map(s => (
+                  <SagePickerRow key={s.slug} s={s} active={s.slug === activeSage.slug}
+                    onPick={() => { newSession(s); setSagePickerOpen(false); }} />
+                ))}
+                {/* 大众派 无 corpus */}
+                <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 px-3 pt-2">大众派 · 元数据角色</div>
+                {SAGES.filter(s => s.tier === "popular" && !s.hasCorpus).map(s => (
+                  <SagePickerRow key={s.slug} s={s} active={s.slug === activeSage.slug}
+                    onPick={() => { newSession(s); setSagePickerOpen(false); }} />
+                ))}
+                {/* 圈内派 */}
+                <div className="text-[9px] font-mono uppercase tracking-wider text-slate-400 px-3 pt-2">圈内派 · 元数据角色</div>
+                {SAGES.filter(s => s.tier === "insider").map(s => (
+                  <SagePickerRow key={s.slug} s={s} active={s.slug === activeSage.slug}
+                    onPick={() => { newSession(s); setSagePickerOpen(false); }} />
                 ))}
               </div>
             )}
@@ -520,7 +611,12 @@ export default function ChatPage() {
                 activeSage.gradient)}>{activeSage.initials}</div>
               <div>
                 <p className="text-sm font-semibold text-slate-900">{activeSession?.title || "和 " + activeSage.display + " 对话"}</p>
-                <p className="text-[11px] text-slate-500">{activeSage.philosophy} · 基于 {activeSage.total_posts.toLocaleString()} 条雪球发言</p>
+                <p className="text-[11px] text-slate-500">
+                  {activeSage.philosophy}
+                  {activeSage.hasCorpus
+                    ? ` · 基于 ${activeSage.total_posts.toLocaleString()} 条雪球发言`
+                    : ` · 元数据角色（无历史发言池）`}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -545,9 +641,16 @@ export default function ChatPage() {
                   activeSage.gradient)}>{activeSage.initials}</div>
                 <h2 className="mt-5 text-2xl font-semibold text-slate-900">和 {activeSage.display} 对话</h2>
                 <p className="mt-2 text-sm text-slate-500">{activeSage.philosophy}</p>
-                <p className="mt-1 text-xs text-slate-400">4 工具 (历史发言语义搜 · 网搜 · 实时行情 · K 线)</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  {activeSage.hasCorpus
+                    ? "4 工具 (历史发言语义搜 · 网搜 · 实时行情 · K 线)"
+                    : "3 工具 (网搜 · 实时行情 · 财务) · 元数据角色，无历史发言池"}
+                </p>
                 <div className="mt-7 flex flex-wrap justify-center gap-2 max-w-xl">
-                  {(STARTERS[activeSage.slug] || []).map(s => (
+                  {((STARTERS[activeSage.slug] || STARTERS_FALLBACK[activeSage.slug]) || [
+                    `${activeSage.display}怎么看现在的市场？`,
+                    `给我讲讲你的核心方法论`,
+                  ]).map(s => (
                     <button key={s} onClick={() => submit(s)}
                       className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition shadow-sm">
                       {s}
