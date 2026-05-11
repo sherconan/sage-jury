@@ -113,7 +113,11 @@ export default function ChatPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeSage, setActiveSage] = useState<SageOption>(SAGES[0]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  // v56: 并行 session 支持 —— 用 Set 跟踪每个 session 各自是否在流式中，替代原全局 loading
+  const [streamingIds, setStreamingIds] = useState<Set<string>>(new Set());
+  const isActiveStreaming = activeId ? streamingIds.has(activeId) : false;
+  const addStreaming = (id: string) => setStreamingIds(prev => { const n = new Set(prev); n.add(id); return n; });
+  const removeStreaming = (id: string) => setStreamingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sagePickerOpen, setSagePickerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -224,7 +228,6 @@ export default function ChatPage() {
   };
 
   const submit = async (overrideText?: string) => {
-    if (loading) return;
     const text = (overrideText !== undefined ? overrideText : input).trim();
     if (!text) return;
 
@@ -237,7 +240,10 @@ export default function ChatPage() {
       sessId = ns.id;
     }
 
-    setInput(""); setLoading(true);
+    // v56: 只阻止"在同一 session 内重复提交"，不阻止"切到别的 session 提问"
+    if (streamingIds.has(sessId)) return;
+
+    setInput(""); addStreaming(sessId);
 
     // 推 user msg + loading sage placeholder（使用最新 history 调用）
     const histPayload = messages.filter(m => !m.loading && m.content).map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
@@ -323,7 +329,7 @@ export default function ChatPage() {
         return { ...s, msgs };
       }));
     } finally {
-      setLoading(false);
+      removeStreaming(sessId);
     }
   };
 
@@ -417,6 +423,7 @@ export default function ChatPage() {
               <p className="text-xs text-slate-400 text-center py-8 px-3">还没有对话<br/>点上面「新对话」开始</p>
             ) : sessions.map(s => {
               const sage = SAGES.find(x => x.slug === s.sage_id);
+              const isStreaming = streamingIds.has(s.id);
               return (
                 <div key={s.id} className={cn("group rounded-lg px-2 py-2 mb-1 cursor-pointer transition",
                   s.id === activeId ? "bg-slate-100" : "hover:bg-slate-50")}
@@ -424,6 +431,12 @@ export default function ChatPage() {
                   <div className="flex items-center gap-2">
                     <span className={cn("h-1.5 w-1.5 rounded-full bg-gradient-to-br shrink-0", sage?.gradient || "bg-slate-300")} />
                     <span className="flex-1 truncate text-sm text-slate-800">{s.title}</span>
+                    {isStreaming && (
+                      <span title="正在回答中" className="inline-flex items-center gap-1 text-[10px] text-blue-500 font-mono">
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        生成中
+                      </span>
+                    )}
                     <button onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }}
                       className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-100 hover:text-rose-600 rounded transition">
                       <Trash2 className="h-3 w-3" />
@@ -558,7 +571,7 @@ export default function ChatPage() {
                             {injectCitationChips(m.content)}
                           </ReactMarkdown>
                         )}
-                        {m.role === "sage" && loading && messages[messages.length - 1] === m && (
+                        {m.role === "sage" && isActiveStreaming && messages[messages.length - 1] === m && (
                           <span className="inline-block w-0.5 h-4 ml-0.5 bg-blue-500 align-middle animate-pulse" />
                         )}
                       </div>
@@ -607,14 +620,14 @@ export default function ChatPage() {
             <div className="flex gap-2 max-w-4xl mx-auto">
               <datalist id="stockSugList">{STOCK_SUGGESTIONS.map(s => <option key={s} value={s} />)}</datalist>
               <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)} list="stockSugList"
-                onKeyDown={e => e.key === "Enter" && !loading && submit()}
-                placeholder={`问 ${activeSage.display}...`}
+                onKeyDown={e => e.key === "Enter" && !isActiveStreaming && submit()}
+                placeholder={isActiveStreaming ? `${activeSage.display} 正在回答…可切换到其他对话` : `问 ${activeSage.display}...`}
                 className="flex-1 rounded-full border border-slate-200 bg-slate-50/50 px-5 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-50 transition"
-                disabled={loading} />
-              <button onClick={() => submit()} disabled={loading || !input.trim()}
+                disabled={isActiveStreaming} />
+              <button onClick={() => submit()} disabled={isActiveStreaming || !input.trim()}
                 className={cn("flex items-center gap-1.5 rounded-full px-5 text-sm font-medium text-white shadow-md hover:shadow-lg disabled:opacity-30 transition",
                   `bg-gradient-to-br ${activeSage.gradient}`)}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {isActiveStreaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 发送
               </button>
             </div>
