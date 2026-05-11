@@ -111,25 +111,63 @@ function findRelevant(sage: SageData, query: string, limit = 5): Quote[] {
 }
 
 const NAME_TO_TICKER: Record<string,string> = {
+  // A 股
   "茅台":"600519","贵州茅台":"600519","五粮液":"000858","汾酒":"600809","泸州老窖":"000568","洋河":"002304",
   "海天":"603288","海天味业":"603288","伊利":"600887","片仔癀":"600436","云南白药":"000538","恒瑞":"600276",
   "美的":"000333","格力":"000651","海尔":"600690","招行":"600036","招商银行":"600036","平安":"601318",
   "工行":"601398","宁德时代":"300750","比亚迪":"002594","隆基":"601012","中免":"601888","神华":"601088",
-  "海康":"002415","中石油":"601857","万华":"600309","泡泡玛特":"09992","腾讯":"00700",
+  "海康":"002415","中石油":"601857","万华":"600309",
+  // 港股 (5 位代码, market 116)
+  "腾讯":"00700","腾讯控股":"00700",
+  "泡泡玛特":"09992",
+  "美团":"03690","美团-W":"03690",
+  "京东":"09618","京东集团":"09618",
+  "阿里":"09988","阿里巴巴":"09988",
+  "小米":"01810","小米集团":"01810",
+  "中国移动":"00941","中移动":"00941",
+  "中国海洋石油":"00883","中海油":"00883",
+  "建设银行":"00939","建行 H":"00939","建设银行 H":"00939",
+  "工商银行 H":"01398","工行 H":"01398",
+  "中国平安 H":"02318",
+  "招商银行 H":"03968","招行 H":"03968",
+  "中国神华 H":"01088",
+  "中国燃气":"00384",
+  "北京控股":"00392",
+  "联邦制药":"03933",
+  "江南布衣":"03306",
+  "首都机场":"00694","北京首都机场":"00694",
+  "惠理集团":"00806",
+  "中国石化 H":"00386","中石化 H":"00386",
 };
-function resolveTicker(input: string): { code: string; secid: string; name: string } | null {
+
+// 港股代码集合 (5 位 0 开头) — 用于判断 market
+function isHKCode(code: string): boolean {
+  // 标准港股: 5 位数字, 第一位 0
+  return /^0\d{4}$/.test(code) || code === "9992" || code === "00700" || code === "03306";
+}
+function calcSecid(code: string): string {
+  if (isHKCode(code) || code.length === 5) {
+    return `116.${code.padStart(5, "0")}`;
+  }
+  // A 股
+  if (code.startsWith("6") || code.startsWith("9")) return `1.${code}`;
+  return `0.${code}`;
+}
+
+function resolveTicker(input: string): { code: string; secid: string; name: string; market: 'A' | 'HK' } | null {
   const v = input.trim();
-  // 直接代码
-  if (/^[036][05]\d{4}$/.test(v) || /^9?9992$/.test(v) || /^00700$/.test(v)) {
-    const code = v.padStart(v.length === 4 ? 5 : v.length, "0");
-    const secid = /^9?9992$|^00700$/.test(v) ? `116.${code.padStart(5,"0")}` : (code.startsWith("6") ? `1.${code}` : `0.${code}`);
-    return { code, secid, name: code };
+  // 直接代码 — A 股 6 位 / 港股 4-5 位
+  if (/^\d{4,6}$/.test(v)) {
+    let code: string, market: 'A' | 'HK';
+    if (v.length === 6) { code = v; market = 'A'; }
+    else { code = v.padStart(5, "0"); market = 'HK'; }
+    return { code, secid: calcSecid(code), name: code, market };
   }
   // 中文/英文名
   for (const [n, c] of Object.entries(NAME_TO_TICKER)) {
     if (v.includes(n) || n === v) {
-      const secid = /^0?9992$|^00700$/.test(c) ? `116.${c.padStart(5,"0")}` : (c.startsWith("6") ? `1.${c}` : `0.${c}`);
-      return { code: c, secid, name: n };
+      const market: 'A' | 'HK' = isHKCode(c) || c.length === 5 ? 'HK' : 'A';
+      return { code: c, secid: calcSecid(c), name: n, market };
     }
   }
   return null;
@@ -251,8 +289,13 @@ async function tool_kline(stock: string, days = 30): Promise<string> {
 async function tool_pe_history_pct(stock: string, years = 5): Promise<string> {
   const r = resolveTicker(stock);
   if (!r) return `未识别股票: ${stock}`;
+  if (r.market === 'HK') {
+    // 港股用 quote 端口拿当前 PE/PB, 历史分位暂用 kline 估算
+    const q = await tool_realtime_quote(stock);
+    return `${r.name}(${r.code}) [港股]\n${q}\n注: 港股暂无历史分位数据, 上面为当前快照。建议看 PE/PB 跟同行/历史区间相比。`;
+  }
   try {
-    // 用 eastmoney push2 ValueAnalysis 接口（公开, 不需 cookie）
+    // A 股: 用 eastmoney push2 ValueAnalysis 接口
     const u = `https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_VALUEANALYSIS_DET&columns=TRADE_DATE,PE_TTM,PB_MRQ,PE_TTM_3YEARS_PCT,PB_MRQ_3YEARS_PCT,PE_TTM_5YEARS_PCT,PB_MRQ_5YEARS_PCT,PE_TTM_10YEARS_PCT&filter=(SECURITY_CODE%3D%22${r.code}%22)&pageNumber=1&pageSize=1&sortColumns=TRADE_DATE&sortTypes=-1`;
     const res = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://emweb.securities.eastmoney.com/" } });
     if (!res.ok) return `PE 历史接口失败 ${res.status}`;
@@ -281,9 +324,27 @@ async function tool_pe_history_pct(stock: string, years = 5): Promise<string> {
 async function tool_financials(stock: string): Promise<string> {
   const r = resolveTicker(stock);
   if (!r) return `未识别股票: ${stock}`;
+  if (r.market === 'HK') {
+    // 港股用专用 endpoint (容错: 失败时 fallback 到 web_search 提示)
+    try {
+      const u = `https://emweb.securities.eastmoney.com/PC_HKF10/FinancialAnalysis/PageAjax?code=${r.code}`;
+      const res = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://emweb.securities.eastmoney.com/" } });
+      if (res.ok) {
+        const j: any = await res.json();
+        const yo: any = j?.zyzbAccountingPeriodList?.[0];
+        if (yo) {
+          const rev = typeof yo.OPERATING_REVENUE === 'number' ? (yo.OPERATING_REVENUE / 1e8).toFixed(0) + "亿" : "?";
+          const np = typeof yo.HOLDER_PROFIT === 'number' ? (yo.HOLDER_PROFIT / 1e8).toFixed(1) + "亿" : "?";
+          const roe = typeof yo.ROE_AVG === 'number' ? yo.ROE_AVG.toFixed(1) + "%" : "?";
+          return `${r.name}(${r.code}) [港股最新年报] 营收 ${rev} / 净利 ${np} / ROE ${roe}`;
+        }
+      }
+    } catch {}
+    return `${r.name}(${r.code}) [港股] 财务数据需联网查 — 建议 LLM 接着调 web_search('${r.name} 年报 营收 净利 ROE 毛利率')`;
+  }
   try {
-    // 用 eastmoney F10 MainTarget endpoint
-    const market = r.code.startsWith("6") ? "SH" : r.code.startsWith("0") || r.code.startsWith("3") ? "SZ" : "HK";
+    // A 股: eastmoney F10 MainTarget endpoint
+    const market = r.code.startsWith("6") ? "SH" : "SZ";
     const u = `https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/PCWebMainTargetCNew?code=${market}${r.code}&type=0`;
     const res = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://emweb.securities.eastmoney.com/" } });
     if (!res.ok) return `财务接口失败 ${res.status}`;
@@ -312,8 +373,13 @@ async function tool_financials(stock: string): Promise<string> {
 async function tool_dividend_history(stock: string, years = 5): Promise<string> {
   const r = resolveTicker(stock);
   if (!r) return `未识别股票: ${stock}`;
+  if (r.market === 'HK') {
+    // 港股派息数据: 现在 quote 已经能拿股息率, 历史派息建议 web_search
+    const q = await tool_realtime_quote(stock);
+    return `${r.name}(${r.code}) [港股] 当前股息率请看下面快照, 详细历史派息建议 web_search:\n${q}`;
+  }
   try {
-    // eastmoney 派息数据
+    // A 股: eastmoney 派息数据
     const u = `https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_SHAREBONUS_DET&columns=PUBLISH_DATE,REPORT_DATE,PRETAX_BONUS_RATIO,DIVIDENT_RATIO,EX_DIVIDENT_DATE&filter=(SECURITY_CODE%3D%22${r.code}%22)&pageNumber=1&pageSize=${years * 2}&sortColumns=REPORT_DATE&sortTypes=-1`;
     const res = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://emweb.securities.eastmoney.com/" } });
     if (!res.ok) return `派息接口失败 ${res.status}`;
@@ -547,12 +613,17 @@ ${ragCtx}
 7. ❌ 禁止 "**最终判决：可买/观望/不买**" 这种总结框
 
 **唯一允许的样子**：自然散文段落，像在雪球发的长帖，像跟朋友闲聊。
-- 一段 2-5 句，每段一个意思
+- **每段 2-4 句话**，每段一个核心意思
+- **段落之间必须用空行（\\n\\n）分隔** — 这一条最重要，长段落顶到一起是失败
+- **完整回答必须有 4-7 段** — 不要堆成一大段
 - 数字嵌在句子里讲（不是表格列出）
 - 判断散在叙述里（不是评分卡）
 - 引用自己原文给个日期就行（不要画框）
 - 结论自然落在最后一段
 - 最后可以加你的招牌结尾（段永平：「反正我是这么看的，对错我自己负责」/ 管我财：「放长线钓大鱼」）
+
+⚠️ **典型烂样子**：一大段 800+ 字不换行不分段，用户读起来累死。
+⚠️ **正确样子**：段段分明，每段 2-4 句，段间空一行，整体 4-7 段。
 
 参考 SKILL.md 中"一个回答的样子（示例）"那个 \`\`\` 块，**那个就是你应该的样子**。
 
