@@ -21,6 +21,8 @@ Page({
     sagePickerOpen: false,
     starters: [],
     scrollTo: '',
+    // v60.5-mp.1: scroll-to-bottom 浮按钮（用户滚动超过 600rpx 离底显示）
+    showScrollBottom: false,
   },
 
   onLoad() {
@@ -356,6 +358,31 @@ Page({
       msgs[mi] = { ...msgs[mi], analystOpen: !msgs[mi].analystOpen };
       this.setData({ messages: [...msgs] });
     }
+  },
+
+  // v60.5-mp.1: scroll-view 滚动监听 — 离底超 600rpx 显示浮按钮
+  // 注意：throttle 在 wxml 用 throttle 属性；这里只判定 boolean，setData 频率自然受 wxml 节流约束
+  _lastScrollState: false,
+  onMessagesScroll(e) {
+    const { scrollHeight, scrollTop, deltaY } = e.detail || {};
+    if (scrollHeight == null || scrollTop == null) return;
+    // scroll-view 自身视口高度未直接给，用 wx.getSystemInfo 兜底估算（首次缓存）
+    if (this._viewportH == null) {
+      try { this._viewportH = wx.getSystemInfoSync().windowHeight - 220; } catch { this._viewportH = 500; }
+    }
+    const distFromBottom = scrollHeight - scrollTop - this._viewportH;
+    const shouldShow = distFromBottom > 300;  // 300rpx ≈ 150px
+    if (shouldShow !== this._lastScrollState) {
+      this._lastScrollState = shouldShow;
+      this.setData({ showScrollBottom: shouldShow });
+    }
+  },
+
+  onScrollToBottom() {
+    const len = (this.data.messages || []).length;
+    if (len <= 0) return;
+    this.setData({ scrollTo: 'm' + (len - 1), showScrollBottom: false });
+    this._lastScrollState = false;
   },
 
   // v54: 点击文中 #N chip → 滚到对应 quote 卡 + 闪烁高亮

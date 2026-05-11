@@ -72,8 +72,21 @@ def open_db(slug: str) -> sqlite3.Connection:
         title TEXT, text TEXT, raw_text TEXT,
         retweet_count INTEGER, reply_count INTEGER, like_count INTEGER,
         view_count INTEGER, type TEXT, url TEXT,
+        rt_id INTEGER, rt_user_id INTEGER, rt_user_name TEXT,
+        rt_title TEXT, rt_text TEXT, rt_raw_text TEXT,
+        rt_url TEXT, rt_created_at TEXT,
         fetched_at TEXT
     )""")
+    # 老库迁移：补齐 rt_* 引用帖字段（已存在则忽略）
+    for col, typ in [
+        ("rt_id", "INTEGER"), ("rt_user_id", "INTEGER"), ("rt_user_name", "TEXT"),
+        ("rt_title", "TEXT"), ("rt_text", "TEXT"), ("rt_raw_text", "TEXT"),
+        ("rt_url", "TEXT"), ("rt_created_at", "TEXT"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE posts ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass
     conn.commit()
     return conn
 
@@ -125,15 +138,45 @@ def write_to_db(conn, posts):
         try:
             ts = int(ca) if ca else 0
         except: ts = 0
-        cur.execute("""INSERT OR IGNORE INTO posts
+        # 引用帖（转发/回复时雪球嵌套返回原帖对象）
+        rs = p.get("retweeted_status") or {}
+        rs_user = (rs.get("user") or {}) if rs else {}
+        rs_target = rs.get("target") or "" if rs else ""
+        rs_ca = rs.get("created_at") if rs else None
+        rt_id = rs.get("id") if rs else None
+        rt_user_id = rs_user.get("id") if rs_user else None
+        rt_user_name = rs_user.get("screen_name") if rs_user else None
+        rt_title = rs.get("title") if rs else None
+        rt_raw = rs.get("text") if rs else None
+        rt_text = clean_text(rs.get("text") or rs.get("description") or "") if rs else None
+        rt_url = f"https://xueqiu.com{rs_target}" if rs_target else None
+        rt_ca_str = str(rs_ca) if rs_ca else None
+        # UPSERT：新帖 INSERT，存量帖刷新引用字段（用于历史回灌）
+        cur.execute("""INSERT INTO posts
             (id, timestamp, created_at, title, text, raw_text, retweet_count, reply_count,
-             like_count, view_count, type, url, fetched_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+             like_count, view_count, type, url,
+             rt_id, rt_user_id, rt_user_name, rt_title, rt_text, rt_raw_text, rt_url, rt_created_at,
+             fetched_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET
+                rt_id=excluded.rt_id,
+                rt_user_id=excluded.rt_user_id,
+                rt_user_name=excluded.rt_user_name,
+                rt_title=excluded.rt_title,
+                rt_text=excluded.rt_text,
+                rt_raw_text=excluded.rt_raw_text,
+                rt_url=excluded.rt_url,
+                rt_created_at=excluded.rt_created_at,
+                retweet_count=excluded.retweet_count,
+                reply_count=excluded.reply_count,
+                like_count=excluded.like_count,
+                view_count=excluded.view_count""",
             (p.get("id"), ts, str(ca) if ca else "",
              p.get("title") or "", clean_text(p.get("text") or p.get("description") or ""),
              p.get("text") or "", p.get("retweet_count", 0), p.get("reply_count", 0),
              p.get("like_count", 0), p.get("view_count", 0), p.get("type") or "",
              f"https://xueqiu.com{p.get('target', '')}",
+             rt_id, rt_user_id, rt_user_name, rt_title, rt_text, rt_raw, rt_url, rt_ca_str,
              dt.now().strftime("%Y-%m-%d %H:%M:%S")))
     conn.commit()
 
@@ -155,21 +198,94 @@ def write_daily_digest(slug: str, display: str, new_posts: list):
     log(f"  digest 写入: {md_path}")
 
 
-def watch_one(session, slug: str):
+def enrich_retweets(session, slug: str, only_missing: bool = True, limit=None, sleep: float = 1.2):
+    """拉引用帖全文 — user_timeline 只返摘要(~150字)，detail 接口才有全文(几千字)
+    only_missing=True: 仅处理 rt_text 短于 500 字符的（未 enrich）
+    """
+    if slug not in TARGETS:
+        log(f"❌ 未知监控目标: {slug}"); return
+    _, db_slug, display = TARGETS[slug]
+    conn = open_db(db_slug)
+    # 加 rt_enriched_at 列做幂等标记
+    try:
+        conn.execute("ALTER TABLE posts ADD COLUMN rt_enriched_at TEXT")
+        conn.commit()
+    except sqlite3.OperationalError: pass
+
+    where = "rt_id IS NOT NULL"
+    if only_missing:
+        where += " AND (rt_enriched_at IS NULL OR length(rt_text) < 500)"
+    sql = f"SELECT id, rt_id FROM posts WHERE {where} ORDER BY id DESC"
+    if limit:
+        sql += f" LIMIT {limit}"
+    targets = conn.execute(sql).fetchall()
+    log(f"▶ Enrich {display}: {len(targets)} 条引用帖待拉全文")
+    ok, fail = 0, 0
+    # 反爬：固定 Referer + 1.2s 间隔（连续触发会 405）
+    session.headers["Referer"] = "https://xueqiu.com"
+    for i, (post_id, rt_id) in enumerate(targets, 1):
+        try:
+            r = session.get(f"https://api.xueqiu.com/statuses/show.json?id={rt_id}", timeout=15)
+            if r.status_code == 405:
+                log(f"  [{i}/{len(targets)}] 405 触发风控，停 60s")
+                time.sleep(60)
+                continue
+            if r.status_code != 200 or not r.text.strip().startswith("{"):
+                fail += 1
+                if fail % 20 == 0: log(f"  [{i}/{len(targets)}] http {r.status_code}, 累计失败 {fail}")
+                time.sleep(sleep); continue
+            d = r.json()
+            rt_user = d.get("user") or {}
+            rt_target = d.get("target") or ""
+            full_text = clean_text(d.get("text") or d.get("description") or "")
+            full_title = d.get("title") or ""
+            rt_url = f"https://xueqiu.com{rt_target}" if rt_target else None
+            conn.execute("""UPDATE posts SET
+                rt_user_name = COALESCE(?, rt_user_name),
+                rt_user_id   = COALESCE(?, rt_user_id),
+                rt_title     = COALESCE(NULLIF(?, ''), rt_title),
+                rt_text      = ?,
+                rt_raw_text  = ?,
+                rt_url       = COALESCE(?, rt_url),
+                rt_created_at= COALESCE(?, rt_created_at),
+                rt_enriched_at = ?
+                WHERE id = ?""",
+                (rt_user.get("screen_name"), rt_user.get("id"),
+                 full_title, full_text, d.get("text") or "",
+                 rt_url, str(d.get("created_at") or "") or None,
+                 dt.now().strftime("%Y-%m-%d %H:%M:%S"), post_id))
+            if i % 50 == 0:
+                conn.commit()
+                log(f"  [{i}/{len(targets)}] 已 enrich")
+            ok += 1
+        except Exception as e:
+            fail += 1
+            if fail % 20 == 0: log(f"  err: {e}")
+        time.sleep(sleep)
+    conn.commit()
+    log(f"  ✅ Enrich {display}: 成功 {ok} / 失败 {fail}")
+    conn.close()
+
+
+def watch_one(session, slug: str, deep: bool = False):
     if slug not in TARGETS:
         log(f"❌ 未知监控目标: {slug}")
         return
     user_id, db_slug, display = TARGETS[slug]
     conn = open_db(db_slug)
-    since = get_last_id(conn)
-    log(f"▶ 监控 {display} (id={user_id}, since_id={since})")
-    new_posts = fetch_user(session, user_id, since)
-    log(f"  新增 {len(new_posts)} 条")
+    since = 0 if deep else get_last_id(conn)
+    pages = 100 if deep else 30
+    mode = "深度回灌" if deep else "增量"
+    log(f"▶ 监控 {display} (id={user_id}, since_id={since}, mode={mode})")
+    new_posts = fetch_user(session, user_id, since, max_pages=pages)
+    log(f"  抓取 {len(new_posts)} 条")
     if new_posts:
         write_to_db(conn, new_posts)
-        write_daily_digest(db_slug, display, new_posts)
+        if not deep:
+            write_daily_digest(db_slug, display, new_posts)
     total_q = conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
-    log(f"  累积 {total_q} 条")
+    rt_q = conn.execute("SELECT COUNT(*) FROM posts WHERE rt_id IS NOT NULL").fetchone()[0]
+    log(f"  累积 {total_q} 条 (含引用 {rt_q})")
     conn.close()
 
 
@@ -203,15 +319,28 @@ def export_to_sage_jury():
 
 def main():
     arg = sys.argv[1] if len(sys.argv) > 1 else "duan"
+    deep = "--deep" in sys.argv
+    enrich = "--enrich" in sys.argv
     s = load_session()
+    if arg == "enrich":
+        # python3 fetch_incremental.py enrich [slug|all]
+        target = sys.argv[2] if len(sys.argv) > 2 else "all"
+        targets = list(TARGETS) if target == "all" else [target]
+        for slug in targets:
+            enrich_retweets(s, slug)
+        return
     if arg == "all":
         for slug in TARGETS:
-            watch_one(s, slug)
+            watch_one(s, slug, deep=deep)
+            if enrich:
+                enrich_retweets(s, slug)
     elif arg == "export":
         export_to_sage_jury()
         return
     else:
-        watch_one(s, arg)
+        watch_one(s, arg, deep=deep)
+        if enrich:
+            enrich_retweets(s, arg)
     # 默认每次跑完都导出给 sage-jury 网页用
     export_to_sage_jury()
 

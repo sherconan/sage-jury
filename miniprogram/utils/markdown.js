@@ -25,22 +25,24 @@ function parseInlines(text) {
       const cm = text.slice(i).match(/^\[原文\s*(\d+)\]/);
       if (cm) { flushText(); out.push({ type: 'cite', n: parseInt(cm[1], 10) }); i += cm[0].length; continue; }
     }
-    // bold **...**
+    // bold **...** (v60.5: 内嵌 cite/code 递归)
     if (ch === '*' && text[i + 1] === '*') {
       const end = text.indexOf('**', i + 2);
       if (end > i + 2) {
         flushText();
-        out.push({ type: 'bold', text: text.slice(i + 2, end) });
+        const inner = text.slice(i + 2, end);
+        out.push({ type: 'bold', text: inner, inlines: parseInlines(inner) });
         i = end + 2; continue;
       }
     }
-    // italic *...* (单星 + 非空格起头)
+    // italic *...* (单星 + 非空格起头, v60.5: 内嵌 cite/code 递归)
     if (ch === '*' && text[i + 1] !== '*' && i > 0 && text[i - 1] !== '*') {
       const rest = text.slice(i + 1);
       const m = rest.match(/^([^*\n]+)\*/);
       if (m) {
         flushText();
-        out.push({ type: 'italic', text: m[1] });
+        const inner = m[1];
+        out.push({ type: 'italic', text: inner, inlines: parseInlines(inner) });
         i += m[0].length + 1; continue;
       }
     }

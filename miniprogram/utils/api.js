@@ -101,27 +101,20 @@ function decorateQuote(q) {
   };
 }
 
-// === DSML 清洗 + Markdown 去格式化（小程序不能渲染 md，去符号留文本）===
-// v60.4-mp.2: 跨包过滤升级 —— 用 [\s\S] 允许跨行匹配，加 1000 字符上限防回溯灾难
+// === DSML 清洗 ===
+// v60.5-mp.1: DSML 走 utils/dsml.js 状态机（吞 body），markdown 保留原文（chat.js parseMarkdown 渲染）
+const { stripDSML } = require('./dsml');
+
 function cleanDSML(s) {
   if (!s) return s;
-  return s
-    // 1. DSML 内部 tool-call 标签（含整段 body 吞掉）
+  // 1. DSML 标签 + body 状态机吞掉（与 web server inDSML 等价）
+  let t = stripDSML(s);
+  // 2. 兜底 regex（万一状态机漏了某种奇形）
+  t = t
     .replace(/<[\s\S]{0,200}?DSML[\s\S]{0,500}?>/g, '')
     .replace(/<\/?\s*(invoke|parameter|tool_calls)[\s\S]{0,500}?>/gi, '')
-    .replace(/name="[a-zA-Z_][a-zA-Z0-9_]{0,40}"\s+string="[^"]{0,200}"\s*>/g, '')
-    // 2. Markdown 去格式（保留文本，去标记符号）
-    // Markdown 解析以后（Phase 3）将 substitute 此分支；保留兜底
-    .replace(/```[\s\S]*?```/g, m => m.replace(/```\w*\n?/g, '').replace(/```/g, ''))  // 代码块去 fence
-    .replace(/^#{1,6}\s+/gm, '')          // 去 ## heading 标记
-    .replace(/\*\*([^*]+)\*\*/g, '$1')   // **粗体** → 粗体
-    .replace(/(?<!\*)\*([^*\n]+)\*/g, '$1')  // *斜体* → 斜体
-    .replace(/`([^`]+)`/g, '$1')          // `code` → code
-    .replace(/^\s*[-*+]\s+/gm, '• ')      // - item → • item
-    .replace(/^\s*>\s+/gm, '')             // > quote → quote
-    .replace(/^\s*\|.*\|.*$/gm, '')        // markdown 表格行直接去掉
-    .replace(/^\s*\|?[\s:|-]{3,}\|?\s*$/gm, '')  // 表格分隔行
     .replace(/^\s+|\s+$/g, '');
+  return t;
 }
 
 // === UTF-8 解码（小程序无 TextDecoder）===
