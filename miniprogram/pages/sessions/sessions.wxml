@@ -27,7 +27,7 @@
 
   <scroll-view scroll-y class="list" wx:else>
     <view wx:for="{{sessions}}" wx:key="id" class="sess-item {{item.streaming ? 'sess-item-streaming' : ''}}"
-      data-id="{{item.id}}" bindtap="onOpen" hover-class="sess-item-hover">
+      data-id="{{item.id}}" bindtap="onOpen" bindlongpress="onLongPressSession" hover-class="sess-item-hover">
       <!-- Sage 头像（带渐变背景 + 首字母） -->
       <view class="sess-avatar" style="background:{{item.sage_color}}">{{item.sage_initials}}</view>
       <view class="sess-body">
