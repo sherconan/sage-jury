@@ -89,6 +89,36 @@ function cleanDSML(s: string): string {
     .replace(/^\s+|\s+$/g, "");
 }
 
+// v58: 工具调用人话化映射 —— 把 "get_realtime_quote" 这种开发者命名翻译成用户能看懂的中文
+const TOOL_LABELS: Record<string, string> = {
+  get_realtime_quote: "实时行情",
+  get_financials: "财务数据",
+  get_pe_history_pct: "PE 历史分位",
+  get_dividend_history: "股息历史",
+  get_kline: "K 线",
+  search_sage_post: "查历史发言",
+  web_search: "联网搜索",
+  compare_stocks: "对比股票",
+};
+const TOOL_ICONS: Record<string, string> = {
+  get_realtime_quote: "📊",
+  get_financials: "💰",
+  get_pe_history_pct: "📈",
+  get_dividend_history: "💵",
+  get_kline: "📉",
+  search_sage_post: "🔍",
+  web_search: "🌐",
+  compare_stocks: "⚖️",
+};
+function formatToolArgs(args: any): string {
+  if (!args || typeof args !== "object") return "";
+  if (args.stock) return String(args.stock);
+  if (args.query) return `"${String(args.query).slice(0, 50)}${String(args.query).length > 50 ? "…" : ""}"`;
+  if (args.tickers) return (Array.isArray(args.tickers) ? args.tickers : [args.tickers]).join(" / ");
+  if (args.stocks) return (Array.isArray(args.stocks) ? args.stocks : [args.stocks]).join(" / ");
+  return Object.values(args).map(v => String(v)).join(" ").slice(0, 50);
+}
+
 // 把 sage 输出里的 [原文 N] / [原文N] 替换为可点击的 ⓘ chip（HTML span 包裹）
 // 后续由 ReactMarkdown 渲染为 <citation-chip data-n="N"/> → 点击展开对应 quote
 function injectCitationChips(text: string): string {
@@ -514,25 +544,44 @@ export default function ChatPage() {
                 </div>
                 <div className={cn("max-w-[78%] rounded-2xl px-5 py-3.5 shadow-sm",
                   m.role === "user" ? "bg-slate-900 text-white" : "bg-white border border-slate-200")}>
-                  {/* tool calls */}
+                  {/* v58: tool calls — 折叠 + 人话标签 + 紧凑 */}
                   {m.role === "sage" && m.toolCalls && m.toolCalls.length > 0 && (
-                    <div className="mb-3 space-y-2">
-                      {m.toolCalls.map((tc, ti) => (
-                        <details key={ti} open={!tc.result}
-                          className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-xs">
-                          <summary className="cursor-pointer flex items-center gap-1.5 text-amber-800 font-medium">
-                            <Wrench className="h-3 w-3 text-amber-600" />
-                            <span className="font-mono">{tc.name}</span>
-                            <span className="font-mono text-[10px] text-amber-600 truncate flex-1">({JSON.stringify(tc.args).slice(0, 60)})</span>
-                            {!tc.result && <Loader2 className="h-3 w-3 animate-spin text-amber-500" />}
-                            {tc.result && <span className="text-[10px] text-emerald-700">✓</span>}
-                          </summary>
-                          {tc.result && (
-                            <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-[11px] text-slate-700 bg-white/70 p-2 rounded">{tc.result.slice(0, 800)}{tc.result.length > 800 ? '...' : ''}</pre>
-                          )}
-                        </details>
-                      ))}
-                    </div>
+                    <details className="mb-3 group">
+                      <summary className="cursor-pointer inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 px-3 py-1 text-[11px] text-slate-600 transition select-none">
+                        <Wrench className="h-3 w-3" />
+                        <span>用了 {m.toolCalls.length} 个工具</span>
+                        {m.toolCalls.some(tc => !tc.result) ? (
+                          <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
+                        ) : (
+                          <span className="text-emerald-600 text-[10px]">✓</span>
+                        )}
+                        <ChevronDown className="h-3 w-3 transition group-open:rotate-180" />
+                      </summary>
+                      <ul className="mt-1.5 ml-1 space-y-px">
+                        {m.toolCalls.map((tc, ti) => {
+                          const label = TOOL_LABELS[tc.name] || tc.name;
+                          const icon = TOOL_ICONS[tc.name] || "🔧";
+                          const argsStr = formatToolArgs(tc.args);
+                          return (
+                            <li key={ti}>
+                              <details className="text-[11.5px]">
+                                <summary className="cursor-pointer flex items-center gap-1.5 py-1 px-2 rounded hover:bg-slate-50 transition select-none">
+                                  <span className="text-[12px] leading-none">{icon}</span>
+                                  <span className="text-slate-700 font-medium shrink-0">{label}</span>
+                                  {argsStr && <span className="text-slate-400">·</span>}
+                                  <span className="text-slate-600 truncate flex-1 min-w-0">{argsStr}</span>
+                                  {!tc.result && <Loader2 className="h-3 w-3 animate-spin text-amber-500 shrink-0" />}
+                                  {tc.result && <span className="text-emerald-500 text-[10px] shrink-0">✓</span>}
+                                </summary>
+                                {tc.result && (
+                                  <pre className="mt-1 mb-1 max-h-40 overflow-y-auto whitespace-pre-wrap text-[10.5px] text-slate-600 bg-slate-50 px-2.5 py-2 rounded ml-5">{tc.result.slice(0, 800)}{tc.result.length > 800 ? '…' : ''}</pre>
+                                )}
+                              </details>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </details>
                   )}
                   {m.loading && !m.content && !m.toolCalls?.length ? (
                     <div className="flex items-center gap-2 text-slate-500 text-sm">
