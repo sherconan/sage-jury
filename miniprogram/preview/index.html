@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sage Chat 小程序 v60.5 · Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1e293b; }
+  body { padding: 40px 20px; }
+  h1 { color: #fff; text-align: center; margin-bottom: 8px; font-size: 28px; }
+  .subtitle { color: #94a3b8; text-align: center; margin-bottom: 32px; font-size: 14px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 380px)); gap: 24px; justify-content: center; max-width: 1400px; margin: 0 auto; }
+  .phone {
+    background: #000;
+    border-radius: 38px;
+    padding: 12px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.4), 0 0 0 1px #333;
+    position: relative;
+  }
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 16px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 24px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    z-index: 10;
+  }
+  .screen {
+    background: #f8fafc;
+    border-radius: 28px;
+    overflow: hidden;
+    height: 720px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  }
+  .phone-label {
+    color: #94a3b8;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* ============ Header ============ */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 50px 16px 12px;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .header-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+  .avatar-square { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px; font-family: ui-monospace, monospace; box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0; }
+  .header-text { flex: 1; min-width: 0; overflow: hidden; }
+  .header-title { font-size: 14px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-sub { font-size: 11px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .header-right { display: flex; gap: 4px; flex-shrink: 0; }
+  .header-btn { font-size: 11px; padding: 4px 10px; background: #f1f5f9; color: #475569; border: 0; border-radius: 999px; }
+
+  /* ============ Empty state ============ */
+  .empty { text-align: center; padding: 32px 16px 24px; flex: 1; overflow-y: auto; }
+  .empty-avatar { width: 72px; height: 72px; border-radius: 18px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 19px; font-family: ui-monospace, monospace; box-shadow: 0 6px 18px rgba(0,0,0,0.14); position: relative; }
+  .empty-avatar::after { content: ''; position: absolute; inset: 0; border-radius: 18px; opacity: 0.32; background: inherit; animation: pulse 2.4s ease-out infinite; z-index: -1; }
+  @keyframes pulse { 0% { transform: scale(1); opacity: 0.36; } 70% { transform: scale(1.45); opacity: 0; } 100% { transform: scale(1.45); opacity: 0; } }
+  .empty-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 18px; }
+  .empty-title-name { font-weight: 700; }
+  .empty-subtitle { font-size: 13px; color: #475569; margin-top: 7px; }
+  .empty-meta { font-size: 11px; color: #94a3b8; margin-top: 5px; }
+  .empty-meta-num { color: #1e293b; font-weight: 600; }
+  .label-divider { margin-top: 28px; font-size: 11px; color: #94a3b8; letter-spacing: 3px; }
+  .sage-row { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .sage-row-card { position: relative; display: flex; flex-direction: column; align-items: center; padding: 10px 8px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; min-width: 70px; }
+  .sage-row-card.active { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 4px 12px rgba(59,130,246,0.18); transform: translateY(-1px); }
+  .sage-row-avatar { width: 32px; height: 32px; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 11px; font-family: ui-monospace, monospace; }
+  .sage-row-name { font-size: 12px; color: #475569; margin-top: 6px; font-weight: 500; }
+  .sage-row-card.active .sage-row-name { color: #1d4ed8; font-weight: 600; }
+  .sage-row-check { position: absolute; top: 4px; right: 5px; font-size: 9px; color: #3b82f6; font-weight: 700; }
+  .starters { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 10px; padding: 0 16px; }
+  .starter-chip { padding: 7px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 13px; color: #475569; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+
+  /* ============ Message Bubble ============ */
+  .messages { flex: 1; padding: 16px 12px; overflow-y: auto; }
+  .msg-row { display: flex; gap: 8px; margin-bottom: 16px; }
+  .msg-user { flex-direction: row-reverse; }
+  .msg-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 11px; flex-shrink: 0; }
+  .avatar-user { background: #0f172a; }
+  .msg-bubble { max-width: 78%; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.7; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  .bubble-user { background: #0f172a; color: #fff; }
+  .bubble-sage { background: #fff; border: 1px solid #e2e8f0; color: #1e293b; }
+
+  /* ============ Analyst card ============ */
+  .analyst-summary { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: #f5f3ff; color: #6d28d9; font-size: 11px; line-height: 1.4; margin-bottom: 6px; }
+  .analyst-spin { color: #8b5cf6; animation: spin 1.2s linear infinite; display: inline-block; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .analyst-body { padding: 9px 11px; background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border-left: 2px solid #a78bfa; border-radius: 0 6px 6px 0; font-size: 12px; color: #5b21b6; line-height: 1.65; margin-bottom: 8px; }
+
+  /* ============ Tool pill ============ */
+  .tools-summary { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 11px; line-height: 1.4; margin-bottom: 8px; }
+  .tools-check { font-size: 9px; color: #059669; font-weight: 700; }
+  .tools-list { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+  .tool-pill { padding: 5px 7px; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; }
+  .tool-pill-head { display: flex; align-items: center; gap: 4px; color: #334155; flex-wrap: wrap; }
+  .tool-pill-label { color: #1e293b; font-weight: 500; }
+  .tool-pill-args { color: #64748b; font-size: 10px; }
+  .tool-pill-check { margin-left: auto; color: #059669; font-weight: 700; }
+
+  /* ============ Markdown render ============ */
+  .md-h2 { font-size: 16px; font-weight: 700; margin: 6px 0 4px; }
+  .md-p { margin: 3px 0; }
+  .md-ul { margin: 4px 0 4px 4px; display: flex; flex-direction: column; gap: 3px; }
+  .md-li { display: flex; gap: 6px; align-items: flex-start; line-height: 1.7; }
+  .md-bullet { color: #3b82f6; font-weight: 700; flex-shrink: 0; }
+  .md-bold { font-weight: 700; }
+  .md-italic { font-style: italic; }
+  .md-inline-code { font-family: ui-monospace, monospace; background: rgba(15,23,42,0.06); padding: 0 4px; border-radius: 3px; font-size: 12px; color: #be185d; }
+  .md-quote { border-left: 3px solid #cbd5e1; padding: 4px 9px; color: #64748b; font-style: italic; background: rgba(148,163,184,0.08); border-radius: 0 4px 4px 0; margin: 6px 0; }
+  .md-hr { height: 1px; background: #e2e8f0; margin: 9px 0; }
+  .md-code-block { font-family: ui-monospace, monospace; background: #0f172a; color: #e2e8f0; padding: 8px 9px; border-radius: 6px; font-size: 12px; margin: 5px 0; white-space: pre-wrap; }
+
+  /* ============ Cite chip ============ */
+  .cite-chip { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 0 6px; border-radius: 999px; font-size: 11px; font-family: ui-monospace, monospace; margin: 0 2px; font-weight: 500; cursor: pointer; }
+  .cite-chip:hover { background: #93c5fd; }
+
+  /* ============ Quote card ============ */
+  .quotes { margin-top: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+  .quotes-label { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
+  .quote-item { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 7px 9px; margin-bottom: 5px; font-size: 11px; }
+  .quote-flash { background: #fef3c7; border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(251,191,36,0.25); }
+  .quote-head { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 3px; }
+  .quote-num { font-weight: 700; color: #0c4a6e; background: #bae6fd; border-radius: 999px; padding: 0 6px; height: 16px; line-height: 16px; font-size: 10px; font-family: ui-monospace, monospace; }
+  .quote-meta { color: #0369a1; font-size: 10px; font-family: ui-monospace, monospace; }
+  .quote-text { color: #1e293b; line-height: 1.6; margin-top: 2px; }
+  .badge { font-size: 9px; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
+  .badge-rel-strong { background: #d1fae5; color: #065f46; }
+  .badge-rel-mid { background: #e0f2fe; color: #075985; }
+  .badge-rec-hot { background: #fef3c7; color: #92400e; }
+  .badge-rec-mid { background: #ede9fe; color: #5b21b6; }
+
+  /* ============ Followups ============ */
+  .followups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .followup-chip { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 4px 9px; border-radius: 999px; font-size: 11px; }
+
+  /* ============ Input ============ */
+  .input-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px 16px; background: #fff; border-top: 1px solid #e2e8f0; }
+  .input-wrap { flex: 1; position: relative; display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 4px 11px 4px 14px; }
+  .input-wrap.focused { background: #fff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+  .input { flex: 1; padding: 7px 0; font-size: 14px; color: #0f172a; background: transparent; border: 0; outline: 0; }
+  .input-counter { font-size: 10px; color: #cbd5e1; font-family: ui-monospace, monospace; margin-left: 5px; }
+  .send-btn { padding: 0 18px; height: 38px; line-height: 38px; color: white; font-size: 13px; font-weight: 600; border: 0; border-radius: 999px; box-shadow: 0 3px 10px rgba(59,130,246,0.25); cursor: pointer; }
+
+  /* ============ Sessions list ============ */
+  .sess-item { display: flex; align-items: flex-start; gap: 9px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 11px; margin-bottom: 7px; }
+  .sess-item.streaming { border-color: #93c5fd; background: linear-gradient(135deg, #fff 0%, #eff6ff 100%); box-shadow: 0 0 0 1px rgba(59,130,246,0.12); }
+  .sess-avatar { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 11px; font-family: ui-monospace, monospace; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
+  .sess-body { flex: 1; min-width: 0; }
+  .sess-title-row { display: flex; align-items: center; gap: 5px; }
+  .sess-title { font-size: 14px; font-weight: 600; color: #0f172a; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sess-streaming-dot { width: 7px; height: 7px; border-radius: 999px; background: #3b82f6; box-shadow: 0 0 0 0 rgba(59,130,246,0.5); animation: dot-pulse 1.6s ease-out infinite; flex-shrink: 0; }
+  @keyframes dot-pulse { 0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); } 70% { box-shadow: 0 0 0 6px rgba(59,130,246,0); } 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); } }
+  .sess-preview { font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .sess-meta { display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px; color: #94a3b8; margin-top: 5px; }
+  .sess-streaming-label { color: #2563eb; font-weight: 500; }
+
+  /* legend */
+  .legend { color: #94a3b8; max-width: 720px; margin: 32px auto 0; line-height: 1.7; font-size: 13px; background: #2a2a2a; padding: 18px 24px; border-radius: 12px; }
+  .legend h2 { color: #e2e8f0; font-size: 15px; margin-bottom: 10px; }
+  .legend code { color: #93c5fd; }
+</style>
+</head>
+<body>
+
+<h1>Sage Chat 小程序 v60.5 · Visual Preview</h1>
+<p class="subtitle">3 个屏幕状态对照：Empty State / 对话中 / 历史列表</p>
+
+<div class="gallery">
+
+  <!-- ============ Phone 1: Empty State ============ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="header-left">
+            <div class="avatar-square" style="background:#3b82f6">DYP</div>
+            <div class="header-text">
+              <div class="header-title">和 段永平 对话</div>
+              <div class="header-sub">本分 · 不懂不投 · 看十年后</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <button class="header-btn">+ 新</button>
+            <button class="header-btn">历史</button>
+          </div>
+        </div>
+        <div class="empty">
+          <div class="empty-avatar" style="background:#3b82f6">DYP</div>
+          <div class="empty-title">和 <span class="empty-title-name">段永平</span> 对话</div>
+          <div class="empty-subtitle">本分 · 不懂不投 · 看十年后</div>
+          <div class="empty-meta">基于 <span class="empty-meta-num">10497</span> 条雪球真实发言 · 8 工具 · v60 深度池</div>
+
+          <div class="label-divider">— 切换大佬 —</div>
+          <div class="sage-row">
+            <div class="sage-row-card active">
+              <div class="sage-row-avatar" style="background:#3b82f6">DYP</div>
+              <div class="sage-row-name">段永平</div>
+              <div class="sage-row-check">✓</div>
+            </div>
+            <div class="sage-row-card">
+              <div class="sage-row-avatar" style="background:#10b981">GWC</div>
+              <div class="sage-row-name">管我财</div>
+            </div>
+          </div>
+
+          <div class="label-divider">— 试试这些问题 —</div>
+          <div class="starters">
+            <span class="starter-chip">段大你为什么换神华去泡泡玛特？</span>
+            <span class="starter-chip">苹果还能拿吗？</span>
+            <span class="starter-chip">拼多多怎么看？</span>
+          </div>
+        </div>
+        <div class="input-bar">
+          <div class="input-wrap">
+            <div class="input" style="color:#94a3b8;">问 段永平...</div>
+          </div>
+          <button class="send-btn" style="background:#3b82f6; opacity:0.35;">发送</button>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Empty State · 引导首问</div>
+  </div>
+
+  <!-- ============ Phone 2: 对话中 (含 analyst + tools + cite + quote) ============ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header">
+          <div class="header-left">
+            <div class="avatar-square" style="background:#10b981">GWC</div>
+            <div class="header-text">
+              <div class="header-title">招行 PE 历史什么分位</div>
+              <div class="header-sub">低估逆向平均赢 · 排雷胜选股</div>
+            </div>
+          </div>
+          <div class="header-right">
+            <button class="header-btn">+ 新</button>
+            <button class="header-btn">历史</button>
+          </div>
+        </div>
+        <div class="messages">
+          <!-- user msg -->
+          <div class="msg-row msg-user">
+            <div class="msg-avatar avatar-user">你</div>
+            <div class="msg-bubble bubble-user">招行 PE 历史什么分位？现在能买吗？</div>
+          </div>
+
+          <!-- sage msg -->
+          <div class="msg-row">
+            <div class="msg-avatar" style="background:#10b981">GWC</div>
+            <div class="msg-bubble bubble-sage">
+
+              <!-- Analyst 内心分析 (collapsed view) -->
+              <div class="analyst-summary">
+                💭 内心分析 <span class="tools-check">✓</span>
+              </div>
+
+              <!-- Tool calls (collapsed pill) -->
+              <div class="tools-summary">
+                🛠️ 用了 3 个工具 <span class="tools-check">✓</span>
+              </div>
+
+              <!-- main content (markdown rendered) -->
+              <div class="md-h2">先看 PE 数据</div>
+              <div class="md-p">招行 <span class="md-bold">PE-TTM 现在 6.8 倍</span>，处于 <span class="cite-chip">#1</span> 过去 10 年的 <span class="md-bold">12% 分位</span>。明显被低估。</div>
+              <div class="md-ul">
+                <div class="md-li"><span class="md-bullet">•</span><span><span class="md-bold">优势</span>：ROE 长期 15%+，零售护城河深 <span class="cite-chip">#2</span></span></div>
+                <div class="md-li"><span class="md-bullet">•</span><span>资本充足率 13.78%，远高于监管</span></div>
+                <div class="md-li"><span class="md-bullet">•</span><span>股息率 5.5%，<span class="md-italic">荒岛策略</span>核心标的 <span class="cite-chip">#3</span></span></div>
+              </div>
+              <div class="md-p">⚠️ <span class="md-bold">风险</span>：地产坏账、息差收窄。但 <span class="md-inline-code">PE 12%</span> 分位已经 price in 多数风险。</div>
+
+              <!-- followups -->
+              <div class="followups">
+                <span class="followup-chip">✨ 港股招行更便宜吗？</span>
+                <span class="followup-chip">✨ 对比工行如何？</span>
+              </div>
+
+              <!-- quotes with badges -->
+              <div class="quotes">
+                <div class="quotes-label">引用 3 条历史原帖 · 点正文 #N 跳转</div>
+                <div class="quote-item quote-flash">
+                  <div class="quote-head">
+                    <div class="quote-num">#1</div>
+                    <div class="quote-meta">2026-03-22 · 👍 412</div>
+                    <span class="badge badge-rel-strong">强相关</span>
+                    <span class="badge badge-rec-hot">近期 🔥</span>
+                  </div>
+                  <div class="quote-text">招行 PE 跌到 6 倍区间，过去十年只有 2014/2018 出现过…</div>
+                </div>
+                <div class="quote-item">
+                  <div class="quote-head">
+                    <div class="quote-num">#2</div>
+                    <div class="quote-meta">2025-08-15 · 👍 287</div>
+                    <span class="badge badge-rel-strong">强相关</span>
+                    <span class="badge badge-rec-mid">近期</span>
+                  </div>
+                  <div class="quote-text">零售银行的护城河比地产链长得多，看看美国富国就知道…</div>
+                </div>
+                <div class="quote-item">
+                  <div class="quote-head">
+                    <div class="quote-num">#3</div>
+                    <div class="quote-meta">2024-12-01 · 👍 156</div>
+                    <span class="badge badge-rel-mid">相关</span>
+                    <span class="badge badge-rec-mid">近期</span>
+                  </div>
+                  <div class="quote-text">荒岛策略持仓里招行始终是底仓，5%+ 股息穿越牛熊…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-bar">
+          <div class="input-wrap focused">
+            <div class="input">那港股 03968 同样便宜吗</div>
+            <span class="input-counter">10/500</span>
+          </div>
+          <button class="send-btn" style="background:#10b981;">发送</button>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">对话中 · 折叠 analyst + tools，正文含 cite chip + 双 badge</div>
+  </div>
+
+  <!-- ============ Phone 3: Sessions ============ -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="header" style="padding-top:50px;">
+          <div style="font-size:16px;font-weight:600;color:#0f172a;">历史对话 <span style="margin-left:6px;font-size:11px;color:#94a3b8;background:#f1f5f9;padding:1px 8px;border-radius:999px;">7</span></div>
+          <button class="header-btn" style="background:#fef2f2;color:#dc2626;">清空</button>
+        </div>
+        <div style="padding:10px 14px 0;">
+          <div style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:999px;">
+            <span style="font-size:11px;color:#94a3b8;">🔍</span>
+            <input class="input" style="font-size:13px;color:#1e293b;" placeholder="搜索标题 / 内容 / sage..." />
+          </div>
+        </div>
+        <div style="flex:1; padding:10px 14px 14px; overflow-y:auto;">
+          <div class="sess-item streaming">
+            <div class="sess-avatar" style="background:#10b981">GWC</div>
+            <div class="sess-body">
+              <div class="sess-title-row">
+                <div class="sess-title">招行 PE 历史什么分位</div>
+                <div class="sess-streaming-dot"></div>
+              </div>
+              <div class="sess-preview">招行 PE-TTM 现在 6.8 倍，处于过去 10 年的 12% 分位。明显被…</div>
+              <div class="sess-meta">
+                <span style="color:#475569;font-weight:500;">管我财</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>1 轮</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>刚刚</span>
+                <span class="sess-streaming-label">· 生成中…</span>
+              </div>
+            </div>
+          </div>
+          <div class="sess-item">
+            <div class="sess-avatar" style="background:#3b82f6">DYP</div>
+            <div class="sess-body">
+              <div class="sess-title-row">
+                <div class="sess-title">为什么换神华去泡泡玛特</div>
+              </div>
+              <div class="sess-preview">这是个估值套利的故事。神华 PE 8 倍但现金流稳，泡泡玛特 PE 30 但增…</div>
+              <div class="sess-meta">
+                <span style="color:#475569;font-weight:500;">段永平</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>3 轮</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>15 分钟前</span>
+              </div>
+            </div>
+          </div>
+          <div class="sess-item">
+            <div class="sess-avatar" style="background:#3b82f6">DYP</div>
+            <div class="sess-body">
+              <div class="sess-title-row">
+                <div class="sess-title">苹果还能拿吗</div>
+              </div>
+              <div class="sess-preview">先想清楚商业模式。苹果不是硬件公司，是 1B+ 全球用户的服务平台…</div>
+              <div class="sess-meta">
+                <span style="color:#475569;font-weight:500;">段永平</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>5 轮</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>2 小时前</span>
+              </div>
+            </div>
+          </div>
+          <div class="sess-item">
+            <div class="sess-avatar" style="background:#10b981">GWC</div>
+            <div class="sess-body">
+              <div class="sess-title-row">
+                <div class="sess-title">26 年荒岛策略选什么</div>
+              </div>
+              <div class="sess-preview">三条原则：低估、分散、避雷。我现在持仓是招行 25% + 中海油 20% + …</div>
+              <div class="sess-meta">
+                <span style="color:#475569;font-weight:500;">管我财</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>2 轮</span>
+                <span style="color:#cbd5e1;">·</span>
+                <span>昨天</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Sessions · 搜索框 / streaming 脉冲 / 长按操作</div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <h2>视觉走查图例（13 commit / v60.4-mp.0 → v60.5-mp.5）</h2>
+  <p>这是用 HTML/CSS 模拟的小程序界面，便于离线视觉验收。所有元素对应 <code>miniprogram/pages/chat/*</code> 和 <code>pages/sessions/*</code> 的 wxml/wxss。</p>
+  <p><strong>覆盖能力</strong>：empty state (avatar pulse) · 折叠 analyst card · 折叠 tool pill · markdown 渲染 (h2/p/ul/bold/italic/code/cite) · 引用 chip <span class="cite-chip">#1</span> · quote 双 badge · followups · focused input · streaming 脉冲</p>
+  <p><strong>真机验证</strong>：打开 <code>/Applications/wechatwebdevtools.app</code> → 导入 <code>~/sage-jury/miniprogram/</code> → 勾选「不校验合法域名」→ 编译。</p>
+  <p style="color:#64748b;margin-top:12px;font-size:12px;">v60.5-mp.5 · 13 commits · 41 lint pass · 2583 LoC</p>
+</div>
+
+</body>
+</html>
