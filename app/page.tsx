@@ -20,6 +20,10 @@ interface Msg {
   toolCalls?: ToolCall[];
   loading?: boolean;
   ts: number;
+  // v60.1: 内心分析 markdown，流式累积
+  analystThinking?: string;
+  analystDone?: boolean;
+  writerStarted?: boolean;
 }
 interface Session {
   id: string;
@@ -324,6 +328,32 @@ export default function ChatPage() {
             msgs[msgs.length - 1] = last;
             return { ...s, msgs };
           }));
+          // v60.1: Analyst 流式思考过程
+          else if (evt === "analyst_chunk" && data.delta) setSessions(prev => prev.map(s => {
+            if (s.id !== sessId) return s;
+            const msgs = [...s.msgs];
+            const last = { ...msgs[msgs.length - 1] };
+            last.analystThinking = (last.analystThinking || "") + data.delta;
+            last.loading = false;
+            msgs[msgs.length - 1] = last;
+            return { ...s, msgs };
+          }));
+          else if (evt === "analyst_done") setSessions(prev => prev.map(s => {
+            if (s.id !== sessId) return s;
+            const msgs = [...s.msgs];
+            const last = { ...msgs[msgs.length - 1] };
+            last.analystDone = true;
+            msgs[msgs.length - 1] = last;
+            return { ...s, msgs };
+          }));
+          else if (evt === "phase" && data?.name === "writer") setSessions(prev => prev.map(s => {
+            if (s.id !== sessId) return s;
+            const msgs = [...s.msgs];
+            const last = { ...msgs[msgs.length - 1] };
+            last.writerStarted = true;
+            msgs[msgs.length - 1] = last;
+            return { ...s, msgs };
+          }));
           else if (evt === "done") {
             // v55: 优先使用服务端 citation 校验后的 fullReply（剥除了张冠李戴的 [原文 N]）
             const finalText = data.fullReply || accumulated || "";
@@ -577,6 +607,21 @@ export default function ChatPage() {
                           );
                         })}
                       </ul>
+                    </details>
+                  )}
+                  {/* v60.1: Analyst 内心分析（思考卡片，默认展开看到流式思考） */}
+                  {m.role === "sage" && m.analystThinking && (
+                    <details open={!m.writerStarted} className="mb-3 group">
+                      <summary className="cursor-pointer inline-flex items-center gap-1.5 rounded-full bg-violet-50 hover:bg-violet-100 px-3 py-1 text-[11px] text-violet-700 transition select-none">
+                        <span>💭</span>
+                        <span>{m.analystDone ? "内心分析" : (m.writerStarted ? "已分析完，落笔中" : "内心分析中…")}</span>
+                        {!m.analystDone && <Loader2 className="h-3 w-3 animate-spin text-violet-500" />}
+                        {m.analystDone && <span className="text-emerald-600 text-[10px]">✓</span>}
+                        <ChevronDown className="h-3 w-3 transition group-open:rotate-180" />
+                      </summary>
+                      <div className="mt-1.5 ml-1 px-3 py-2 bg-violet-50/40 border-l-2 border-violet-200 rounded-r text-[11.5px] text-slate-600 max-h-72 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                        {m.analystThinking}
+                      </div>
                     </details>
                   )}
                   {m.loading && !m.content && !m.toolCalls?.length ? (
