@@ -338,7 +338,7 @@ export async function POST(req: NextRequest) {
           }
           const reader = llmRes.body.getReader();
           const dec = new TextDecoder();
-          let buf = "", roundContent = "", roundReasoning = "";
+          let buf = "", roundContent = "", roundReasoning = "", emitBuf = "", inDSML = false;
           // tool_calls 累积器（按 index）
           const toolAcc: Record<number, { id?: string; name?: string; args: string }> = {};
           let finishReason = "";
@@ -361,7 +361,47 @@ export async function POST(req: NextRequest) {
                 if (delta?.content) {
                   roundContent += delta.content;
                   fullReply += delta.content;
-                  controller.enqueue(sse("chunk", { delta: delta.content }));
+                  // v60.4.10: emitBuf + DSML 边界保护（同 chat/stream v60.2 实现）
+                  // 直到检测到 DSML 关闭/无开标签才 emit，避免泄漏 raw <｜｜DSML｜｜...> 给前端
+                  emitBuf += delta.content;
+                  let outSeg = "";
+                  while (emitBuf.length > 0) {
+                    if (!inDSML) {
+                      const m = emitBuf.match(/<[^<>]{0,400}DSML[^<>]{0,400}tool_calls\s*>/);
+                      if (m && m.index !== undefined) {
+                        outSeg += emitBuf.slice(0, m.index);
+                        emitBuf = emitBuf.slice(m.index + m[0].length);
+                        inDSML = true;
+                      } else {
+                        const lastOpen = emitBuf.lastIndexOf("<");
+                        const lastClose = emitBuf.lastIndexOf(">");
+                        const safeEnd = lastOpen > lastClose ? lastOpen : emitBuf.length;
+                        outSeg += emitBuf.slice(0, safeEnd);
+                        emitBuf = emitBuf.slice(safeEnd);
+                        break;
+                      }
+                    } else {
+                      const m = emitBuf.match(/<\/[^<>]{0,400}DSML[^<>]{0,400}tool_calls\s*>/);
+                      if (m && m.index !== undefined) {
+                        emitBuf = emitBuf.slice(m.index + m[0].length);
+                        inDSML = false;
+                      } else {
+                        emitBuf = "";
+                        break;
+                      }
+                    }
+                  }
+                  if (outSeg) {
+                    // v60.4.4 风格切 80 字符流式
+                    const MAX_CHUNK = 80;
+                    if (outSeg.length > MAX_CHUNK) {
+                      for (let i = 0; i < outSeg.length; i += MAX_CHUNK) {
+                        controller.enqueue(sse("chunk", { delta: outSeg.slice(i, i + MAX_CHUNK) }));
+                      }
+                    } else {
+                      controller.enqueue(sse("chunk", { delta: outSeg }));
+                    }
+                  }
                 }
                 if (delta?.reasoning_content) {
                   roundReasoning += delta.reasoning_content;
