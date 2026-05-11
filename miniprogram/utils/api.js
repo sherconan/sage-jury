@@ -102,14 +102,16 @@ function decorateQuote(q) {
 }
 
 // === DSML 清洗 + Markdown 去格式化（小程序不能渲染 md，去符号留文本）===
+// v60.4-mp.2: 跨包过滤升级 —— 用 [\s\S] 允许跨行匹配，加 1000 字符上限防回溯灾难
 function cleanDSML(s) {
   if (!s) return s;
   return s
-    // 1. DSML 内部 tool-call 标签
-    .replace(/<[^<>\n]{0,200}DSML[^<>\n]{0,200}>/g, '')
-    .replace(/<\/?\s*(invoke|parameter|tool_calls)[^>]*>/gi, '')
-    .replace(/name="[a-z_]+"\s+string="(true|false)"\s*>/g, '')
+    // 1. DSML 内部 tool-call 标签（含整段 body 吞掉）
+    .replace(/<[\s\S]{0,200}?DSML[\s\S]{0,500}?>/g, '')
+    .replace(/<\/?\s*(invoke|parameter|tool_calls)[\s\S]{0,500}?>/gi, '')
+    .replace(/name="[a-zA-Z_][a-zA-Z0-9_]{0,40}"\s+string="[^"]{0,200}"\s*>/g, '')
     // 2. Markdown 去格式（保留文本，去标记符号）
+    // Markdown 解析以后（Phase 3）将 substitute 此分支；保留兜底
     .replace(/```[\s\S]*?```/g, m => m.replace(/```\w*\n?/g, '').replace(/```/g, ''))  // 代码块去 fence
     .replace(/^#{1,6}\s+/gm, '')          // 去 ## heading 标记
     .replace(/\*\*([^*]+)\*\*/g, '$1')   // **粗体** → 粗体

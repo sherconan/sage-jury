@@ -2,11 +2,28 @@
 const SESS_KEY = 'sj_chat_sessions_v1';
 const ACTIVE_KEY = 'sj_chat_active_session_v1';
 
+// v60.4-mp.2: 容量护栏（wx.storage 单 key 上限 10MB）
+const MAX_SESSIONS = 100;
+const MAX_MSGS_PER_SESSION = 200;
+
 function load() {
   try { return wx.getStorageSync(SESS_KEY) || []; } catch { return []; }
 }
 function save(sessions) {
-  try { wx.setStorageSync(SESS_KEY, sessions.slice(0, 100)); } catch {}
+  try {
+    // 1) 单个 session 内 msg 数量裁剪（保留最近 N 条，老消息丢弃）
+    const safe = (sessions || []).map(s => {
+      if (Array.isArray(s.msgs) && s.msgs.length > MAX_MSGS_PER_SESSION) {
+        return { ...s, msgs: s.msgs.slice(s.msgs.length - MAX_MSGS_PER_SESSION) };
+      }
+      return s;
+    });
+    // 2) session 数量上限
+    wx.setStorageSync(SESS_KEY, safe.slice(0, MAX_SESSIONS));
+  } catch (e) {
+    // 持久化失败常见原因：storage 满。降级 → 只保留最近 20 个 session
+    try { wx.setStorageSync(SESS_KEY, (sessions || []).slice(0, 20)); } catch {}
+  }
 }
 function getActiveId() {
   try { return wx.getStorageSync(ACTIVE_KEY) || null; } catch { return null; }
