@@ -61,7 +61,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--base', default='https://sage-jury.vercel.app')
     ap.add_argument('--tolerance', type=float, default=1.30,
-                    help='allow current to exceed baseline by this multiplier (default 1.30 = +30%)')
+                    help='allow current to exceed baseline by this multiplier (default 1.30 = +30 percent)')
     ap.add_argument('--queries-only', action='store_true', help='print test queries & exit')
     args = ap.parse_args()
 
