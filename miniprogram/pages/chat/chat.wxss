@@ -248,39 +248,143 @@ page { height: 100%; }
   color: #1e293b;
 }
 
-.tool-calls {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
+/* v60.1: Analyst 内心分析卡（violet 渐变） */
+.analyst-card {
   margin-bottom: 16rpx;
 }
-.tool-card {
-  border: 1rpx solid #fbbf24;
-  background: #fffbeb;
+.analyst-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 9999rpx;
+  background: #f5f3ff;
+  color: #6d28d9;
+  font-size: 22rpx;
+  line-height: 1.4;
+}
+.analyst-summary-hover { background: #ede9fe; }
+.analyst-emoji { font-size: 22rpx; }
+.analyst-title { font-weight: 500; }
+.analyst-spin {
+  font-size: 20rpx;
+  color: #8b5cf6;
+  animation: spin 1.2s linear infinite;
+  display: inline-block;
+}
+.analyst-check {
+  font-size: 18rpx;
+  color: #059669;
+  font-weight: bold;
+}
+.analyst-arrow {
+  font-size: 22rpx;
+  color: #a78bfa;
+  margin-left: 4rpx;
+  transition: transform 0.2s;
+}
+.analyst-arrow.open { transform: rotate(180deg); }
+.analyst-body {
+  margin-top: 12rpx;
+  padding: 18rpx 22rpx;
+  background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%);
+  border-left: 4rpx solid #a78bfa;
   border-radius: 12rpx;
-  padding: 12rpx 16rpx;
+  font-size: 24rpx;
+  color: #5b21b6;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+/* v58: tool calls 折叠 pill */
+.tools-card {
+  margin-bottom: 16rpx;
+}
+.tools-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 9999rpx;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 22rpx;
+  line-height: 1.4;
+}
+.tools-summary-hover { background: #e2e8f0; }
+.tools-emoji { font-size: 22rpx; }
+.tools-title { font-weight: 500; }
+.tools-check {
+  font-size: 18rpx;
+  color: #059669;
+  font-weight: bold;
+}
+.tools-spin {
+  font-size: 20rpx;
+  color: #f59e0b;
+  animation: spin 1.2s linear infinite;
+  display: inline-block;
+}
+.tools-arrow {
+  font-size: 22rpx;
+  color: #94a3b8;
+  margin-left: 4rpx;
+  transition: transform 0.2s;
+}
+.tools-arrow.open { transform: rotate(180deg); }
+.tools-list {
+  margin-top: 12rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.tool-pill {
+  padding: 10rpx 14rpx;
+  border-radius: 12rpx;
+  background: #f8fafc;
+  border: 1rpx solid #e2e8f0;
   font-size: 22rpx;
 }
-.tool-head {
+.tool-pill-head {
   display: flex;
   align-items: center;
   gap: 8rpx;
-  color: #92400e;
+  color: #334155;
+  flex-wrap: wrap;
 }
-.tool-icon { font-size: 22rpx; }
-.tool-name {
-  font-family: ui-monospace, monospace;
-  color: #78350f;
+.tool-pill-icon { font-size: 22rpx; }
+.tool-pill-label { color: #1e293b; font-weight: 500; }
+.tool-pill-args { color: #64748b; font-size: 20rpx; }
+.tool-pill-check {
+  margin-left: auto;
+  font-size: 18rpx;
+  color: #059669;
+  font-weight: bold;
 }
-.tool-result {
+.tool-pill-spin {
+  margin-left: auto;
+  font-size: 20rpx;
+  color: #f59e0b;
+  animation: spin 1.2s linear infinite;
+  display: inline-block;
+}
+.tool-pill-result {
   margin-top: 8rpx;
-  padding: 8rpx;
-  background: rgba(255,255,255,.7);
+  margin-left: 30rpx;
+  padding: 10rpx 14rpx;
+  background: #f1f5f9;
   border-radius: 8rpx;
   font-size: 20rpx;
   color: #475569;
-  max-height: 200rpx;
+  line-height: 1.6;
+  max-height: 240rpx;
   overflow: hidden;
+  white-space: pre-wrap;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 .loading-text { color: #94a3b8; font-size: 26rpx; }

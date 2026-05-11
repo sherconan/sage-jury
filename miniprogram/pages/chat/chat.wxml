@@ -56,21 +56,44 @@
         {{item.role === 'user' ? '你' : activeSage.initials}}
       </view>
       <view class="msg-bubble {{item.role === 'user' ? 'bubble-user' : 'bubble-sage'}}">
-        <!-- tool calls -->
-        <view wx:if="{{item.role === 'sage' && item.toolCalls && item.toolCalls.length > 0}}" class="tool-calls">
-          <view wx:for="{{item.toolCalls}}" wx:for-item="tc" wx:key="id" class="tool-card">
-            <view class="tool-head">
-              <text class="tool-icon">🛠️</text>
-              <text class="tool-name font-mono">{{tc.name}}</text>
-              <text wx:if="{{tc.result}}" class="text-xs" style="color:#059669">✓</text>
-              <text wx:else class="text-xs text-amber-700">…</text>
+        <!-- v60.1: Analyst 内心分析卡（紫色，默认展开，writer 开始后自动折叠） -->
+        <view wx:if="{{item.role === 'sage' && item.analystThinking}}" class="analyst-card">
+          <view class="analyst-summary" data-mi="{{index}}" bindtap="onToggleAnalyst" hover-class="analyst-summary-hover">
+            <text class="analyst-emoji">💭</text>
+            <text class="analyst-title">{{item.analystDone ? '内心分析' : (item.writerStarted ? '已分析完，落笔中' : '内心分析中…')}}</text>
+            <text wx:if="{{!item.analystDone}}" class="analyst-spin">⟳</text>
+            <text wx:if="{{item.analystDone}}" class="analyst-check">✓</text>
+            <text class="analyst-arrow {{item.analystOpen ? 'open' : ''}}">⌄</text>
+          </view>
+          <view wx:if="{{item.analystOpen}}" class="analyst-body">{{item.analystThinking}}</view>
+        </view>
+
+        <!-- v58: tool calls 折叠 pill（人话标签 + 紧凑） -->
+        <view wx:if="{{item.role === 'sage' && item.toolCalls && item.toolCalls.length > 0}}" class="tools-card">
+          <view class="tools-summary" data-mi="{{index}}" bindtap="onToggleTools" hover-class="tools-summary-hover">
+            <text class="tools-emoji">🛠️</text>
+            <text class="tools-title">用了 {{item.toolCalls.length}} 个工具</text>
+            <text wx:if="{{item.toolsAllDone}}" class="tools-check">✓</text>
+            <text wx:else class="tools-spin">⟳</text>
+            <text class="tools-arrow {{item.toolsOpen ? 'open' : ''}}">⌄</text>
+          </view>
+          <view wx:if="{{item.toolsOpen}}" class="tools-list">
+            <view wx:for="{{item.toolCalls}}" wx:for-item="tc" wx:key="id" class="tool-pill">
+              <view class="tool-pill-head">
+                <text class="tool-pill-icon">{{tc.icon}}</text>
+                <text class="tool-pill-label">{{tc.label}}</text>
+                <text wx:if="{{tc.argsStr}}" class="tool-pill-args">· {{tc.argsStr}}</text>
+                <text wx:if="{{tc.result}}" class="tool-pill-check">✓</text>
+                <text wx:else class="tool-pill-spin">⟳</text>
+              </view>
+              <view wx:if="{{tc.result}}" class="tool-pill-result">{{tc.resultPreview}}</view>
             </view>
-            <view wx:if="{{tc.result}}" class="tool-result">{{tc.resultPreview}}</view>
           </view>
         </view>
+
         <!-- main content -->
-        <view wx:if="{{item.loading && !item.content}}" class="loading-text">{{activeSage.display}} 正在思考...</view>
-        <view wx:else class="msg-content">{{item.content}}</view>
+        <view wx:if="{{item.loading && !item.content && !item.analystThinking}}" class="loading-text">{{activeSage.display}} 正在思考...</view>
+        <view wx:elif="{{item.content}}" class="msg-content">{{item.content}}</view>
         <!-- followups -->
         <view wx:if="{{item.followups && item.followups.length > 0}}" class="followups">
           <view wx:for="{{item.followups}}" wx:for-item="fp" wx:key="*this" class="followup-chip" data-q="{{fp}}" bindtap="onStarter">
