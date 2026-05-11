@@ -626,6 +626,10 @@ export default function ChatPage() {
                   <Download className="h-3 w-3" /> 导出
                 </button>
               )}
+              <a href="/jury" title="多 sage 同时评判同一问题（v60.5.0）"
+                className="flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 text-xs text-blue-700 font-medium transition">
+                <span>👥</span> 陪审团
+              </a>
               <span className="hidden md:flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-[10px] text-emerald-700 font-medium">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 Agent · 4 tools
