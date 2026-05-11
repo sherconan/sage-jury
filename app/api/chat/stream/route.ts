@@ -79,7 +79,9 @@ function tokenize(q: string): string[] {
   }
   return [...t];
 }
-function findRelevant(sage: SageData, query: string, limit = 8): Quote[] {
+// v57.1: 动态召回 —— 不写死条数，按"时效性 × 相关性"自适应
+// 上界 maxCap=15 防 context 爆炸；下界靠动态阈值，能力圈外可能返回 0 条
+function findRelevant(sage: SageData, query: string, maxCap = 15): Quote[] {
   const found = new Map<number, { q: Quote; score: number }>();
   const tokens = tokenize(query);
   const qLow = normalize(query).toLowerCase();
@@ -101,20 +103,37 @@ function findRelevant(sage: SageData, query: string, limit = 8): Quote[] {
   if (sage.recent_originals) for (const q of sage.recent_originals) score(q, 0);
   for (const q of sage.high_quality_originals) score(q, 0);
   if (sage.position_changes) for (const q of sage.position_changes) score(q, 0);
-  // v55: 删除"召回不足 3 条就用高赞帖填充"的兜底 —— 这是引用张冠李戴的根因
-  // 召回为空就让 buildRagContext 显式声明"未召回到"，禁止 LLM 伪造引用
-  const MIN_RELEVANCE_SCORE = 2;  // 至少 2 个 token 命中或 1 个 by_concept 命中
+
+  const MIN_RELEVANCE_SCORE = 2;
   const now = Date.now();
-  return [...found.values()]
+
+  // v57.1: 时效性分桶 —— 越新越重，让最近 1 个月的帖子比 3 年前帖子优先级高 2 倍
+  const recencyMul = (q: Quote): number => {
+    if (!q.ts) return 0.5;
+    const days = (now - q.ts) / 86400000;
+    if (days < 7)   return 2.0;  // 1 周内（热点）
+    if (days < 30)  return 1.5;  // 1 月内
+    if (days < 180) return 1.2;  // 半年内
+    if (days < 365) return 1.0;  // 1 年内
+    if (days < 730) return 0.7;  // 2 年内
+    return 0.5;                  // 更老
+  };
+
+  // 综合评分 = (相关性 × 10 + 赞数 × 0.005) × 时效性
+  const scored = [...found.values()]
     .filter(({ score }) => score >= MIN_RELEVANCE_SCORE)
-    .map(({ q, score }) => {
-      const days = q.ts ? (now - q.ts) / 86400000 : 9999;
-      const r = Math.max(0.3, 1 - days / 365);
-      // v55: q.likes 权重 0.05 → 0.005，避免高赞但无关帖压倒真相关帖
-      return { q, fs: score * 10 + q.likes * 0.005 * r };
-    })
-    .sort((a, b) => b.fs - a.fs)
-    .slice(0, limit)
+    .map(({ q, score }) => ({ q, fs: (score * 10 + q.likes * 0.005) * recencyMul(q) }))
+    .sort((a, b) => b.fs - a.fs);
+
+  if (!scored.length) return [];
+
+  // 动态阈值：必须 ≥ top × 0.35 且 ≥ 绝对底 12（避免边缘弱相关溜进来）
+  const topScore = scored[0].fs;
+  const dynThresh = Math.max(topScore * 0.35, 12);
+
+  return scored
+    .filter(s => s.fs >= dynThresh)
+    .slice(0, maxCap)
     .map(({ q }) => q);
 }
 
@@ -444,20 +463,44 @@ function makeTool_searchSagePost(sage: SageData) {
     let candidates = bm25Rank(queryTokens, docs).slice(0, 30);  // 召回 top 30
     if (candidates.length === 0) candidates = docs.slice(0, 30).map(d => ({ id: d.id, score: 0 }));
 
-    // 3. Bocha rerank 精排到 top N
+    // 3. Bocha rerank 多请求一些候选（top 15），后面做动态过滤
     const candTexts = candidates.map(c => {
       const q = allCands.find(x => String(x.id) === c.id)!;
       return { id: c.id, text: (q.text_n || q.text).slice(0, 350) };
     });
-    const reranked = await bochaRerank(query, candTexts, Math.min(top || 8, 12));
+    const reranked = await bochaRerank(query, candTexts, 15);
     if (reranked.length === 0) return "无相关发言";
 
-    // 4. 拼回完整 quote 信息返回
-    return reranked.map((r, i) => {
+    // v57.1: 动态过滤 —— 按 rerank 分数 × 时效性，不写死条数
+    const now = Date.now();
+    const recencyMul = (q: Quote): number => {
+      if (!q.ts) return 0.5;
+      const days = (now - q.ts) / 86400000;
+      if (days < 7)   return 1.5;
+      if (days < 30)  return 1.3;
+      if (days < 180) return 1.15;
+      if (days < 365) return 1.0;
+      if (days < 730) return 0.85;
+      return 0.7;
+    };
+    const enriched = reranked.map(r => {
       const q = allCands.find(x => String(x.id) === r.id);
-      if (!q) return "";
-      return `[${i+1}] ${q.date} 👍${q.likes} (rerank ${r.score.toFixed(3)})\n${(q.text_n || q.text).slice(0, 280)}\n${q.url}`;
-    }).filter(Boolean).join("\n\n");
+      if (!q) return null;
+      return { r, q, finalScore: r.score * recencyMul(q) };
+    }).filter(Boolean) as Array<{ r: { id: string; score: number }; q: Quote; finalScore: number }>;
+    if (!enriched.length) return "无相关发言";
+
+    // 动态阈值：rerank score 必须 ≥ top × 0.45 OR ≥ 绝对底 0.25
+    // top 上限：用户指定的 top（如有）或默认 12
+    const userTop = Math.min(top || 12, 15);
+    const topScore = enriched[0].finalScore;
+    const dynThresh = Math.max(topScore * 0.45, 0.25);
+    const passed = enriched.filter(e => e.finalScore >= dynThresh).slice(0, userTop);
+    if (!passed.length) return "无相关发言（话题可能在能力圈外）";
+
+    return passed.map((e, i) =>
+      `[${i+1}] ${e.q.date} 👍${e.q.likes} (rerank ${e.r.score.toFixed(3)}, recency×${recencyMul(e.q).toFixed(2)})\n${(e.q.text_n || e.q.text).slice(0, 280)}\n${e.q.url}`
+    ).join("\n\n");
   };
 }
 
@@ -466,8 +509,8 @@ const TOOLS = [
     type: "function" as const,
     function: {
       name: "search_sage_post",
-      description: "⭐ 在你（sage）自己的雪球历史发言里做语义搜索（BM25 + reranker）。当用户问到你过去的具体观点、某只股票你怎么看、某概念你怎么解释时**优先用此工具**。返回最相关的 8 条原文（带日期/赞数/链接）。",
-      parameters: { type: "object", properties: { query: { type: "string", description: "语义搜索 query，如『腾讯估值』『泡泡玛特换仓理由』『为什么看好招行』" }, top: { type: "number", description: "返回条数 1-12", default: 8 } }, required: ["query"] },
+      description: "⭐ 在你（sage）自己的雪球历史发言里做语义搜索（BM25 + reranker + 时效性加权）。当用户问到你过去的具体观点、某只股票你怎么看、某概念你怎么解释时**优先用此工具**。返回**按相关性 × 时效性动态筛选**的若干条原文（0-12 条，话题热可能多，能力圈外可能 0 条）。",
+      parameters: { type: "object", properties: { query: { type: "string", description: "语义搜索 query，如『腾讯估值』『泡泡玛特换仓理由』『为什么看好招行』" }, top: { type: "number", description: "上限条数（不强制，实际按相关性 × 时效性动态裁剪）1-15", default: 12 } }, required: ["query"] },
     },
   },
   {
@@ -550,7 +593,8 @@ function buildRagContext(quotes: Quote[]): string {
 - 如果用户问的是某只股票/行业/概念，**坦白说"这个我没专门讨论过"或"不是我能力圈"**
 - 禁止从无关旧帖里强行类比，禁止编造历史观点`;
   }
-  return quotes.slice(0, 8).map((q, i) =>
+  // v57.1: 动态条数，不截断 —— findRelevant 已按时效×相关性筛过，全部展示
+  return quotes.map((q, i) =>
     `[原文 ${i+1}] ${q.date}(👍${q.likes}): ${(q.text_n || q.text).replace(/\n/g, " ").slice(0, 180)}`
   ).join("\n");
 }
@@ -627,7 +671,7 @@ export async function POST(req: NextRequest) {
       try {
         // === Prefetch 环境信息（不分类，无脑准备）===
         const [quotes, sageSkill] = await Promise.all([
-          Promise.resolve(findRelevant(sage, userMsg, 8)),
+          Promise.resolve(findRelevant(sage, userMsg)),  // v57.1: 动态条数，不传 limit 走默认 maxCap=15
           loadSageSkill(sage.slug, req),  // 加载 6-file sage skill 作为 persona
         ]);
         controller.enqueue(sse("quotes", quotes));
