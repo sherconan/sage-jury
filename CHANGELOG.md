@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [v60.4.7] - 2026-05-12
+
+### Fixed
+- **重要 bug**：前端 sage 列表展示 14 个 sage（popular+insider），但 `SAGE_FILES` 只配了 2 个有 corpus 的（duan/guan）；其余 12 个点击会立刻 `400 Unknown sage`，**86% 入口是死的**
+
+### Added
+- `loadSage` 增加 fallback：SAGE_FILES 不命中时从 `SAGE_BY_ID` metadata 拼合成 SageData
+- `buildFallbackSkillBlock` 函数：用 `dimensions`/`redFlags`/`quotes`/`representativeTrades`/`misuseWarnings` 拼系统 prompt
+- fallback prompt 明确禁止 `search_sage_post`（避免空数据池查询）和"我 2023 年说过 X"造假
+- 仍可调 `web_search` / `get_realtime_quote` 等公开数据工具
+
+### Verified
+- feng-liu × "医药 CXO 现在是逆向机会吗" → 957 字符冯柳口吻（弱者体系 / 预期差 / 药明 17.4 倍 PE）
+- buffett × "伯克希尔现金仓位" → 998 字符巴菲特口吻（现金堆 + 等机会）
+- 不存在 sage 仍然 400
+- `baseline_gate.py` 跑 8 query：p50 30.1s（基线 36.7s）、0 fallback 命中，无回归
+
 ## [v60.4.6] - 2026-05-12
 
 ### Added
