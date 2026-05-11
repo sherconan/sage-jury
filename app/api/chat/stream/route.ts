@@ -36,7 +36,18 @@ async function loadSage(slug: string, req: NextRequest): Promise<SageData | null
 
 // ⭐ 加载 sage skill 文件（持久化的 persona）
 // /public/sages/<slug>/SKILL.md + methodology + decision_framework + voice_samples + classic_holdings + triggers
-const SAGE_SKILL_FILES = ["SKILL.md", "methodology.md", "decision_framework.md", "voice_samples.md", "classic_holdings.md", "triggers.md"];
+// v3: 9 文件 sage skill 包（新增 3 个反射式文件 mental_models / anti_patterns / default_position_logic）
+const SAGE_SKILL_FILES = [
+  "SKILL.md",
+  "mental_models.md",          // ⭐ v3 新增: 反射式心理模型
+  "anti_patterns.md",          // ⭐ v3 新增: 反例集合（永不碰）
+  "default_position_logic.md", // ⭐ v3 新增: 仓位决策默认逻辑
+  "methodology.md",
+  "decision_framework.md",
+  "voice_samples.md",
+  "classic_holdings.md",
+  "triggers.md",
+];
 async function loadSageSkill(slug: string, req: NextRequest): Promise<string> {
   const parts: string[] = [];
   // 串行 fetch（保证文件顺序在 prompt 里稳定）
@@ -232,6 +243,113 @@ async function tool_kline(stock: string, days = 30): Promise<string> {
   } catch (e: any) { return `K线异常: ${e.message}`; }
 }
 
+// === Tool v3 新增 4 个工具 ===
+
+// 1. PE 历史分位 (管哥强需)
+//   策略: 拉 10 年（~2500 个交易日）日 K + EPS-TTM 计算 PE 时间序列 → 分位
+//   简化版: 拉 1000 天日 K, 用当前 PE 反推过去 PE 趋势, 给"当前 vs 历史最高/最低/中位"对照
+async function tool_pe_history_pct(stock: string, years = 5): Promise<string> {
+  const r = resolveTicker(stock);
+  if (!r) return `未识别股票: ${stock}`;
+  try {
+    // 用 eastmoney push2 ValueAnalysis 接口（公开, 不需 cookie）
+    const u = `https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_VALUEANALYSIS_DET&columns=TRADE_DATE,PE_TTM,PB_MRQ,PE_TTM_3YEARS_PCT,PB_MRQ_3YEARS_PCT,PE_TTM_5YEARS_PCT,PB_MRQ_5YEARS_PCT,PE_TTM_10YEARS_PCT&filter=(SECURITY_CODE%3D%22${r.code}%22)&pageNumber=1&pageSize=1&sortColumns=TRADE_DATE&sortTypes=-1`;
+    const res = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://emweb.securities.eastmoney.com/" } });
+    if (!res.ok) return `PE 历史接口失败 ${res.status}`;
+    const j: any = await res.json();
+    const row = j?.result?.data?.[0];
+    if (!row) return `${r.name}(${r.code}) 暂无 PE 历史分位数据`;
+    const lines = [
+      `${r.name}(${r.code}) PE/PB 历史分位 (${row.TRADE_DATE}):`,
+      `当前 PE-TTM: ${row.PE_TTM?.toFixed(2) || '?'}`,
+      `当前 PB-MRQ: ${row.PB_MRQ?.toFixed(2) || '?'}`,
+      ``,
+      `PE 历史分位:`,
+      `  3年: ${row.PE_TTM_3YEARS_PCT?.toFixed(1) || '?'}%`,
+      `  5年: ${row.PE_TTM_5YEARS_PCT?.toFixed(1) || '?'}% ${row.PE_TTM_5YEARS_PCT < 20 ? '🟢 低估区' : row.PE_TTM_5YEARS_PCT > 70 ? '🔴 高估区' : '🟡 合理区'}`,
+      `  10年: ${row.PE_TTM_10YEARS_PCT?.toFixed(1) || '?'}%`,
+      ``,
+      `PB 历史分位:`,
+      `  3年: ${row.PB_MRQ_3YEARS_PCT?.toFixed(1) || '?'}%`,
+      `  5年: ${row.PB_MRQ_5YEARS_PCT?.toFixed(1) || '?'}%`,
+    ];
+    return lines.join("\n");
+  } catch (e: any) { return `PE 历史分位异常: ${e.message}`; }
+}
+
+// 2. 财务指标 (ROE/毛利/3 年增长)
+async function tool_financials(stock: string): Promise<string> {
+  const r = resolveTicker(stock);
+  if (!r) return `未识别股票: ${stock}`;
+  try {
+    // 用 eastmoney F10 MainTarget endpoint
+    const market = r.code.startsWith("6") ? "SH" : r.code.startsWith("0") || r.code.startsWith("3") ? "SZ" : "HK";
+    const u = `https://emweb.securities.eastmoney.com/PC_HSF10/NewFinanceAnalysis/PCWebMainTargetCNew?code=${market}${r.code}&type=0`;
+    const res = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://emweb.securities.eastmoney.com/" } });
+    if (!res.ok) return `财务接口失败 ${res.status}`;
+    const j: any = await res.json();
+    const rows: any[] = j?.data || [];
+    if (!rows.length) return `${r.name}(${r.code}) 暂无年报数据`;
+    // 取最近 4 年（年报）
+    const yearly = rows.filter(x => x.REPORT_DATE_NAME?.includes("年报") || x.REPORT_DATE?.endsWith("12-31")).slice(0, 4);
+    if (!yearly.length) return "无年报数据";
+    const lines = [`${r.name}(${r.code}) 最近 ${yearly.length} 年年报关键指标:`];
+    for (const y of yearly) {
+      const date = y.REPORT_DATE?.slice(0, 4) || y.REPORT_DATE_NAME || "?";
+      const rev = y.TOTAL_OPERATE_INCOME ? (y.TOTAL_OPERATE_INCOME / 1e8).toFixed(0) + "亿" : "?";
+      const np = y.PARENT_NETPROFIT ? (y.PARENT_NETPROFIT / 1e8).toFixed(1) + "亿" : "?";
+      const roe = y.WEIGHTAVG_ROE?.toFixed(1) + "%" || "?";
+      const gross = y.GROSS_PROFIT_RATIO?.toFixed(1) + "%" || "?";
+      const opChg = y.OPERATE_INCOME_YOY?.toFixed(1) + "%" || "?";
+      const npChg = y.PARENT_NETPROFIT_YOY?.toFixed(1) + "%" || "?";
+      lines.push(`  ${date}: 营收 ${rev} (同比 ${opChg}), 净利 ${np} (同比 ${npChg}), ROE ${roe}, 毛利率 ${gross}`);
+    }
+    return lines.join("\n");
+  } catch (e: any) { return `财务异常: ${e.message}`; }
+}
+
+// 3. 派息历史 (管哥强需)
+async function tool_dividend_history(stock: string, years = 5): Promise<string> {
+  const r = resolveTicker(stock);
+  if (!r) return `未识别股票: ${stock}`;
+  try {
+    // eastmoney 派息数据
+    const u = `https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_F10_SHAREBONUS_DET&columns=PUBLISH_DATE,REPORT_DATE,PRETAX_BONUS_RATIO,DIVIDENT_RATIO,EX_DIVIDENT_DATE&filter=(SECURITY_CODE%3D%22${r.code}%22)&pageNumber=1&pageSize=${years * 2}&sortColumns=REPORT_DATE&sortTypes=-1`;
+    const res = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://emweb.securities.eastmoney.com/" } });
+    if (!res.ok) return `派息接口失败 ${res.status}`;
+    const j: any = await res.json();
+    const rows: any[] = j?.result?.data || [];
+    if (!rows.length) return `${r.name}(${r.code}) 近 ${years} 年无派息记录或数据未公开`;
+    const lines = [`${r.name}(${r.code}) 派息历史 (近 ${rows.length} 次):`];
+    for (const x of rows.slice(0, 10)) {
+      const period = x.REPORT_DATE?.slice(0, 10) || "?";
+      const ratio = x.DIVIDENT_RATIO?.toFixed(2) || "?";  // 每股派息
+      const exDate = x.EX_DIVIDENT_DATE?.slice(0, 10) || "?";
+      lines.push(`  ${period}: 每股派 ${ratio} 元 (除权 ${exDate})`);
+    }
+    return lines.join("\n");
+  } catch (e: any) { return `派息异常: ${e.message}`; }
+}
+
+// 4. 多股对比 (并行调用 realtime + financials + pe_history 给 N 只股票)
+async function tool_compare_stocks(stocks: string[]): Promise<string> {
+  if (!stocks || stocks.length < 2) return "请至少提供 2 只股票";
+  if (stocks.length > 5) stocks = stocks.slice(0, 5);
+  const results = await Promise.all(stocks.map(async s => {
+    const r = resolveTicker(s);
+    if (!r) return `❌ ${s}: 未识别`;
+    try {
+      const qUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${r.secid}&fields=f43,f58,f162,f167,f168,f170`;
+      const qRes = await fetch(qUrl, { headers: { "User-Agent": "Mozilla/5.0", Referer: "https://quote.eastmoney.com/" } });
+      const qd: any = (await qRes.json()).data;
+      if (!qd?.f58) return `❌ ${s}: 数据失败`;
+      const div = (n: any) => typeof n === "number" && !isNaN(n) ? n / 100 : null;
+      return `${qd.f58}(${r.code}): 价 ${div(qd.f43)?.toFixed(2)}, PE ${div(qd.f162)?.toFixed(1)}, PB ${div(qd.f167)?.toFixed(2)}, 股息率 ${div(qd.f168)?.toFixed(2)}%, 今日 ${div(qd.f170)?.toFixed(2)}%`;
+    } catch { return `❌ ${s}: 异常`; }
+  }));
+  return `多股对比 (${stocks.length} 只):\n` + results.join("\n");
+}
+
 // ⭐ 当前 sage 的语义搜（Hybrid: BM25 召回 + Bocha rerank 精排）
 // 注意: 这个工具需要 sage 数据。我们用闭包封装 sage 给它访问。
 function makeTool_searchSagePost(sage: SageData) {
@@ -302,6 +420,38 @@ const TOOLS = [
       parameters: { type: "object", properties: { stock: { type: "string" }, days: { type: "number", description: "天数 7-250", default: 30 } }, required: ["stock"] },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_pe_history_pct",
+      description: "⭐ 查询某只股票当前 PE/PB 在 3/5/10 年历史中的分位（百分位）。**管我财类定量价值投资者必用**：他们的核心信条是 PE 在历史什么分位。当用户问'X 贵不贵''X 历史什么位置''X 合理估值'时必用。",
+      parameters: { type: "object", properties: { stock: { type: "string", description: "股票名或代码" }, years: { type: "number", description: "年数 3/5/10", default: 5 } }, required: ["stock"] },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_financials",
+      description: "查询某只股票近 4 年年报关键财务指标：营收/净利/ROE/毛利率/同比增长。**所有价值投资者都用**：判断生意质量、增长可持续性、护城河变化。当用户问'X 财务怎么样''X 增长''X 盈利能力'时必用。",
+      parameters: { type: "object", properties: { stock: { type: "string", description: "股票名或代码" } }, required: ["stock"] },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_dividend_history",
+      description: "查询某只股票近 5 年派息历史（每股派息金额 + 除权日）。**管我财类高股息派必用**：他们的安全边际靠 5% 股息打底。当用户问'X 派息''X 股息怎么样''X 分红'时必用。",
+      parameters: { type: "object", properties: { stock: { type: "string", description: "股票名或代码" }, years: { type: "number", default: 5 } }, required: ["stock"] },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "compare_stocks",
+      description: "**多股对比**：并排展示 2-5 只股票的当前价、PE、PB、股息率。当用户问'X vs Y'、'A 和 B 哪个好'、'同行业横向对比'时必用。",
+      parameters: { type: "object", properties: { tickers: { type: "array", items: { type: "string" }, description: "2-5 只股票名或代码" } }, required: ["tickers"] },
+    },
+  },
 ];
 
 const SAGE_PROMPTS: Record<string, string> = {
@@ -333,6 +483,10 @@ function makeExecuteTool(sage: SageData) {
       if (name === "web_search") return await tool_web_search(args.query, args.count);
       if (name === "get_realtime_quote") return await tool_realtime_quote(args.stock);
       if (name === "get_kline") return await tool_kline(args.stock, args.days);
+      if (name === "get_pe_history_pct") return await tool_pe_history_pct(args.stock, args.years);
+      if (name === "get_financials") return await tool_financials(args.stock);
+      if (name === "get_dividend_history") return await tool_dividend_history(args.stock, args.years);
+      if (name === "compare_stocks") return await tool_compare_stocks(args.tickers || args.stocks);
       return `未知工具: ${name}`;
     } catch (e: any) { return `工具异常: ${e.message}`; }
   };
