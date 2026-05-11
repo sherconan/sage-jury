@@ -63,5 +63,18 @@ python3 scripts/bench_chat_stream.py duan-yongping "苹果还能拿吗" --json >
 
 ## 已知 follow-ups
 
-- 单 chunk 现象：建议 v60.5 排查 server-side flushing（可能要在 chat/stream/route.ts 强制 chunked encoding hint）
+- ~~单 chunk 现象~~：**已 fix（v60.4.4 + v60.4.5）**：
+  - v60.4.4：服务端 outSeg 切 80 字符段（招行 PE 1 chunk → 315 chunks）
+  - v60.4.5：发现 duan+苹果 query 触发 Round 2 兜底假回答"（本轮回答未生成，请重试）"，根因是 FAST_MODEL 偶发空 content。改成**真的 retry**：用 FAST_MODEL + 显式 user msg 重新生成。
 - 多 sage × 多 query × 5 runs 跑一次正式 P50/P95 → 写入 baseline.json，做 CI gate
+
+## v60.4.5 修复证据
+
+| | before (fallback) | after (retry) |
+|---|---:|---:|
+| duan-yongping 苹果还能拿吗 chunks | 1 | **321** |
+| content bytes | 13 ("请重试" 占位) | **595** (真答案) |
+| answer preview | "（本轮回答未生成，请重试）" | "苹果我拿了 20 多年，没想过要卖。我去年 12 月说过..." |
+| fallback hit? | yes | no |
+
+Production 上线时间：2026-05-12 02:xx。线上不再吐占位文本。
