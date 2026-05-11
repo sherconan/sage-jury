@@ -1244,12 +1244,68 @@ ${ragCtx}`;
         }
 
         */
-        // v60.2: 兜底 —— 如果单 LLM tool loop 没产出内容（极小概率，比如 model 只 tool 不 write），
-        // 用 roundReasoning 作为兜底（思考内容当回答）
+        // v60.4.5: 兜底升级 —— 如果 tool loop 没产出内容（duan+苹果 可复现），
+        // 做一次真正的 retry：用 FAST_MODEL + 明确指令"现在写完整答案"。
+        // 比 v60.2 的"请重试"假回答好很多。
         if (!fullReply.trim()) {
-          // 退化方案：直接用思考内容作为答案
-          fullReply = "（本轮回答未生成，请重试）";
-          controller.enqueue(sse("chunk", { delta: fullReply }));
+          try {
+            const retryMessages = [
+              ...messages,
+              { role: "user", content: `（系统提示）请综合以上工具数据和你的内心思考，用 ${sage.display} 的口吻给用户写一段完整的回答（5-7 段散文，每段 2-4 句，段间空行）。不要再调工具。直接写。` },
+            ];
+            const rr = await fetch(`${LLM_BASE}/chat/completions`, {
+              method: "POST",
+              headers: { "Authorization": `Bearer ${LLM_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: LLM_FAST_MODEL,
+                messages: retryMessages,
+                max_tokens: 2000,
+                temperature: 0.85,
+                stream: true,
+              }),
+            });
+            if (rr.ok && rr.body) {
+              const rreader = rr.body.getReader();
+              const rdec = new TextDecoder();
+              let rbuf = "";
+              const MAX_CHUNK = 80;
+              while (true) {
+                const { value, done: rdone } = await rreader.read();
+                if (rdone) break;
+                rbuf += rdec.decode(value, { stream: true });
+                const rlines = rbuf.split("\n");
+                rbuf = rlines.pop() || "";
+                for (const line of rlines) {
+                  const t = line.trim();
+                  if (!t.startsWith("data:")) continue;
+                  const p = t.slice(5).trim();
+                  if (p === "[DONE]") continue;
+                  try {
+                    const j = JSON.parse(p);
+                    const delta = j?.choices?.[0]?.delta?.content;
+                    if (delta) {
+                      fullReply += delta;
+                      // 同 v60.4.4 切 80 字符段
+                      if (delta.length > MAX_CHUNK) {
+                        for (let i = 0; i < delta.length; i += MAX_CHUNK) {
+                          controller.enqueue(sse("chunk", { delta: delta.slice(i, i + MAX_CHUNK) }));
+                        }
+                      } else {
+                        controller.enqueue(sse("chunk", { delta }));
+                      }
+                    }
+                  } catch {}
+                }
+              }
+            }
+          } catch (e: any) {
+            console.error("Round 2 retry error:", e?.message);
+          }
+          // 还是空 → 最后的兜底字符串（远小于触发概率）
+          if (!fullReply.trim()) {
+            fullReply = "（本轮回答未生成，请重试。如果反复出现，可以尝试换个问法）";
+            controller.enqueue(sse("chunk", { delta: fullReply }));
+          }
         }
 
         // followups (v60.4: 切 FAST_MODEL，避免 done 前白等 5-10s)
