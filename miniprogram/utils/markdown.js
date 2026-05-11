@@ -142,10 +142,30 @@ function parseMarkdown(text) {
       continue;
     }
 
-    // ===== Markdown 表格（直接降级为段落，小程序原生不渲染表格）=====
+    // ===== Markdown 表格降级（v60.5-mp.4：转 ul 列表）=====
+    // 表格首行 + 分隔行 + 数据行 → ul：第一项 = header（cells 连接），后续每行一项
     if (line.match(/^\s*\|.*\|\s*$/)) {
-      // 跳过表格分隔行
-      while (i < lines.length && lines[i].match(/^\s*\|.*\|\s*$/) || (i < lines.length && lines[i].match(/^\s*\|?[\s:|-]{3,}\|?\s*$/))) i++;
+      const rows = [];
+      let isHeader = true;
+      while (i < lines.length) {
+        const L = lines[i];
+        // 分隔行直接跳过
+        if (L.match(/^\s*\|?[\s:|-]{3,}\|?\s*$/)) { i++; continue; }
+        if (!L.match(/^\s*\|.*\|\s*$/)) break;
+        // 解析 cells，trim、过空头尾 |
+        const cells = L.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(c => c.trim()).filter(c => c.length);
+        if (cells.length) rows.push({ cells, isHeader });
+        isHeader = false;
+        i++;
+      }
+      // 转为 ul 块
+      const items = rows.map(r => ({
+        inlines: r.isHeader
+          // header 整体加粗
+          ? [{ type: 'bold', text: r.cells.join(' · '), inlines: parseInlines(r.cells.join(' · ')) }]
+          : parseInlines(r.cells.join(' · ')),
+      }));
+      if (items.length) pushBlock({ type: 'ul', items });
       continue;
     }
 
