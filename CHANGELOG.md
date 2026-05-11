@@ -5,6 +5,19 @@
 
 ## [Unreleased]
 
+## [v60.4.10] - 2026-05-12
+
+### Fixed
+- `app/api/battle/stream/route.ts` 同步 v60.4.7 fallback path（`SAGE_BY_ID` 入口检查 + `buildFallbackSkillBlock`），feng-liu 等 12 个 fallback sage 不再 400
+- battle/stream 加 chat/stream v60.2 同等 emitBuf + DSML 状态机（之前会泄漏 raw `<｜｜DSML｜｜tool_calls>` 给前端）+ 80 字符切片
+
+### Known limitations
+- battle/stream 缺 v60.4.5 Round 2 retry 兜底；如果 model 用 DSML 双声道（content + OpenAI tool_calls 同时），content 全被 emitBuf suppress 后 0 chunks。退化成单 sage chat 完全的等价路径建议 follow-up（或直接撤回该 endpoint）
+- `app/api/battle/route.ts`（node runtime, 非 stream）尚未补 fallback；当前没 frontend 调用，留作技术债
+
+### Notes
+- 没有 frontend 调用 `/api/battle*`；本次修复主要是 backend 一致性 + 偶发外部测试可用
+
 ## [v60.4.9] - 2026-05-12
 
 ### Added
