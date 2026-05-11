@@ -1,78 +1,40 @@
 // utils/api.js
-// 微信小程序 wx.request 不支持 SSE 流式，所以我们写一个 chunk-poll 版：
-// - 调用 /api/chat/stream POST，返回完整 SSE 流（响应体一次性返回）
-// - 在前端解析 event/data 行，挤出最终 reply + tool calls + quotes + followups
-// 体验：用户看不到流式 token，但能看到「正在思考...」+ 完整结果一次性出现
+// 微信小程序 wx.request 不直接支持 SSE 流式，但 enableChunked + onChunkReceived 可以伪流式：
+// - chunkReceived 边收边解析（真机/PC 工具支持，老版本 fallback 到 success 一次性）
+// - 服务端有时会把 DeepSeek 的 DSML 内部 tool-call 标签泄漏到 content，必须清洗
+// - done 事件包含 fullReply + followups，是真正的"完成"信号
 
 const app = getApp();
 
-function callChatStream({ sage_id, message, history }, onProgress) {
-  return new Promise((resolve, reject) => {
-    const requestTask = wx.request({
-      url: `${app.globalData.apiBase}/api/chat/stream`,
-      method: 'POST',
-      header: { 'Content-Type': 'application/json' },
-      data: { sage_id, message, history: history || [] },
-      enableChunked: true,
-      timeout: 90000,
-      success: (res) => {
-        // 非流式 fallback 路径（如果 enableChunked 不工作，res.data 是完整 SSE 字符串）
-        if (typeof res.data === 'string') {
-          const parsed = parseSSE(res.data);
-          resolve(parsed);
-        } else {
-          resolve({ reply: '', error: '空响应' });
-        }
-      },
-      fail: (err) => reject(err),
-    });
-
-    // 试着监听 chunkReceived 实现伪流式
-    if (requestTask && requestTask.onChunkReceived) {
-      let buf = '';
-      let evt = '';
-      let accumulated = '';
-      let quotes = [];
-      let toolCalls = [];
-      requestTask.onChunkReceived((res) => {
-        const arr = new Uint8Array(res.data);
-        const text = bytesToStr(arr);
-        buf += text;
-        const lines = buf.split('\n');
-        buf = lines.pop() || '';
-        for (const line of lines) {
-          if (line.startsWith('event: ')) { evt = line.slice(7).trim(); continue; }
-          if (!line.startsWith('data: ')) continue;
-          let data;
-          try { data = JSON.parse(line.slice(6)); } catch { continue; }
-          if (evt === 'quotes') { quotes = data || []; onProgress && onProgress({ quotes }); }
-          else if (evt === 'chunk' && data.delta) {
-            accumulated += data.delta;
-            onProgress && onProgress({ content: accumulated });
-          } else if (evt === 'tool_call') {
-            toolCalls.push({ name: data.name, args: data.args, id: data.id });
-            onProgress && onProgress({ toolCalls: [...toolCalls] });
-          } else if (evt === 'tool_result') {
-            const tc = toolCalls.find(t => t.id === data.id);
-            if (tc) tc.result = data.result;
-            onProgress && onProgress({ toolCalls: [...toolCalls] });
-          } else if (evt === 'done') {
-            onProgress && onProgress({ content: accumulated || data.fullReply || '', followups: data.followups || [] });
-          }
-        }
-      });
-    }
-  });
+// === DSML 清洗 + Markdown 去格式化（小程序不能渲染 md，去符号留文本）===
+function cleanDSML(s) {
+  if (!s) return s;
+  return s
+    // 1. DSML 内部 tool-call 标签
+    .replace(/<[^<>\n]{0,200}DSML[^<>\n]{0,200}>/g, '')
+    .replace(/<\/?\s*(invoke|parameter|tool_calls)[^>]*>/gi, '')
+    .replace(/name="[a-z_]+"\s+string="(true|false)"\s*>/g, '')
+    // 2. Markdown 去格式（保留文本，去标记符号）
+    .replace(/```[\s\S]*?```/g, m => m.replace(/```\w*\n?/g, '').replace(/```/g, ''))  // 代码块去 fence
+    .replace(/^#{1,6}\s+/gm, '')          // 去 ## heading 标记
+    .replace(/\*\*([^*]+)\*\*/g, '$1')   // **粗体** → 粗体
+    .replace(/(?<!\*)\*([^*\n]+)\*/g, '$1')  // *斜体* → 斜体
+    .replace(/`([^`]+)`/g, '$1')          // `code` → code
+    .replace(/^\s*[-*+]\s+/gm, '• ')      // - item → • item
+    .replace(/^\s*>\s+/gm, '')             // > quote → quote
+    .replace(/^\s*\|.*\|.*$/gm, '')        // markdown 表格行直接去掉
+    .replace(/^\s*\|?[\s:|-]{3,}\|?\s*$/gm, '')  // 表格分隔行
+    .replace(/^\s+|\s+$/g, '');
 }
 
+// === UTF-8 解码（小程序无 TextDecoder）===
 function bytesToStr(arr) {
-  // UTF-8 decode
   let s = '';
   let i = 0;
   while (i < arr.length) {
     const b = arr[i];
     if (b < 0x80) { s += String.fromCharCode(b); i++; }
-    else if (b < 0xc0) { i++; }  // 不该出现，跳过
+    else if (b < 0xc0) { i++; }
     else if (b < 0xe0) {
       const c2 = arr[i+1] || 0;
       s += String.fromCharCode(((b & 0x1f) << 6) | (c2 & 0x3f));
@@ -92,26 +54,101 @@ function bytesToStr(arr) {
   return s;
 }
 
-function parseSSE(text) {
-  const lines = text.split('\n');
-  let evt = '', accumulated = '', quotes = [], toolCalls = [], followups = [];
-  for (const line of lines) {
-    if (line.startsWith('event: ')) { evt = line.slice(7).trim(); continue; }
-    if (!line.startsWith('data: ')) continue;
-    let d; try { d = JSON.parse(line.slice(6)); } catch { continue; }
-    if (evt === 'quotes') quotes = d || [];
-    else if (evt === 'chunk' && d.delta) accumulated += d.delta;
-    else if (evt === 'tool_call') toolCalls.push({ name: d.name, args: d.args, id: d.id });
-    else if (evt === 'tool_result') {
-      const tc = toolCalls.find(t => t.id === d.id);
-      if (tc) tc.result = d.result;
-    }
-    else if (evt === 'done') {
-      accumulated = accumulated || d.fullReply || accumulated;
-      followups = d.followups || [];
+// 共用 SSE 解析状态机
+function makeStreamState(onProgress) {
+  let buf = '', evt = '', accumulated = '', emitBuf = '', inDSML = false;
+  let quotes = [], toolCalls = [], followups = [], doneFired = false;
+
+  // 处理一段已收到的文本（增量）
+  function feed(text) {
+    buf += text;
+    const lines = buf.split('\n');
+    buf = lines.pop() || '';
+    for (const line of lines) {
+      if (line.startsWith('event: ')) { evt = line.slice(7).trim(); continue; }
+      if (!line.startsWith('data: ')) continue;
+      let d;
+      try { d = JSON.parse(line.slice(6)); } catch { continue; }
+      if (evt === 'quotes') {
+        quotes = d || [];
+        onProgress && onProgress({ quotes });
+      } else if (evt === 'chunk' && d.delta) {
+        // 边收边清洗 DSML
+        emitBuf += d.delta;
+        const lastOpen = emitBuf.lastIndexOf('<');
+        const lastClose = emitBuf.lastIndexOf('>');
+        const safeEnd = lastOpen > lastClose ? lastOpen : emitBuf.length;
+        const safe = emitBuf.slice(0, safeEnd);
+        emitBuf = emitBuf.slice(safeEnd);
+        const cleaned = cleanDSML(safe);
+        if (cleaned) {
+          accumulated += cleaned;
+          onProgress && onProgress({ content: accumulated });
+        }
+      } else if (evt === 'tool_call') {
+        toolCalls.push({ name: d.name, args: d.args, id: d.id });
+        onProgress && onProgress({ toolCalls: toolCalls.slice() });
+      } else if (evt === 'tool_result') {
+        const tc = toolCalls.find(t => t.id === d.id);
+        if (tc) tc.result = d.result;
+        onProgress && onProgress({ toolCalls: toolCalls.slice() });
+      } else if (evt === 'done') {
+        doneFired = true;
+        followups = d.followups || [];
+        // 如果流式没收到 chunks（fallback 模式），用 fullReply
+        if (!accumulated && d.fullReply) accumulated = cleanDSML(d.fullReply);
+        onProgress && onProgress({ content: accumulated, followups });
+      } else if (evt === 'error') {
+        onProgress && onProgress({ error: d.message || 'unknown' });
+      }
     }
   }
-  return { reply: accumulated, quotes, toolCalls, followups };
+
+  function finalize() {
+    // 如果 buf 还有残留行未处理，喂入
+    if (buf) feed('\n');
+    return { reply: accumulated, quotes, toolCalls, followups, doneFired };
+  }
+
+  return { feed, finalize };
 }
 
-module.exports = { callChatStream };
+function callChatStream({ sage_id, message, history }, onProgress) {
+  return new Promise((resolve, reject) => {
+    const state = makeStreamState(onProgress);
+    let chunkReceived = false;
+
+    const requestTask = wx.request({
+      url: `${app.globalData.apiBase}/api/chat/stream`,
+      method: 'POST',
+      header: { 'Content-Type': 'application/json' },
+      data: { sage_id, message, history: history || [] },
+      enableChunked: true,
+      timeout: 120000,
+      success: (res) => {
+        // 如果 chunkReceived 没触发（老版本 fallback），res.data 是完整 SSE 字符串
+        if (!chunkReceived && typeof res.data === 'string' && res.data.length > 10) {
+          state.feed(res.data);
+        }
+        const final = state.finalize();
+        resolve(final);
+      },
+      fail: (err) => reject(err),
+    });
+
+    if (requestTask && requestTask.onChunkReceived) {
+      requestTask.onChunkReceived((res) => {
+        chunkReceived = true;
+        try {
+          const arr = new Uint8Array(res.data);
+          const text = bytesToStr(arr);
+          state.feed(text);
+        } catch (e) {
+          console.error('chunk decode error', e);
+        }
+      });
+    }
+  });
+}
+
+module.exports = { callChatStream, cleanDSML };
