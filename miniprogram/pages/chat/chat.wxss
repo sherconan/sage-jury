@@ -443,6 +443,8 @@ page { height: 100%; }
 .md-text { color: inherit; }
 .md-bold { font-weight: 700; color: inherit; }
 .md-italic { font-style: italic; color: inherit; }
+/* v60.5-mp.1: bold/italic 嵌套 inline 渲染 wrapper（保持行内 + 行为继承） */
+.md-inline-wrap { display: inline; }
 .md-inline-code {
   font-family: 'SF Mono', Consolas, ui-monospace, monospace;
   background: rgba(15,23,42,0.06);
@@ -637,6 +639,31 @@ page { height: 100%; }
 }
 .cite-chip:active { background: #93c5fd; }
 .msg-text { color: inherit; }
+
+/* v60.5-mp.1: scroll-to-bottom 浮按钮 */
+.scroll-bottom-btn {
+  position: fixed;
+  right: 32rpx;
+  bottom: 180rpx;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 9999rpx;
+  background: #fff;
+  border: 1rpx solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: #475569;
+  font-weight: 700;
+  box-shadow: 0 8rpx 24rpx rgba(0,0,0,0.12), 0 2rpx 6rpx rgba(0,0,0,0.06);
+  z-index: 8;
+  transition: all 0.18s;
+}
+.scroll-bottom-btn-hover {
+  transform: scale(0.92);
+  background: #f8fafc;
+}
 
 .input-bar {
   display: flex;

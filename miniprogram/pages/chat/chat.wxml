@@ -1,11 +1,31 @@
-<!-- v60.4-mp.3: 复用 inline 渲染 -->
+<!-- v60.5-mp.1: bold/italic 内嵌 cite 二层递归 inline -->
+<template name="md-inline-child">
+  <text wx:if="{{seg.type === 'text'}}" class="md-text">{{seg.text}}</text>
+  <text wx:elif="{{seg.type === 'code'}}" class="md-inline-code">{{seg.text}}</text>
+  <text wx:elif="{{seg.type === 'cite'}}" class="cite-chip" data-mi="{{mi}}" data-n="{{seg.n}}" bindtap="onCiteTap">#{{seg.n}}</text>
+  <!-- 已在 bold/italic 嵌套层，不再递归 -->
+  <text wx:elif="{{seg.type === 'bold'}}" class="md-bold">{{seg.text}}</text>
+  <text wx:elif="{{seg.type === 'italic'}}" class="md-italic">{{seg.text}}</text>
+</template>
+
 <template name="md-inlines">
   <block wx:for="{{inlines}}" wx:for-item="seg" wx:key="index">
     <text wx:if="{{seg.type === 'text'}}" class="md-text">{{seg.text}}</text>
-    <text wx:elif="{{seg.type === 'bold'}}" class="md-bold">{{seg.text}}</text>
-    <text wx:elif="{{seg.type === 'italic'}}" class="md-italic">{{seg.text}}</text>
     <text wx:elif="{{seg.type === 'code'}}" class="md-inline-code">{{seg.text}}</text>
     <text wx:elif="{{seg.type === 'cite'}}" class="cite-chip" data-mi="{{mi}}" data-n="{{seg.n}}" bindtap="onCiteTap">#{{seg.n}}</text>
+    <!-- bold/italic: 优先用 inlines 子节点（递归一层）；否则 fallback 纯文本 -->
+    <view wx:elif="{{seg.type === 'bold' && seg.inlines && seg.inlines.length > 1}}" class="md-bold md-inline-wrap">
+      <block wx:for="{{seg.inlines}}" wx:for-item="seg" wx:key="index">
+        <template is="md-inline-child" data="{{seg, mi}}" />
+      </block>
+    </view>
+    <text wx:elif="{{seg.type === 'bold'}}" class="md-bold">{{seg.text}}</text>
+    <view wx:elif="{{seg.type === 'italic' && seg.inlines && seg.inlines.length > 1}}" class="md-italic md-inline-wrap">
+      <block wx:for="{{seg.inlines}}" wx:for-item="seg" wx:key="index">
+        <template is="md-inline-child" data="{{seg, mi}}" />
+      </block>
+    </view>
+    <text wx:elif="{{seg.type === 'italic'}}" class="md-italic">{{seg.text}}</text>
   </block>
 </template>
 
@@ -69,7 +89,8 @@
   </view>
 
   <!-- Messages 区域 -->
-  <scroll-view class="messages" scroll-y scroll-into-view="{{scrollTo}}" enhanced show-scrollbar="{{false}}">
+  <scroll-view class="messages" scroll-y scroll-into-view="{{scrollTo}}" enhanced show-scrollbar="{{false}}"
+    bindscroll="onMessagesScroll" throttle="200" scroll-with-animation>
     <view wx:if="{{messages.length === 0}}" class="empty">
       <view class="empty-avatar-wrap">
         <view class="empty-avatar" style="background:{{activeSage.color}}">{{activeSage.initials}}</view>
@@ -176,6 +197,9 @@
       </view>
     </view>
   </scroll-view>
+
+  <!-- v60.5-mp.1: scroll-to-bottom 浮按钮 -->
+  <view wx:if="{{showScrollBottom}}" class="scroll-bottom-btn" bindtap="onScrollToBottom" hover-class="scroll-bottom-btn-hover">↓</view>
 
   <!-- 输入区 (v60.4-mp.4 polished) -->
   <view class="input-bar">

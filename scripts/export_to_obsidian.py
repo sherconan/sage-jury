@@ -55,7 +55,8 @@ def export_sage(slug: str, info: dict):
         print(f"  ⚠️  {db_path} 不存在，跳过")
         return 0
     conn = sqlite3.connect(str(db_path))
-    rows = conn.execute("""SELECT id, timestamp, text, retweet_count, reply_count, like_count, view_count, url
+    rows = conn.execute("""SELECT id, timestamp, text, retweet_count, reply_count, like_count, view_count, url,
+                                  rt_id, rt_user_name, rt_title, rt_text, rt_url, rt_created_at
                            FROM posts WHERE timestamp > 0 ORDER BY timestamp ASC""").fetchall()
     conn.close()
 
@@ -90,7 +91,7 @@ def export_sage(slug: str, info: dict):
         lines.append("")
 
         for r in posts:
-            id_, ts, text, rt, rp, lk, vw, url = r
+            id_, ts, text, rt, rp, lk, vw, url, rt_id, rt_user, rt_title, rt_text, rt_url, rt_ca = r
             d = dt.fromtimestamp(ts/1000)
             text_md = clean_md(text)
             text_md = add_links(text_md)
@@ -100,6 +101,27 @@ def export_sage(slug: str, info: dict):
             lines.append("")
             lines.append(text_md)
             lines.append("")
+            # 引用帖块（转发/回复时雪球嵌套返回的原帖）
+            if rt_id and (rt_text or rt_title):
+                rt_ts_str = ""
+                if rt_ca:
+                    try:
+                        rt_d = dt.fromtimestamp(int(rt_ca)/1000)
+                        rt_ts_str = f" · {rt_d.strftime('%Y-%m-%d %H:%M')}"
+                    except: pass
+                head = f"@{rt_user}" if rt_user else "原帖"
+                link = f" · [原帖]({rt_url})" if rt_url else ""
+                lines.append(f"> **📌 引用 {head}{rt_ts_str}{link}**")
+                lines.append(">")
+                if rt_title:
+                    lines.append(f"> **{clean_md(rt_title)}**")
+                    lines.append(">")
+                if rt_text:
+                    body = clean_md(rt_text)
+                    # 不截断 — 完整引用内容（用户要求"信息完全"）
+                    for ln in body.split("\n"):
+                        lines.append(f"> {ln}" if ln.strip() else ">")
+                lines.append("")
             lines.append("---")
             lines.append("")
 
