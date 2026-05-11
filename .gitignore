@@ -5,3 +5,17 @@ out/
 *.log
 .DS_Store
 .vercel
+
+# TS build cache (already tracked once → run: git rm --cached tsconfig.tsbuildinfo)
+*.tsbuildinfo
+
+# SQLite WAL journals (transient, recreated by xueqiu_watcher)
+*.sqlite-journal
+
+# xueqiu_watcher runtime logs / daily dumps
+data/xueqiu-watcher/*.log
+data/xueqiu-watcher/daily/
+
+# python
+__pycache__/
+*.pyc
