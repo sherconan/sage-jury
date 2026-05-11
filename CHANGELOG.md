@@ -5,6 +5,24 @@
 
 ## [Unreleased]
 
+## [v60.5.1] - 2026-05-12
+
+### Added
+- **`/jury` 前端页面**（446 行 React）暴露 v60.5.0 multi-sage endpoint
+  - sage 多选 chip（按 tier 分组，fallback sage 显"元"标）
+  - 3 个 PRESETS 一键模板（段+管 / 三大流派 / 圈内 vs 大众）
+  - 5 个 starter queries
+  - 多列网格响应式输出（2/3/4 列），每位 sage 独立流式
+  - 每列 4 块：💭 思考 / 🛠️ 工具 / 答案 / ✨ followups
+  - batched setState 80ms 防多 sage 并发风暴
+  - 状态指示器：启动 → 思考 → 落笔 → 完成（带 elapsed）
+- 主页 (`/`) header 加 `👥 陪审团` 入口 chip
+
+### Verified (prod)
+- `/jury` 页面 200 OK，22.7KB HTML 渲染含"陪审团 / Sage Jury"
+- 首页 page chunk 含 `/jury` 链接 + "陪审团" chip
+- `/api/jury/stream` 2 sage 并行 "hi" 测试：10.1s / 14.9KB / 145 events
+
 ## [v60.5.0] - 2026-05-12
 
 ### Added
