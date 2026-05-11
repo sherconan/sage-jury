@@ -6,6 +6,7 @@
 //   - get_company_news: 个股公司层面新闻（博查站内 site: 限定）
 
 import { NextRequest } from "next/server";
+import { SAGE_BY_ID } from "@/data/sages";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -26,12 +27,56 @@ const SAGE_FILES: Record<string, string> = {
 };
 
 async function loadSage(slug: string, req: NextRequest): Promise<SageData | null> {
-  try {
-    const url = new URL(`/sages-quotes/${SAGE_FILES[slug] || `${slug}.json`}`, req.url);
-    const r = await fetch(url.toString(), { cache: "no-store" });
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; }
+  // 1) corpus sage（duan/guan）走 json
+  if (SAGE_FILES[slug]) {
+    try {
+      const url = new URL(`/sages-quotes/${SAGE_FILES[slug]}`, req.url);
+      const r = await fetch(url.toString(), { cache: "no-store" });
+      if (r.ok) return await r.json();
+    } catch {}
+  }
+  // 2) v60.4.10 fallback：用 SAGES_RAW metadata 拼合成 SageData（与 chat/stream 同步）
+  const meta = SAGE_BY_ID[slug];
+  if (!meta) return null;
+  return {
+    slug,
+    display: meta.name,
+    alias: '',
+    philosophy: meta.philosophy,
+    total_posts: 0,
+    high_quality_originals: [],
+    recent_originals: [],
+    position_changes: [],
+    by_stock: {},
+    by_concept: {},
+  } as SageData;
+}
+
+// v60.4.10: 给 fallback sage 拼系统 prompt（与 chat/stream 同步）
+function buildFallbackSkillBlock(meta: any): string {
+  const dimensions = (meta.dimensions || []).map((d: any) =>
+    `  - ${d.label} (${Math.round((d.weight || 0) * 100)}%): ${d.description}`).join('\n');
+  const redFlags = (meta.redFlags || []).map((r: any) =>
+    `  - ${r.label}（${r.severity}）: ${r.trigger}`).join('\n');
+  const quotes = (meta.quotes || []).slice(0, 5).map((q: string) => `  • ${q}`).join('\n');
+  return `你是【${meta.name}】（${meta.title}）。流派：${meta.school}。
+
+## 你的投资哲学
+${meta.philosophy}
+
+## 你的招牌核心句
+"${meta.coreLine || ''}"
+
+## 你的评分维度
+${dimensions || '  （无）'}
+
+## 你绝不碰的红旗
+${redFlags || '  （无）'}
+
+## 你常说的话
+${quotes || '  （无）'}
+
+⚠️ 你没有公开雪球 corpus 可查。不要假装"我说过 X"，承认"按方法论应该是 ..."。可调 web_search / get_realtime_quote。最终输出简体中文散文 5-7 段。`;
 }
 
 const HK_TO_M: Array<[string,string]> = [["點解","为什么"],["嘅","的"],["咗","了"],["喺","在"],["啲","些"],["冇","没"],["畀","给"],["俾","给"],["咁","这么"],["咩","什么"],["邊","哪"],["唔","不"],["睇","看"],["識","会"]];
@@ -243,7 +288,9 @@ async function executeTool(name: string, args: any): Promise<string> {
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { sage_id, message, history } = body;
-  if (!sage_id || !SAGE_FILES[sage_id]) return new Response("Unknown sage", { status: 400 });
+  if (!sage_id || (!SAGE_FILES[sage_id] && !SAGE_BY_ID[sage_id])) {
+    return new Response("Unknown sage", { status: 400 });
+  }
   const sage = await loadSage(sage_id, req);
   if (!sage) return new Response("Failed to load sage data", { status: 500 });
   const userMsg = String(message || "").trim();
@@ -257,7 +304,10 @@ export async function POST(req: NextRequest) {
         controller.enqueue(sse("quotes", quotes));
 
         const ragCtx = buildRagContext(quotes);
-        const sys = (SAGE_PROMPTS[sage.slug] || `你是${sage.display}。`) +
+        // v60.4.10: prompt fallback 链 SAGE_PROMPTS → SAGES_RAW metadata 拼合 → 兜底
+        const sageSkillBlock = SAGE_PROMPTS[sage.slug]
+          || (SAGE_BY_ID[sage.slug] ? buildFallbackSkillBlock(SAGE_BY_ID[sage.slug]) : `你是${sage.display}。`);
+        const sys = sageSkillBlock +
           `\n\n=== 你过去在雪球上的真实相关发言（请优先引用）===\n${ragCtx}\n\n你有 4 个外部工具可调用：web_search（联网最新消息）、get_realtime_quote（实时股价 PE）、get_kline（历史 K 线）、get_company_news（公司新闻）。**估值/股价/最新事件类问题必须先调用工具拿真数据再回答**，不要瞎猜。`;
 
         // Tool-calling loop (最多 3 轮 tool call)
