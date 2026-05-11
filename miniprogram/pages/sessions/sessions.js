@@ -49,11 +49,47 @@ Page({
     // 因为是 navigateTo 进来的，navigateBack 即可。chat 页面 onShow 会自动刷新
   },
 
-  onDelete(e) {
+  // v60.4-mp.5: 长按 session 出操作菜单
+  onLongPressSession(e) {
     const id = e.currentTarget.dataset.id;
+    const s = this.data.sessions.find(x => x.id === id);
+    if (!s) return;
+    wx.showActionSheet({
+      itemList: ['重命名', '复制标题', '删除对话'],
+      success: (r) => {
+        if (r.tapIndex === 0) this.startRename(id, s.title);
+        else if (r.tapIndex === 1) {
+          wx.setClipboardData({ data: s.title || '新对话', success: () => wx.showToast({ title: '标题已复制', icon: 'success', duration: 800 }) });
+        } else if (r.tapIndex === 2) this.confirmDelete(id);
+      },
+    });
+  },
+
+  startRename(id, currentTitle) {
+    wx.showModal({
+      title: '重命名对话',
+      editable: true,
+      placeholderText: currentTitle || '新对话',
+      content: currentTitle || '',
+      confirmText: '保存',
+      success: (r) => {
+        if (!r.confirm) return;
+        const newTitle = String(r.content || '').trim().slice(0, 30);
+        if (!newTitle) return;
+        const list = sess.load();
+        const updated = list.map(x => x.id === id ? { ...x, title: newTitle, ts_updated: Date.now() } : x);
+        sess.save(updated);
+        this.refresh();
+        wx.showToast({ title: '已重命名', icon: 'success', duration: 800 });
+      },
+    });
+  },
+
+  confirmDelete(id) {
     wx.showModal({
       title: '确认删除',
       content: '确认删除这个对话？',
+      confirmColor: '#dc2626',
       success: (r) => {
         if (!r.confirm) return;
         const filtered = sess.load().filter(s => s.id !== id);
@@ -62,6 +98,10 @@ Page({
         this.refresh();
       },
     });
+  },
+
+  onDelete(e) {
+    this.confirmDelete(e.currentTarget.dataset.id);
   },
 
   onClearAll() {
