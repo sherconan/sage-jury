@@ -15,7 +15,12 @@ const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
 const BOCHA_KEY = process.env.BOCHA_API_KEY || "***BOCHA_KEY_REMOVED***";
 
-interface Quote { id: number; date: string; ts?: number; text: string; text_n?: string; kw?: string[]; likes: number; rt?: number; url: string; }
+interface Quote { id: number; date: string; ts?: number; text: string; text_n?: string; kw?: string[]; likes: number; rt?: number; url: string;
+  // v57.2: 召回 score 元数据（仅运行时附加，便于前端展示"为什么排第一"）
+  _rel_score?: number;   // 0-N 相关性原始分（by_stock 8/by_concept 5/token 命中 +1/+3）
+  _rec_mul?: number;     // 时效性 multiplier（0.5-2.0）
+  _final_score?: number; // 综合分（用于排序）
+}
 interface SageData { slug: string; display: string; alias: string; philosophy: string; total_posts: number;
   high_quality_originals: Quote[]; recent_originals?: Quote[]; position_changes?: Quote[];
   by_stock: Record<string, Quote[]>; by_concept: Record<string, Quote[]>; }
@@ -81,7 +86,7 @@ function tokenize(q: string): string[] {
 }
 // v57.1: 动态召回 —— 不写死条数，按"时效性 × 相关性"自适应
 // 上界 maxCap=15 防 context 爆炸；下界靠动态阈值，能力圈外可能返回 0 条
-function findRelevant(sage: SageData, query: string, maxCap = 15): Quote[] {
+function findRelevant(sage: SageData, query: string, maxCap = 12): Quote[] {
   const found = new Map<number, { q: Quote; score: number }>();
   const tokens = tokenize(query);
   const qLow = normalize(query).toLowerCase();
@@ -122,19 +127,24 @@ function findRelevant(sage: SageData, query: string, maxCap = 15): Quote[] {
   // 综合评分 = (相关性 × 10 + 赞数 × 0.005) × 时效性
   const scored = [...found.values()]
     .filter(({ score }) => score >= MIN_RELEVANCE_SCORE)
-    .map(({ q, score }) => ({ q, fs: (score * 10 + q.likes * 0.005) * recencyMul(q) }))
+    .map(({ q, score }) => {
+      const recMul = recencyMul(q);
+      return { q, relScore: score, recMul, fs: (score * 10 + q.likes * 0.005) * recMul };
+    })
     .sort((a, b) => b.fs - a.fs);
 
   if (!scored.length) return [];
 
-  // 动态阈值：必须 ≥ top × 0.35 且 ≥ 绝对底 12（避免边缘弱相关溜进来）
+  // v57.2: 动态阈值收紧 —— 必须 ≥ top × 0.5 且 ≥ 绝对底 18
+  // 让强相关话题真正"挑出最相关"，而不是凑齐 maxCap
   const topScore = scored[0].fs;
-  const dynThresh = Math.max(topScore * 0.35, 12);
+  const dynThresh = Math.max(topScore * 0.5, 18);
 
   return scored
     .filter(s => s.fs >= dynThresh)
     .slice(0, maxCap)
-    .map(({ q }) => q);
+    // 附加 score 元数据到 Quote，便于前端展示
+    .map(({ q, relScore, recMul, fs }) => ({ ...q, _rel_score: relScore, _rec_mul: recMul, _final_score: Math.round(fs) }));
 }
 
 const NAME_TO_TICKER: Record<string,string> = {
@@ -490,11 +500,10 @@ function makeTool_searchSagePost(sage: SageData) {
     }).filter(Boolean) as Array<{ r: { id: string; score: number }; q: Quote; finalScore: number }>;
     if (!enriched.length) return "无相关发言";
 
-    // 动态阈值：rerank score 必须 ≥ top × 0.45 OR ≥ 绝对底 0.25
-    // top 上限：用户指定的 top（如有）或默认 12
+    // v57.2: 动态阈值收紧 —— rerank × recency 必须 ≥ top × 0.6 OR ≥ 绝对底 0.30
     const userTop = Math.min(top || 12, 15);
     const topScore = enriched[0].finalScore;
-    const dynThresh = Math.max(topScore * 0.45, 0.25);
+    const dynThresh = Math.max(topScore * 0.6, 0.30);
     const passed = enriched.filter(e => e.finalScore >= dynThresh).slice(0, userTop);
     if (!passed.length) return "无相关发言（话题可能在能力圈外）";
 
