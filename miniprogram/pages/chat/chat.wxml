@@ -3,14 +3,14 @@
   <view class="header">
     <view class="header-left" bindtap="onSagePickerToggle">
       <view class="sage-avatar" style="background:{{activeSage.color}}">{{activeSage.initials}}</view>
-      <view>
-        <view class="text-md font-semibold text-slate-900">{{activeSession.title || ('和 ' + activeSage.display + ' 对话')}}</view>
-        <view class="text-xs text-slate-500">{{activeSage.philosophy}}</view>
+      <view class="header-text">
+        <view class="header-title">{{activeSession.title || ('和 ' + activeSage.display + ' 对话')}}</view>
+        <view class="header-sub">{{activeSage.philosophy}}</view>
       </view>
       <view class="header-arrow">{{sagePickerOpen ? '▲' : '▼'}}</view>
     </view>
     <view class="header-right">
-      <button class="header-btn" bindtap="onNewSession" hover-class="hover">+ 新对话</button>
+      <button class="header-btn" bindtap="onNewSession" hover-class="hover">+ 新</button>
       <button class="header-btn" bindtap="onGoSessions" hover-class="hover">历史</button>
     </view>
   </view>

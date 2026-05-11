@@ -1,58 +1,88 @@
 /* chat.wxss */
+page { height: 100%; }
 .container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
   background: #f8fafc;
+  box-sizing: border-box;
 }
 
+/* ============ HEADER (fixed horizontal layout) ============ */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx 32rpx;
+  padding: 20rpx 24rpx;
   background: #fff;
   border-bottom: 1rpx solid #e2e8f0;
   z-index: 10;
+  min-height: 96rpx;
 }
 .header-left {
   display: flex;
   align-items: center;
   gap: 16rpx;
-  flex: 1;
-  max-width: 70%;
+  flex: 1 1 auto;
+  min-width: 0; /* 关键: 防止 flex item 被超长中文撑爆 */
+  overflow: hidden;
+}
+.header-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.header-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: keep-all;
+}
+.header-sub {
+  font-size: 22rpx;
+  color: #64748b;
+  margin-top: 4rpx;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .header-arrow {
   font-size: 20rpx;
   color: #94a3b8;
   margin-left: 8rpx;
+  flex-shrink: 0;
 }
 .header-right {
   display: flex;
-  gap: 12rpx;
+  gap: 8rpx;
+  flex-shrink: 0; /* 关键: 按钮不被压 */
 }
 .header-btn {
   font-size: 22rpx;
-  padding: 8rpx 18rpx;
+  padding: 8rpx 16rpx;
   background: #f1f5f9;
   color: #475569;
   border: none;
   border-radius: 9999rpx;
   margin: 0;
   line-height: 1.6;
+  flex-shrink: 0;
 }
 .header-btn::after { border: none; }
 
 .sage-avatar {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 16rpx;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 14rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: bold;
-  font-size: 22rpx;
+  font-size: 20rpx;
   font-family: ui-monospace, monospace;
   flex-shrink: 0;
 }
