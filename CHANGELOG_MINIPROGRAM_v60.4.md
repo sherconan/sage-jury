@@ -102,3 +102,40 @@ miniprogram/
 
 - `HANDOFF_MINIPROGRAM_v60.4.md` — 下一轮 sprint handoff
 - `HANDOFF_MINIPROGRAM_v60.3.md` — 上一轮 handoff（保留作历史）
+
+---
+
+## v60.5 增量（同 7H 挑战赛后段）
+
+把 v60.4 HANDOFF P1 全部消化 + 表格降级 + 多行输入 + streaming 续接：
+
+| commit | 内容 |
+|--------|------|
+| `448db72` mp.1 | bold/italic 内 cite 递归 + scroll-to-bottom 浮按钮 + utils/dsml.js 状态机 + scripts/lint-miniprogram.js |
+| `4b673d9` mp.2 | input → textarea（auto-height max 4 行 + maxlength 500 + focus glow） |
+| `a02194e` mp.3 | onShow 续接 streaming + _doFlush 每 5 次持久化 storage |
+| `7278caa` mp.4 | markdown 表格降级为 ul（不再 skip 丢数据） |
+
+### v60.5 关键能力
+
+- **bold/italic 内嵌 cite chip 可点**：parseInlines 递归 + wxml md-inline-child 二层 template
+- **scroll-to-bottom 浮按钮**：长 session 离底 > 300rpx 显示，点击平滑回底
+- **DSML 状态机硬化**：utils/dsml.js stripDSML 用嵌套计数吞 body（与 server 对齐）
+- **回归测试固化**：scripts/lint-miniprogram.js 41 项检查，CI 友好（exit code = 失败数）
+- **多行输入**：textarea + auto-height
+- **streaming 续接**：page 切换不丢 streaming UI 状态
+- **表格降级**：markdown 表格 → ul 列表（表头加粗）
+
+### v60.5 测试结果
+
+- lint script: **41 pass / 0 fail**
+- stripDSML 单元测试: **7 case 全绿**
+- bold/italic 递归 cite: **2 case 验证**
+- cleanDSML 集成: **4 case 验证**
+
+### 下一步建议（v60.6+ 候选）
+
+- chat.json 加 `enablePullDownRefresh` 拉历史
+- session 列表加 sage 头像分组 tab 切换
+- 加 starters 推荐随机选 6 个（当前固定 3 个）
+- HTML preview 工具：把 wxml → preview HTML 用于视觉走查

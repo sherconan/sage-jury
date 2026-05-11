@@ -1,20 +1,25 @@
 # Sage Chat 微信小程序
 
-> 和 4 位投资大佬 1v1 聊天的小程序版（段永平 / 管我财 / 但斌 / 老唐），Agent + tools。
+> 和 2 位投资大佬 1v1 聊天的小程序版（段永平 / 管我财），DeepSeek thinking 模式 + 8 工具。
+
+> v60.5 — 完整追平 web 后端 v60.4。详见 `../CHANGELOG_MINIPROGRAM_v60.4.md`。
 
 ## 项目结构
 
 ```
 miniprogram/
-├── app.json / app.js / app.wxss     全局配置 + 4 sage 数据 + 全局样式
+├── app.json / app.js / app.wxss     全局配置 + sage 数据 + 全局样式
+│                                    含 streamingIds 跨页 streaming 注册表
 ├── project.config.json              AppID = wx8b251c593a93d37e
 ├── sitemap.json
 ├── pages/
-│   ├── chat/                        主对话页（sage 选择 + 流式输出 + tool calls）
-│   └── sessions/                    历史对话列表
+│   ├── chat/                        主对话页（sage 切换 / 工具折叠 / 内心分析 / cite chip）
+│   └── sessions/                    历史列表（搜索 / 预览 / streaming 脉冲 / 长按操作）
 └── utils/
-    ├── api.js                       wx.request + onChunkReceived 实现"伪流式"
-    └── sessions.js                  本地多 session 持久化
+    ├── api.js                       SSE 解析 + decorate helpers (含 v60.1 analyst_chunk)
+    ├── sessions.js                  lazy session + 容量护栏 (MAX 100/200)
+    ├── markdown.js                  轻量 markdown parser (block + inline)
+    └── dsml.js                      DSML 状态机（与 server 端 inDSML 对齐）
 ```
 
 ## 启动步骤
@@ -25,18 +30,41 @@ miniprogram/
 4. **重要：勾选「不校验合法域名/web-view (业务域名)、TLS 版本以及 HTTPS 证书」**
    - 路径：详情 → 本地设置 → 不校验合法域名
    - 因为后端在 `sage-jury.vercel.app`，未做 ICP 备案，开发版必须关掉校验
-
 5. 点击「编译」即可在模拟器看到效果
 
-## 技术亮点
+## 离线回归（不需要 IDE）
+
+```bash
+node ../scripts/lint-miniprogram.js
+```
+
+41 项检查（JS lint / JSON / WXML→JS handler / template 引用 / wx:if 平衡 / mock require / 关键方法）。
+CI 友好：exit code = 失败数。
+
+## 技术亮点（v60.5）
 
 | 维度 | 实现 |
 |---|---|
-| **流式响应** | 用 `enableChunked: true` + `onChunkReceived` 监听字节流 → SSE 解析 → 边收边渲染 |
-| **多 session** | wx.setStorageSync 本地存储 (key: `sj_chat_sessions_v1`) |
-| **Agent + tools** | 4 工具：search_sage_post (BM25+Bocha rerank) / web_search / get_realtime_quote / get_kline |
-| **首轮自动标题** | 调用 /api/chat/title 用 LLM 生成 |
-| **持久化恢复** | 启动时还原上次 active session |
+| **流式响应** | `enableChunked: true` + `onChunkReceived` SSE 解析；含 v60.1 analyst_chunk 双流 |
+| **内心分析卡** | 紫色 💭 卡 streaming markdown，writer 阶段开始自动折叠 |
+| **工具折叠** | 单 pill「用了 N 个工具 ✓」点开看人话标签（📈 PE 历史分位 · 招行 ✓） |
+| **引用 chip** | `[原文 N]` → 可点击 `#N` → 滚到 quote 卡 + 黄色高亮 1.5s |
+| **Quote score badges** | 相关性（强/中/弱）+ 时效性（近期🔥/近期/去年/老）双 badge |
+| **Markdown 渲染** | 自写 parser：heading / list / quote / code / hr + bold/italic 内嵌 cite 递归 |
+| **Per-session streaming** | app.globalData.streamingIds，sessions 列表脉冲动画 |
+| **Lazy session** | "新对话"不立即建实体，第一条消息发出才落 storage |
+| **多 session** | wx.setStorageSync 持久化 + 容量护栏 (max 100 sessions × 200 msgs) |
+| **首轮自动标题** | LLM 生成 |
+| **DSML 安全** | 状态机吞 body（不只剥标签），与 server 行为对齐 |
+| **setData 节流** | 60ms 合并 + precise path `messages[i].field`，600 chunks 不爆 |
+
+## 已知差距 / 路线图
+
+- 真机验证：CLI 不带 lint，需 IDE 实跑（GUI 启动 → 编译）
+- markdown 表格降级为 ul（cells 用 ` · ` 连接），不渲染原始表格结构
+- 输入 textarea：回车 = 换行（不发送），发送靠按钮
+
+详见 `../HANDOFF_MINIPROGRAM_v60.4.md`。
 
 ## 上架准备 (生产部署)
 
@@ -58,11 +86,8 @@ miniprogram/
 4. **审核与发布**：
    - 每次发布先「上传」→ 在线提交审核 → 通过后「发布」
 
-## 当前 dev 体验
+## 基础库要求
 
-- ✅ 4 sage 列表 + 切换（切换=自动新建 session）
-- ✅ 多 session 历史（持久化）
-- ✅ Agent 调 4 工具 + 工具结果展示
-- ✅ 历史对话恢复
-- ✅ 首轮自动 LLM 标题
-- ⚠️ 流式：依赖 `onChunkReceived`（PC/真机均支持，模拟器 1.05.2308310+）
+- **≥ 2.20.1**（onChunkReceived 必需）
+- 重命名 modal: **≥ 2.18**（showModal editable）
+- textarea auto-height: **≥ 1.4.0**（基本所有版本支持）
