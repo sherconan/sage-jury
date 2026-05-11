@@ -89,6 +89,14 @@ function cleanDSML(s: string): string {
     .replace(/^\s+|\s+$/g, "");
 }
 
+// 把 sage 输出里的 [原文 N] / [原文N] 替换为可点击的 ⓘ chip（HTML span 包裹）
+// 后续由 ReactMarkdown 渲染为 <citation-chip data-n="N"/> → 点击展开对应 quote
+function injectCitationChips(text: string): string {
+  if (!text) return text;
+  // 匹配 [原文 1] 或 [原文1] 或 [原文 12]
+  return text.replace(/\[原文\s*(\d+)\]/g, (_, n) => `[\`#${n}\`](#cite-${n})`);
+}
+
 function fmtTime(ts: number) {
   const d = new Date(ts);
   const now = Date.now();
@@ -519,7 +527,30 @@ export default function ChatPage() {
                         {m.role === "user" ? (
                           <p className="whitespace-pre-wrap m-0">{m.content}</p>
                         ) : (
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                            a: ({ href, children }: any) => {
+                              const m2 = href?.match(/^#cite-(\d+)/);
+                              if (m2) {
+                                const n = parseInt(m2[1], 10);
+                                return (
+                                  <a href={`#cite-${n}`}
+                                    className="inline-flex items-center gap-0.5 rounded-md bg-sky-50 border border-sky-200 px-1.5 py-0 text-[11px] text-sky-700 hover:bg-sky-100 hover:border-sky-400 align-baseline no-underline font-mono"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      const el = document.getElementById(`cite-card-${m.ts}-${n}`);
+                                      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      el?.classList.add('ring-2', 'ring-sky-400');
+                                      setTimeout(() => el?.classList.remove('ring-2', 'ring-sky-400'), 1500);
+                                    }}
+                                    title="跳到引用原帖"
+                                  >#{n}</a>
+                                );
+                              }
+                              return <a href={href} target="_blank" rel="noreferrer">{children}</a>;
+                            }
+                          }}>
+                            {injectCitationChips(m.content)}
+                          </ReactMarkdown>
                         )}
                         {m.role === "sage" && loading && messages[messages.length - 1] === m && (
                           <span className="inline-block w-0.5 h-4 ml-0.5 bg-blue-500 align-middle animate-pulse" />
@@ -537,21 +568,22 @@ export default function ChatPage() {
                         </div>
                       )}
                       {m.quotes && m.quotes.length > 0 && (
-                        <details className="mt-4 border-t border-slate-100 pt-3">
+                        <details open className="mt-4 border-t border-slate-100 pt-3">
                           <summary className="cursor-pointer flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-400 hover:text-slate-600">
-                            <Hash className="h-3 w-3" /> 引用 {m.quotes.length} 条历史原帖
+                            <Hash className="h-3 w-3" /> 引用 {m.quotes.length} 条历史原帖（点击文中 #N 跳转）
                           </summary>
                           <ul className="mt-2.5 space-y-2">
                             {m.quotes.map((q, j) => (
-                              <li key={j} className="rounded-xl border border-slate-200 bg-sky-50/60 px-3.5 py-2.5 text-xs">
+                              <li key={j} id={`cite-card-${m.ts}-${j + 1}`} className="rounded-xl border border-slate-200 bg-sky-50/60 px-3.5 py-2.5 text-xs transition-all">
                                 <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-sky-500 px-1 text-[10px] font-mono font-bold text-white">#{j + 1}</span>
                                   <Twitter className="h-3 w-3 text-sky-500" />
                                   <span className="font-medium text-slate-600">雪球</span>
                                   <span className="text-slate-300">·</span>
                                   <a href={q.url} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-600 transition">{q.date} · 👍{q.likes}</a>
                                   <ExternalLink className="h-3 w-3 text-slate-400" />
                                 </div>
-                                <p className="text-slate-700 line-clamp-2 leading-relaxed">{q.text}</p>
+                                <p className="text-slate-700 line-clamp-3 leading-relaxed">{q.text}</p>
                               </li>
                             ))}
                           </ul>
