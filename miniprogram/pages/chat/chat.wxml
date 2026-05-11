@@ -71,23 +71,28 @@
   <!-- Messages 区域 -->
   <scroll-view class="messages" scroll-y scroll-into-view="{{scrollTo}}" enhanced show-scrollbar="{{false}}">
     <view wx:if="{{messages.length === 0}}" class="empty">
-      <view class="empty-avatar" style="background:{{activeSage.color}}">{{activeSage.initials}}</view>
-      <view class="empty-title">和 {{activeSage.display}} 对话</view>
+      <view class="empty-avatar-wrap">
+        <view class="empty-avatar" style="background:{{activeSage.color}}">{{activeSage.initials}}</view>
+        <view class="empty-avatar-pulse" style="background:{{activeSage.color}}"></view>
+      </view>
+      <view class="empty-title">和 <text class="empty-title-name">{{activeSage.display}}</text> 对话</view>
       <view class="empty-subtitle">{{activeSage.philosophy}}</view>
-      <view class="empty-meta">基于 {{activeSage.total_posts}} 条真实雪球发言 · 4 工具 (语义搜/网搜/实时行情/K线)</view>
+      <view class="empty-meta">基于 <text class="empty-meta-num">{{activeSage.total_posts}}</text> 条雪球真实发言 · 8 工具 · v60 深度池</view>
 
-      <!-- ⭐ 4 sage 横排选择器（一眼可见可切换）-->
-      <view class="sage-row-label">切换大佬</view>
+      <!-- sage 横排选择器（一眼可见可切换）-->
+      <view class="sage-row-label">— 切换大佬 —</view>
       <view class="sage-row">
         <view wx:for="{{sages}}" wx:key="slug" class="sage-row-card {{item.slug === activeSage.slug ? 'active' : ''}}"
-          data-slug="{{item.slug}}" bindtap="onSelectSage">
+          data-slug="{{item.slug}}" bindtap="onSelectSage" hover-class="sage-row-card-hover">
           <view class="sage-row-avatar" style="background:{{item.color}}">{{item.initials}}</view>
           <view class="sage-row-name">{{item.display}}</view>
+          <view wx:if="{{item.slug === activeSage.slug}}" class="sage-row-check">✓</view>
         </view>
       </view>
 
+      <view class="starters-label">— 试试这些问题 —</view>
       <view class="starters">
-        <view wx:for="{{starters}}" wx:key="*this" class="starter-chip" data-q="{{item}}" bindtap="onStarter">{{item}}</view>
+        <view wx:for="{{starters}}" wx:key="*this" class="starter-chip" data-q="{{item}}" bindtap="onStarter" hover-class="starter-chip-hover">{{item}}</view>
       </view>
     </view>
 
@@ -172,13 +177,18 @@
     </view>
   </scroll-view>
 
-  <!-- 输入区 -->
+  <!-- 输入区 (v60.4-mp.4 polished) -->
   <view class="input-bar">
-    <input class="input" placeholder="问 {{activeSage.display}}..." value="{{input}}"
-      bindinput="onInputChange" confirm-type="send" bindconfirm="onSubmit" disabled="{{loading}}" />
-    <button class="send-btn" style="background:{{activeSage.color}}" bindtap="onSubmit"
-      disabled="{{loading || !input}}" loading="{{loading}}">
-      {{loading ? '发送中' : '发送'}}
+    <view class="input-wrap">
+      <input class="input" placeholder="问 {{activeSage.display}}..." value="{{input}}"
+        bindinput="onInputChange" confirm-type="send" bindconfirm="onSubmit"
+        disabled="{{loading}}" maxlength="500" cursor-spacing="20" />
+      <text wx:if="{{input.length > 0}}" class="input-counter {{input.length > 450 ? 'input-counter-warn' : ''}}">{{input.length}}/500</text>
+    </view>
+    <button class="send-btn {{loading ? 'send-btn-loading' : ''}}" style="background:{{activeSage.color}}"
+      bindtap="onSubmit" disabled="{{loading || !input}}" loading="{{loading}}" hover-class="send-btn-hover">
+      <text wx:if="{{!loading}}">发送</text>
+      <text wx:else>发送中</text>
     </button>
   </view>
 </view>
