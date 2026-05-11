@@ -38,4 +38,8 @@ function fmtTime(ts) {
   const d = new Date(ts);
   return (d.getMonth()+1) + '/' + d.getDate();
 }
-module.exports = { load, save, getActiveId, setActiveId, genId, newSession, fmtTime };
+// v59: 清理 hydrate 后仍是空 msgs 的 session（lazy 创建逻辑的兜底）
+function purgeEmpty(sessions) {
+  return (sessions || []).filter(s => Array.isArray(s.msgs) && s.msgs.length > 0);
+}
+module.exports = { load, save, getActiveId, setActiveId, genId, newSession, fmtTime, purgeEmpty };
