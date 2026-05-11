@@ -69,9 +69,24 @@ Page({
     const slug = e.currentTarget.dataset.slug;
     const sage = this.data.sages.find(s => s.slug === slug);
     if (!sage) return;
-    // 切 sage 时新建 session
     this.setData({ sagePickerOpen: false });
-    this.createSession(sage);
+    // 如果当前已经有有内容的 session, 才新建 session 切换
+    // 如果是空 session (没消息) 或没 session, 只切换 activeSage 不建新 session
+    const cur = this.data.activeSession;
+    if (cur && cur.msgs && cur.msgs.length > 0) {
+      this.createSession(sage);
+    } else {
+      this.setData({
+        activeSage: sage,
+        starters: STARTERS[sage.slug] || [],
+      });
+      if (cur) {
+        // 更新当前空 session 的 sage 绑定
+        const updated = { ...cur, sage_id: sage.slug, sage_name: sage.display, sage_initials: sage.initials, sage_color: sage.color };
+        this.persistSession(updated);
+        this.setData({ activeSession: updated });
+      }
+    }
   },
 
   onNewSession() { this.createSession(this.data.activeSage); },

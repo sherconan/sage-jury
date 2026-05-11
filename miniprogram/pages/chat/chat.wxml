@@ -35,6 +35,17 @@
       <view class="empty-title">和 {{activeSage.display}} 对话</view>
       <view class="empty-subtitle">{{activeSage.philosophy}}</view>
       <view class="empty-meta">基于 {{activeSage.total_posts}} 条真实雪球发言 · 4 工具 (语义搜/网搜/实时行情/K线)</view>
+
+      <!-- ⭐ 4 sage 横排选择器（一眼可见可切换）-->
+      <view class="sage-row-label">切换大佬</view>
+      <view class="sage-row">
+        <view wx:for="{{sages}}" wx:key="slug" class="sage-row-card {{item.slug === activeSage.slug ? 'active' : ''}}"
+          data-slug="{{item.slug}}" bindtap="onSelectSage">
+          <view class="sage-row-avatar" style="background:{{item.color}}">{{item.initials}}</view>
+          <view class="sage-row-name">{{item.display}}</view>
+        </view>
+      </view>
+
       <view class="starters">
         <view wx:for="{{starters}}" wx:key="*this" class="starter-chip" data-q="{{item}}" bindtap="onStarter">{{item}}</view>
       </view>
