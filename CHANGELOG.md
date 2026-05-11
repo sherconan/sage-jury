@@ -5,6 +5,28 @@
 
 ## [Unreleased]
 
+## [v60.5.0] - 2026-05-12
+
+### Added
+- **`/api/jury/stream` 真 multi-sage 陪审团 endpoint**（sage-jury 名字核心终于兑现）
+  - 入参 `{ sage_ids: string[2-5], message, history? }`
+  - 内部并行 fetch `/api/chat/stream`（自动继承 v60.4.7 fallback / v60.4.5 retry / v60.4.4 chunk split / v60.2 DSML 清洗）
+  - 输出合并 SSE：`jury_start` → `jury_event{sage_id,type,payload}` → `jury_done{sage_states}`
+  - 5 sage 上限防 deepseek API rate limit；duplicate 自动去重
+  - GET 返回 spec for discovery
+
+### Verified
+- 3 sage 并行评判"腾讯能买吗"（duan + guan + feng-liu）：
+  - 64s 完成（串行需 ~150s+），422KB 总 SSE 流量
+  - duan 576 chunks / 892 字 / 3 tools
+  - guan 347 chunks / 538 字 / 5 tools
+  - feng-liu 691 chunks / 1112 字 / 8 tools（fallback sage 也跑通）
+  - 0 错误
+
+### Note
+- 这是 backend MVP；前端 jury page UI 在 v60.5.x 后续 cycle 实现
+- 复用而非重写策略：jury 只做 SSE 多路合并，每位 sage 独立完整 chat/stream 流；chat/stream 任何修复自动惠及 jury
+
 ## [v60.4.10] - 2026-05-12
 
 ### Fixed
