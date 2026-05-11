@@ -1244,14 +1244,14 @@ ${ragCtx}`;
           controller.enqueue(sse("chunk", { delta: fullReply }));
         }
 
-        // followups
+        // followups (v60.4: 切 FAST_MODEL，避免 done 前白等 5-10s)
         let followups: string[] = [];
         try {
           const fr = await fetch(`${LLM_BASE}/chat/completions`, {
             method: "POST",
             headers: { "Authorization": `Bearer ${LLM_KEY}`, "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: LLM_MODEL,
+              model: LLM_FAST_MODEL,
               messages: [
                 { role: "system", content: `生成 3 个用户接着想问 ${sage.display} 的问题。每行 1 个，不超过 18 字。无编号无引号。` },
                 { role: "user", content: `用户问：${userMsg.slice(0,200)}\n${sage.display}回答：${fullReply.slice(0,600)}\n\n3个跟进：` },
