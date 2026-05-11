@@ -293,10 +293,16 @@ export default function ChatPage() {
             return { ...s, msgs };
           }));
           else if (evt === "done") {
-            patchLast({ content: cleanDSML(accumulated || data.fullReply || ""), followups: data.followups || [], loading: false });
+            // v55: 优先使用服务端 citation 校验后的 fullReply（剥除了张冠李戴的 [原文 N]）
+            const finalText = data.fullReply || accumulated || "";
+            patchLast({ content: cleanDSML(finalText), followups: data.followups || [], loading: false });
             const sess = sessions.find(s => s.id === sessId);
             const turns = sess ? sess.msgs.filter(m => m.role === "user").length + 1 : 1;
-            if (turns === 1) setTimeout(() => generateTitle(sessId!, text, accumulated || data.fullReply || ""), 100);
+            if (turns === 1) setTimeout(() => generateTitle(sessId!, text, finalText), 100);
+          }
+          else if (evt === "citation_audit") {
+            // v55: 调试事件 —— 控制台打印被剥的引用，便于回测
+            if (data?.stripped?.length) console.warn("[citation_audit] stripped:", data.stripped, "kept:", data.kept);
           }
           else if (evt === "error") patchLast({ content: `Error: ${data.message}`, loading: false });
         }
