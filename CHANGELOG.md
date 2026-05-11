@@ -5,6 +5,30 @@
 
 ## [Unreleased]
 
+## [v60.4.9] - 2026-05-12
+
+### Added
+- chat 主页 sage picker 暴露 15 个 live sage（之前只有 4 个静态 hardcode）
+- 新 `SagePickerRow` 子组件 + 按 tier 分 3 组（大众派有 corpus / 大众派元 / 圈内派元）
+- 13 个 fallback sage 显示"元"小标签 + "无历史发言池"提示
+- `STARTERS_FALLBACK` 给每个 fallback sage 2 个定制 starter
+- header bar `hasCorpus` 条件文案：`基于 N 条雪球发言` 或 `元数据角色`
+
+### Verified
+- 15/15 sages smoke test 全过（query 复杂如"讲讲你的核心方法论"也跑通）
+- baseline_gate 跑 8 query：p50=33.6s（基线 36.7s 还更快）、0 fallback、max 66.7s 在阈值 69.6s 内
+- 实测 fallback sage 输出质量：buffett 1233 字符（含"买股票就是买公司" / "Price is what you pay"）、li-lu 1079（芒格"知道自己不知道什么" / 福耀玻璃 / 比亚迪）、deng-xiaofeng 702（招行 ROE / 海康市占率 30%）
+
+### Changed
+- `app/page.tsx` SAGES 从 hardcode 改为 SAGES_RAW 派生 + tier/hasCorpus 字段
+- `gradientForSage()` 给每个 sage 配 tailwind 渐变
+
+## [v60.4.8] - 2026-05-12
+
+### Changed
+- `app/page.tsx` SAGES 删 dan-bin / lao-tang（与 SAGES_RAW.tier="removed" 对齐；mp app.js 早已删过）
+- guan total_posts 33853 → 33877（与最新 mp app.js 同步）
+
 ## [v60.4.7] - 2026-05-12
 
 ### Fixed
