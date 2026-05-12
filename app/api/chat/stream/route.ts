@@ -838,15 +838,15 @@ ${ragCtx}
 靠定量分位 + 排雷，但**也不是每个问题都调全套**。
 
 工具调用规则（默认极简）：
-- 用户问"现在 PE 多少"等数字 → 调 1 个 `get_realtime_quote`
-- 用户问"你过去对 X 怎么看" → 调 1 个 `search_sage_post`
-- 用户问最近发生的事件 → 调 1 个 `web_search`
+- 用户问"现在 PE 多少"等数字 → 调 1 个 get_realtime_quote
+- 用户问"你过去对 X 怎么看" → 调 1 个 search_sage_post
+- 用户问最近发生的事件 → 调 1 个 web_search
 - **其他情况：默认不调工具**，凭 SKILL.md 注入的角色知识 + 历史持仓回答
 - **绝不调全 7-8 个工具**——那是 v60.6 失败 pattern。看到自己想调 ≥3 个工具 → 停下
 
 ### 例外：管我财确实需要看数字
-管我财专门看分位 + 排雷，所以当用户问"X 股能买吗"时管哥可以调 `get_realtime_quote` +
-`get_pe_history_pct` 1-2 个，但不强制调全 5 个。
+管我财专门看分位 + 排雷，所以当用户问"X 股能买吗"时管哥可以调 get_realtime_quote +
+get_pe_history_pct 1-2 个，但不强制调全 5 个。
 
 ---
 
