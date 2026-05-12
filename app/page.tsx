@@ -279,10 +279,24 @@ export default function ChatPage() {
       ], ts_updated: Date.now() };
     }));
 
+    // v60.6.1: AbortController + 双重 watchdog
+    // - 总超时 240s（cover 复杂多 sage 5 步推理 + 多工具）
+    // - stall watchdog 90s（如果 90s 没新 SSE 事件 → 流死了，强制 abort）
+    const ctrl = new AbortController();
+    const totalTimeout = setTimeout(() => ctrl.abort(new Error("total-timeout-240s")), 240_000);
+    let lastEventAt = Date.now();
+    const stallTimer = setInterval(() => {
+      if (Date.now() - lastEventAt > 90_000) {
+        clearInterval(stallTimer);
+        ctrl.abort(new Error("stall-90s-no-event"));
+      }
+    }, 5_000);
+    const cleanupTimers = () => { clearTimeout(totalTimeout); clearInterval(stallTimer); };
     try {
       const res = await fetch("/api/chat/stream", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sage_id: activeSage.slug, message: text, history: histPayload }),
+        signal: ctrl.signal,
       });
       if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
       const reader = res.body.getReader();
@@ -301,6 +315,7 @@ export default function ChatPage() {
           if (line.startsWith("event: ")) { evt = line.slice(7).trim(); continue; }
           if (!line.startsWith("data: ")) continue;
           let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
+          lastEventAt = Date.now(); // v60.6.1 stall watchdog 心跳
           if (evt === "quotes") patchLast({ quotes: data || [], loading: true });
           else if (evt === "chunk" && data.delta) {
             const clean = cleanDSML(data.delta);
@@ -351,7 +366,14 @@ export default function ChatPage() {
           else if (evt === "done") {
             // v55: 优先使用服务端 citation 校验后的 fullReply（剥除了张冠李戴的 [原文 N]）
             const finalText = data.fullReply || accumulated || "";
-            patchLast({ content: cleanDSML(finalText), followups: data.followups || [], loading: false });
+            // v60.6.1: done = 终态。强制清 analyst loading，防 analyst_done/phase 事件丢失导致 UI 永远转
+            patchLast({
+              content: cleanDSML(finalText),
+              followups: data.followups || [],
+              loading: false,
+              analystDone: true,
+              writerStarted: true,
+            });
             const sess = sessions.find(s => s.id === sessId);
             const turns = sess ? sess.msgs.filter(m => m.role === "user").length + 1 : 1;
             if (turns === 1) setTimeout(() => generateTitle(sessId!, text, finalText), 100);
@@ -372,13 +394,28 @@ export default function ChatPage() {
         processLines(lines);
       }
     } catch (e: any) {
+      // v60.6.1: 友好错误 + 始终清 analyst 状态防"内心分析中"永远转
+      const isAbort = e?.name === "AbortError" || /timeout|stall/.test(String(e?.message));
+      const friendlyMsg = isAbort
+        ? "（响应超时——服务端可能仍在处理，但流被中断了。试着重发一次或换个简短的问法）"
+        : `Error: ${e?.message || e}`;
       setSessions(prev => prev.map(s => {
         if (s.id !== sessId) return s;
         const msgs = [...s.msgs];
-        if (msgs.length > 0) msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content: `Error: ${e.message}`, loading: false };
+        if (msgs.length > 0) {
+          const last = msgs[msgs.length - 1];
+          msgs[msgs.length - 1] = {
+            ...last,
+            content: last.content || friendlyMsg,
+            loading: false,
+            analystDone: true,
+            writerStarted: true,
+          };
+        }
         return { ...s, msgs };
       }));
     } finally {
+      cleanupTimers();
       removeStreaming(sessId);
     }
   };
