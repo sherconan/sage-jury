@@ -727,19 +727,33 @@ function auditCitations(reply: string, quotes: Quote[]): { corrected: string; st
   return { corrected, stripped };
 }
 
+// v60.6.1: 单工具调用 20s 超时保护，防 upstream API（雪球/akshare/bocha/eastmoney）卡死
+// 用户报"内心分析中跑 10 分钟"根因：江南布衣 03306 调 get_pe_history_pct + get_dividend_history
+// 上游 hang，没超时，整个 agent loop 永远等 tool result
+async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T | string> {
+  return await Promise.race([
+    p,
+    new Promise<string>((resolve) => setTimeout(() => resolve(`[${label} 超时 ${ms}ms]`), ms)) as Promise<any>,
+  ]);
+}
+
 function makeExecuteTool(sage: SageData) {
   const searchSagePost = makeTool_searchSagePost(sage);
   return async function (name: string, args: any): Promise<string> {
+    const TIMEOUT = 20_000;
     try {
-      if (name === "search_sage_post") return await searchSagePost(args.query, args.top);
-      if (name === "web_search") return await tool_web_search(args.query, args.count);
-      if (name === "get_realtime_quote") return await tool_realtime_quote(args.stock);
-      if (name === "get_kline") return await tool_kline(args.stock, args.days);
-      if (name === "get_pe_history_pct") return await tool_pe_history_pct(args.stock, args.years);
-      if (name === "get_financials") return await tool_financials(args.stock);
-      if (name === "get_dividend_history") return await tool_dividend_history(args.stock, args.years);
-      if (name === "compare_stocks") return await tool_compare_stocks(args.tickers || args.stocks);
-      return `未知工具: ${name}`;
+      let p: Promise<string>;
+      if (name === "search_sage_post") p = searchSagePost(args.query, args.top);
+      else if (name === "web_search") p = tool_web_search(args.query, args.count);
+      else if (name === "get_realtime_quote") p = tool_realtime_quote(args.stock);
+      else if (name === "get_kline") p = tool_kline(args.stock, args.days);
+      else if (name === "get_pe_history_pct") p = tool_pe_history_pct(args.stock, args.years);
+      else if (name === "get_financials") p = tool_financials(args.stock);
+      else if (name === "get_dividend_history") p = tool_dividend_history(args.stock, args.years);
+      else if (name === "compare_stocks") p = tool_compare_stocks(args.tickers || args.stocks);
+      else return `未知工具: ${name}`;
+      const r = await withTimeout(p, TIMEOUT, name);
+      return typeof r === "string" ? r : String(r);
     } catch (e: any) { return `工具异常: ${e.message}`; }
   };
 }
