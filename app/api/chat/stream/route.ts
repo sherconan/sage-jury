@@ -10,6 +10,9 @@ import { SAGE_BY_ID } from "@/data/sages";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
+// v60.6.1: 明确给 5 分钟 — v60.6 5 步推理 + 8 工具会让 analyst 阶段更长，
+// 默认 Vercel edge 25-60s 会切断流，导致前端"内心分析中"永远转
+export const maxDuration = 300;
 
 const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
 const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
