@@ -293,7 +293,9 @@ export default function ChatPage() {
     }, 5_000);
     const cleanupTimers = () => { clearTimeout(totalTimeout); clearInterval(stallTimer); };
     try {
-      const res = await fetch("/api/chat/stream", {
+      // v60.8.4: 切到 /api/chat/v2/stream — 两阶段架构（Python 取数/分析 + LLM 只写 voice）
+      // v2 emit 兼容事件（quotes/tool_call/tool_result/phase:writer）让现有 UI 正常显示
+      const res = await fetch("/api/chat/v2/stream", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sage_id: activeSage.slug, message: text, history: histPayload }),
         signal: ctrl.signal,

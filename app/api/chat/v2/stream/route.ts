@@ -171,6 +171,12 @@ function buildVoicePrompt(
 3. **团队 (right people)**：管理层讲不讲大话？回购+分红信号？
 4. **价格 (right price，第三位)**：用**今天 PE / 股息率 / FCF** vs 10 年期国债 4% 比，年化预期是否值得？必须算账！
 5. **stop doing**：是不是杠杆股 / 讲故事股 / 夕阳行业？触发就直接放弃
+
+# 你的身份独占元素（其他 sage 不会这么说）
+- 地点/生活：加州后院、圆石滩高尔夫、Westfield 门店、品 30 年茅台
+- 招牌口头：right business / right people / right price、I'll be back!、本分、看十年、stop doing list、千万别用 Margin 哈
+- 持仓案例：苹果（2002+）、网易（2001+）、拒绝百度、神华→泡泡玛特换仓
+- 朋友圈：老巴、库克、芒格、Elon Mask
 ` : `
 # 管我财的分析逻辑（必须用今天数据按这 5 步现场推理，不是抄历史）
 
@@ -181,6 +187,15 @@ function buildVoicePrompt(
 3. **股息安全垫**：今天股息率有 5%+ 吗？没有 → 下行没保护
 4. **商业稳态**：今天 ROE / 行业第一第二、可预测吗？
 5. **荒岛测试**：一年不能换还能拿吗？拿不住 → 仓位太重
+
+# 你的身份独占元素（其他 sage 不会这么说）
+- 地点/生活：在香港、茶餐厅、现场跑门店调研（首都机场免税店、江南布衣店）
+- 招牌口头：低估逆向平均赢、排雷胜选股、5% 股息打底、5% + 5% = 10% 年化、放长线钓大鱼、看分位不看 K 线、荒岛 X 年组合、贵就是贵 再好都不动
+- 持仓案例：招行/工行长持、江南布衣高股息、首都机场清仓（现场看免税被餐饮挤）、北京控股、物管行业
+- 风格：港式口语、爱讲数字但不列表
+
+# ⚠️ 角色独占铁律
+你**绝不**使用其他 sage 的独占元素。比如管我财不打圆石滩、不说"I'll be back"；段永平不去茶餐厅、不说"放长线钓大鱼"。**写之前问自己：这是我的话还是别的 sage 的？**
 `;
 
   const system = `你是${isDuan ? "段永平" : "管我财"}。
@@ -287,12 +302,29 @@ export async function POST(req: NextRequest) {
 
         if (facts) send("facts", { ticker: stock, facts });
         else send("facts", { ticker: null, note: "无识别股票" });
-        if (history.length) send("history", { count: history.length, posts: history });
+        if (history.length) {
+          send("history", { count: history.length, posts: history });
+          // v60.8.4: 兼容 v1 frontend — 把 history 也作为 quotes 事件 emit，让 quote 卡能显示
+          send("quotes", history.map((p, i) => ({
+            date: p.date, text: p.text, likes: p.likes, url: p.url,
+            _rel_score: Math.round(p.score), _rec_mul: 1, _final_score: Math.round(p.score),
+          })));
+        }
 
         const verdict: SageVerdict = sage_id === 'duan-yongping' ? scoreDuan(facts, userMsg) : scoreGuan(facts, userMsg);
         send("verdict", verdict);
 
-        send("phase", { name: "writing", message: `${sage_id === 'duan-yongping' ? '段永平' : '管哥'}写答案...` });
+        // v60.8.4: 兼容 v1 frontend — emit synthetic tool_call/result 让"用了 X 工具"显示
+        if (facts) {
+          const toolId = `v608-fetch-${Date.now()}`;
+          send("tool_call", { name: "get_realtime_quote", args: { stock: stock?.name }, id: toolId });
+          send("tool_result", {
+            name: "get_realtime_quote", id: toolId,
+            result: `${stock?.name}(${stock?.code}) 现价 ${facts.price?.toFixed?.(2) || '?'} | PE ${facts.pe_ttm || '?'} | PB ${facts.pb_mrq?.toFixed?.(2) || '?'} | 股息率 ${facts.dividend_yield_pct?.toFixed?.(2) || '?'}% | ROE ${facts.roe_pct?.toFixed?.(1) || '?'}% | 营收 ${facts.revenue_billion?.toFixed?.(0) || '?'}亿 | 数据源 ${facts.source.join(',')}`,
+          });
+        }
+        // v60.8.4: 兼容 — emit phase writer 让 UI 关闭"内心分析中"loader
+        send("phase", { name: "writer", message: `${sage_id === 'duan-yongping' ? '段永平' : '管哥'}写答案...` });
         const { system, user } = buildVoicePrompt(sage_id, userMsg, facts, verdict, history);
 
         const llmRes = await fetch(`${LLM_BASE}/chat/completions`, {
