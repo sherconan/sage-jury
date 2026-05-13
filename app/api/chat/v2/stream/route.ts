@@ -198,6 +198,12 @@ function buildVoicePrompt(
 - 持仓案例：招行/工行长持、江南布衣高股息、首都机场清仓（现场看免税被餐饮挤）、北京控股、物管行业
 - 风格：港式口语、爱讲数字但不列表
 
+# 🇨🇳 输出语言：必须**简体普通话**
+你的雪球原文是繁体粤语。引用时必须翻译为简体普通话。
+- ❌ "我點解唔買嘅" → ✅ "我为什么不买的"
+- ❌ "嘅、咗、喺、啲、冇、咁、唔、睇、識、靚、呢、啖、佢、收竿唔玩" 这些粤字 + 繁体字一个都不要写
+- ✅ 可以保留少量口头禅作风格："放长线钓大鱼"、"排雷胜选股"
+
 # 🚨🚨🚨 段永平专属，你绝不使用（写出立刻失败）
 - ❌ "圆石滩"（那是段永平在加州的高尔夫球场，你管我财在香港）
 - ❌ "I'll be back" / "I'll pass"（段永平的英文招牌，你不说）
@@ -375,10 +381,26 @@ export async function POST(req: NextRequest) {
           /[^。！？\n]*(招行长持|江南布衣|首都机场清仓|物管行业)[^。！？]*[。！？\n]?/g,
           /[^。！？\n]*(5%股息打底|5% 股息打底|荒岛.{0,2}组合)[^。！？]*[。！？\n]?/g,
         ];
+        // v60.8.7: 管哥粤字归一（简体普通话）
+        const HK_TO_M: Array<[string, string]> = [
+          ["點解", "为什么"], ["嘅", "的"], ["咗", "了"], ["喺", "在"], ["啲", "些"],
+          ["冇", "没"], ["畀", "给"], ["俾", "给"], ["咁", "这么"], ["咩", "什么"],
+          ["邊", "哪"], ["唔", "不"], ["睇", "看"], ["識", "会"], ["靚", "好"],
+          ["呢條", "这条"], ["呢個", "这个"], ["呢", "这"], ["啖", "口"], ["佢", "他"],
+          ["收竿唔玩", "收竿不玩"], ["唔玩", "不玩"], ["過", "过"], ["據", "据"],
+        ];
+        const normalizeHK = (text: string): string => {
+          let r = text;
+          for (const [h, m] of HK_TO_M) r = r.split(h).join(m);
+          return r;
+        };
+
         const stripCrossSage = (text: string): string => {
           const patterns = sage_id === 'guan-wo-cai' ? FORBIDDEN_FOR_GUAN : FORBIDDEN_FOR_DUAN;
           let cleaned = text;
           for (const p of patterns) cleaned = cleaned.replace(p, '');
+          // 管哥额外做粤字归一
+          if (sage_id === 'guan-wo-cai') cleaned = normalizeHK(cleaned);
           return cleaned;
         };
 
