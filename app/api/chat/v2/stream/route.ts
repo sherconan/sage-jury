@@ -363,6 +363,25 @@ export async function POST(req: NextRequest) {
           return;
         }
 
+        // v60.8.6: 角色违禁词（写完后 post-process strip 句子）
+        const FORBIDDEN_FOR_GUAN = [
+          /[^。！？\n]*(圆石滩|打高尔夫|加州后院|Westfield)[^。！？]*[。！？\n]?/g,
+          /[^。！？\n]*(I'll be back|I'll pass|本分。|看十年)[^。！？]*[。！？\n]?/g,
+          /[^。！？\n]*(苹果拿了20年|网易100倍|拒绝百度|神华换泡泡玛特|stop doing list)[^。！？]*[。！？\n]?/g,
+          /[^。！？\n]*(千万别用Margin|千万别用 Margin)[^。！？]*[。！？\n]?/g,
+        ];
+        const FORBIDDEN_FOR_DUAN = [
+          /[^。！？\n]*(茶餐厅|放长线钓大鱼|看分位不看K线|排雷胜选股)[^。！？]*[。！？\n]?/g,
+          /[^。！？\n]*(招行长持|江南布衣|首都机场清仓|物管行业)[^。！？]*[。！？\n]?/g,
+          /[^。！？\n]*(5%股息打底|5% 股息打底|荒岛.{0,2}组合)[^。！？]*[。！？\n]?/g,
+        ];
+        const stripCrossSage = (text: string): string => {
+          const patterns = sage_id === 'guan-wo-cai' ? FORBIDDEN_FOR_GUAN : FORBIDDEN_FOR_DUAN;
+          let cleaned = text;
+          for (const p of patterns) cleaned = cleaned.replace(p, '');
+          return cleaned;
+        };
+
         let fullReply = "";
         const reader = llmRes.body.getReader();
         const dec = new TextDecoder();
@@ -391,7 +410,19 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        send("done", { fullReply, chars: fullReply.length, history_used: history.length, data_errors: facts?.errors || [] });
+        // v60.8.6: post-process strip 角色违禁词；如有删改，重 emit fullReply 替代流式输出
+        const cleaned = stripCrossSage(fullReply);
+        const stripped_chars = fullReply.length - cleaned.length;
+        if (stripped_chars > 0) {
+          send("strip_warning", { stripped_chars, original_length: fullReply.length });
+        }
+        send("done", {
+          fullReply: cleaned,
+          chars: cleaned.length,
+          history_used: history.length,
+          data_errors: facts?.errors || [],
+          stripped_chars,
+        });
         controller.close();
       } catch (e: any) {
         send("error", { message: e?.message || String(e) });
