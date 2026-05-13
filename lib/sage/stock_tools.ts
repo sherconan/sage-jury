@@ -200,7 +200,33 @@ async function fetchHKFinancials(code: string): Promise<Partial<StockFactsTyped>
   } catch { return {}; }
 }
 
-// === 美股: Stooq + 一些 fallback ===
+// === 美股: Sina hq.sinajs.cn/list=gb_xxx — 字段 14 = PE TTM, 字段 13 = EPS ===
+async function fetchUSSina(symbol: string): Promise<Partial<StockFactsTyped>> {
+  try {
+    const u = `https://hq.sinajs.cn/list=gb_${symbol.toLowerCase()}`;
+    const r = await fetch(u, {
+      headers: { "User-Agent": "Mozilla/5.0", Referer: "https://finance.sina.com.cn/" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
+    });
+    if (!r.ok) return { errors: [`sina-us ${r.status}`] };
+    const txt = await r.text();
+    const m = txt.match(/var hq_str_gb_[a-z]+="([^"]+)"/i);
+    if (!m) return { errors: ["sina-us no match"] };
+    const f = m[1].split(",");
+    if (f.length < 15) return { errors: ["sina-us fields short"] };
+    const eps = parseFloat(f[13]);
+    const pe = parseFloat(f[14]);
+    const price = parseFloat(f[1]);
+    return {
+      price: isFinite(price) ? price : undefined,
+      pe_ttm: isFinite(pe) && pe > 0 ? pe : undefined,
+      source: ["sina-us"],
+      errors: [],
+    };
+  } catch (e: any) { return { errors: [`sina-us ${e.message}`] }; }
+}
+
+// === 美股: Stooq fallback ===
 async function fetchUSStooq(symbol: string): Promise<Partial<StockFactsTyped>> {
   try {
     const u = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcvn&h&e=csv`;
@@ -268,22 +294,22 @@ export async function gatherFacts(t: Ticker): Promise<StockFactsTyped> {
       source: [...(quote.source || []), ...(fin.source || [])],
       errors: [...(quote.errors || []), ...(fin.errors || [])] };
   }
-  // US: eastmoney 105.XXX 能拿 PB / 股息 / 市值（虽然 PE 字段为 0），加上 Stooq price + Bocha PE
-  const [eastmoneyUS, stooq, bocha] = await Promise.all([
-    fetchEastmoneyQuote(t),  // 即使是 US 也试 — 拿 PB/股息/市值
-    fetchUSStooq(t.code),
-    fetchUSBocha(t.code, t.name),
+  // US: 多源融合（v60.8.6 加 sina hq.sinajs.cn 拿 PE TTM）
+  const [sina, eastmoneyUS, stooq, bocha] = await Promise.all([
+    fetchUSSina(t.code),       // ⭐ sina gb_aapl 端口拿 PE TTM (字段 14)
+    fetchEastmoneyQuote(t),     // eastmoney 105.XXX 拿 PB/股息/市值/今日涨幅
+    fetchUSStooq(t.code),       // stooq 兜底 price
+    fetchUSBocha(t.code, t.name), // Bocha web search 兜底 PE
   ]);
-  // 合并：eastmoneyUS 提供 PB/股息/市值/今日涨幅；stooq 提供 price 兜底；bocha 提供 PE 兜底
   const merged: Partial<StockFactsTyped> = {
-    price: stooq.price ?? eastmoneyUS.price,
+    price: sina.price ?? eastmoneyUS.price ?? stooq.price,
+    pe_ttm: sina.pe_ttm ?? ((eastmoneyUS.pe_ttm && eastmoneyUS.pe_ttm > 0) ? eastmoneyUS.pe_ttm : bocha.pe_ttm),
     pb_mrq: eastmoneyUS.pb_mrq,
     dividend_yield_pct: eastmoneyUS.dividend_yield_pct,
     market_cap_billion: eastmoneyUS.market_cap_billion,
     change_today_pct: eastmoneyUS.change_today_pct,
-    pe_ttm: (eastmoneyUS.pe_ttm && eastmoneyUS.pe_ttm > 0) ? eastmoneyUS.pe_ttm : bocha.pe_ttm,
   };
   return { ...base, ...merged,
-    source: [...(eastmoneyUS.source || []), ...(stooq.source || []), ...(bocha.source || [])],
-    errors: [...(eastmoneyUS.errors || []), ...(stooq.errors || []), ...(bocha.errors || [])] };
+    source: [...(sina.source || []), ...(eastmoneyUS.source || []), ...(stooq.source || []), ...(bocha.source || [])],
+    errors: [...(sina.errors || []), ...(eastmoneyUS.errors || []), ...(stooq.errors || []), ...(bocha.errors || [])] };
 }
