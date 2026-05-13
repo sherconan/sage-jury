@@ -268,12 +268,22 @@ export async function gatherFacts(t: Ticker): Promise<StockFactsTyped> {
       source: [...(quote.source || []), ...(fin.source || [])],
       errors: [...(quote.errors || []), ...(fin.errors || [])] };
   }
-  // US
-  const [stooq, bocha] = await Promise.all([
+  // US: eastmoney 105.XXX 能拿 PB / 股息 / 市值（虽然 PE 字段为 0），加上 Stooq price + Bocha PE
+  const [eastmoneyUS, stooq, bocha] = await Promise.all([
+    fetchEastmoneyQuote(t),  // 即使是 US 也试 — 拿 PB/股息/市值
     fetchUSStooq(t.code),
     fetchUSBocha(t.code, t.name),
   ]);
-  return { ...base, ...stooq, ...bocha,
-    source: [...(stooq.source || []), ...(bocha.source || [])],
-    errors: [...(stooq.errors || []), ...(bocha.errors || [])] };
+  // 合并：eastmoneyUS 提供 PB/股息/市值/今日涨幅；stooq 提供 price 兜底；bocha 提供 PE 兜底
+  const merged: Partial<StockFactsTyped> = {
+    price: stooq.price ?? eastmoneyUS.price,
+    pb_mrq: eastmoneyUS.pb_mrq,
+    dividend_yield_pct: eastmoneyUS.dividend_yield_pct,
+    market_cap_billion: eastmoneyUS.market_cap_billion,
+    change_today_pct: eastmoneyUS.change_today_pct,
+    pe_ttm: (eastmoneyUS.pe_ttm && eastmoneyUS.pe_ttm > 0) ? eastmoneyUS.pe_ttm : bocha.pe_ttm,
+  };
+  return { ...base, ...merged,
+    source: [...(eastmoneyUS.source || []), ...(stooq.source || []), ...(bocha.source || [])],
+    errors: [...(eastmoneyUS.errors || []), ...(stooq.errors || []), ...(bocha.errors || [])] };
 }
