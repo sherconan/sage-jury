@@ -15,12 +15,12 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
-const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
+const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
 // v60.3: 最后一轮（合成答案）用 fast non-thinking 模型，TTFT 从 25s+ 降到 3-5s
 // 深度已经在 reasoning_content 里累积，最后只需要按 sage 口吻写出来，不需要 thinking
 const LLM_FAST_MODEL = process.env.SAGE_LLM_FAST_MODEL || "deepseek-chat";
-const BOCHA_KEY = process.env.BOCHA_API_KEY || "***BOCHA_KEY_REMOVED***";
+const BOCHA_KEY = process.env.BOCHA_API_KEY || "";
 
 interface Quote { id: number; date: string; ts?: number; text: string; text_n?: string; kw?: string[]; likes: number; rt?: number; url: string;
   // v57.2: 召回 score 元数据（仅运行时附加，便于前端展示"为什么排第一"）

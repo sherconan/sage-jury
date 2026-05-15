@@ -12,9 +12,9 @@ export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
-const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
+const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
-const BOCHA_KEY = process.env.BOCHA_API_KEY || "***BOCHA_KEY_REMOVED***";
+const BOCHA_KEY = process.env.BOCHA_API_KEY || "";
 
 interface Quote { id: number; date: string; ts?: number; text: string; text_n?: string; kw?: string[]; likes: number; rt?: number; url: string; }
 interface SageData { slug: string; display: string; alias: string; philosophy: string; total_posts: number;

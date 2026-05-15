@@ -17,7 +17,7 @@ const cors = {
 };
 
 const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
-const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
+const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
 
 interface Quote {

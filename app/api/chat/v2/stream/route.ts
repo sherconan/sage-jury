@@ -45,7 +45,7 @@ async function loadSageSkill(slug: string, req: { url: string }): Promise<string
 }
 
 const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
-const LLM_KEY  = process.env.SAGE_LLM_KEY  || "***DEEPSEEK_KEY_REMOVED***";
+const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
 const LLM_FAST_MODEL = process.env.SAGE_LLM_FAST_MODEL || "deepseek-chat";
 
 function sse(event: string, data: any): string {

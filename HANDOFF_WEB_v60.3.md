@@ -75,10 +75,10 @@ compare_stocks         — 多股对比
 
 ```bash
 SAGE_LLM_BASE     = https://api.deepseek.com
-SAGE_LLM_KEY      = ***DEEPSEEK_KEY_REMOVED***  (DeepSeek)
+SAGE_LLM_KEY      = <set-in-vercel-env>  (DeepSeek)
 SAGE_LLM_MODEL    = deepseek-v4-pro (thinking mode, 前 N-1 轮用)
 SAGE_LLM_FAST_MODEL = deepseek-chat (非 thinking, 最后一轮用)
-BOCHA_API_KEY     = ***BOCHA_KEY_REMOVED***   (web_search + rerank)
+BOCHA_API_KEY     = <set-in-vercel-env>   (web_search + rerank)
 ```
 
 ## SSE 事件协议
