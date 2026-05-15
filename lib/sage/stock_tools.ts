@@ -246,7 +246,7 @@ async function fetchUSStooq(symbol: string): Promise<Partial<StockFactsTyped>> {
 
 // === 美股: Bocha web_search 提取 PE/ROE 等（用于补 stooq 不足）===
 async function fetchUSBocha(symbol: string, name: string): Promise<Partial<StockFactsTyped>> {
-  const BOCHA_KEY = process.env.BOCHA_API_KEY || "***BOCHA_KEY_REMOVED***";
+  const BOCHA_KEY = process.env.BOCHA_API_KEY || "";
   try {
     const q = `${name} ${symbol} PE ratio dividend yield ROE TTM`;
     const r = await fetch("https://api.bochaai.com/v1/web-search", {
