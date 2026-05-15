@@ -1,20 +1,11 @@
 import type { MetadataRoute } from "next";
-import { SAGES } from "@/data/sages";
 
 const BASE = "https://sage-jury.vercel.app";
 
+// v60.9.1 — 删除花哨 /sage/[id] /stock/[ticker] /about /dynamics /quotes 路由后，
+// sitemap 只保留首页（chat 主入口）。
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
   return [
-    { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
-    { url: `${BASE}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${BASE}/dynamics`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/quotes`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
-    ...SAGES.map((s) => ({
-      url: `${BASE}/sage/${s.id}`,
-      lastModified: now,
-      changeFrequency: "monthly" as const,
-      priority: 0.6,
-    })),
+    { url: `${BASE}/`, lastModified: new Date(), changeFrequency: "weekly", priority: 1.0 },
   ];
 }
