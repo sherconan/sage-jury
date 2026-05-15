@@ -1,0 +1,30 @@
+title = "sage-jury secret guard"
+# Extends gitleaks default rules (OpenAI, AWS, GitHub PAT, etc.) and adds
+# explicit patterns for the providers this repo uses, so any future
+# hardcoded literal blows up at pre-commit.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "deepseek-api-key"
+description = "DeepSeek API key (sk- + 32 hex chars)"
+regex = '''sk-[a-f0-9]{32}'''
+keywords = ["sk-"]
+
+[[rules]]
+id = "bochaai-api-key"
+description = "Bocha AI API key (sk- + 32 hex chars, identical shape — both providers caught by one rule, kept explicit for grep-ability)"
+regex = '''sk-[a-f0-9]{32}'''
+keywords = ["bocha", "BOCHA", "sk-"]
+
+[allowlist]
+description = "Allowlisted placeholder strings"
+regexes = [
+  '''sk-\*+''',
+  '''<set-in-vercel-env>''',
+  '''\*\*\*[A-Z_]+_REMOVED\*\*\*''',
+]
+paths = [
+  '''(?i)\.example$''',
+  '''(?i)\.sample$''',
+]
