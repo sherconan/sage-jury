@@ -127,9 +127,11 @@ async function fetchEastmoneyQuote(t: Ticker): Promise<Partial<StockFactsTyped>>
     const d: any = (await r.json()).data;
     if (!d?.f43) return { errors: ["eastmoney no data"] };
     const div100 = (n: any) => safeNum(n) !== undefined ? n / 100 : undefined;
+    // v60.9.2: 港股 push2 不给 PE (f162=0)，0/负值视为缺失，交给 gatherFacts 反推
+    const pePos = (() => { const v = div100(d.f162); return v && v > 0 ? v : undefined; })();
     return {
       price: div100(d.f43),
-      pe_ttm: div100(d.f162),
+      pe_ttm: pePos,
       pb_mrq: div100(d.f167),
       dividend_yield_pct: div100(d.f168),
       change_today_pct: div100(d.f170),
@@ -198,6 +200,36 @@ async function fetchHKFinancials(code: string): Promise<Partial<StockFactsTyped>
       gross_margin_pct: typeof yo.GROSS_PROFIT_RATIO === 'number' ? yo.GROSS_PROFIT_RATIO : undefined,
     };
   } catch { return {}; }
+}
+
+// === 港股: 腾讯 qt.gtimg.cn — eastmoney 港股 f162 恒为 0、HK F10 已 302 废弃，
+//          gtimg 是唯一稳定的港股 PE 源。字段 [3]=价 [44]=市值亿 [57]=PE [58]=PB [59]=股息率% ===
+async function fetchGtimgHK(code: string): Promise<Partial<StockFactsTyped>> {
+  try {
+    const u = `https://qt.gtimg.cn/q=hk${code}`;
+    const r = await fetch(u, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT),
+    });
+    if (!r.ok) return { errors: [`gtimg-hk ${r.status}`] };
+    const txt = await r.text();
+    const m = txt.match(/="([^"]+)"/);
+    if (!m) return { errors: ["gtimg-hk no match"] };
+    const f = m[1].split("~");
+    if (f.length < 60) return { errors: ["gtimg-hk fields short"] };
+    const pos = (s: string): number | undefined => {
+      const v = parseFloat(s);
+      return isFinite(v) && v > 0 ? v : undefined;
+    };
+    return {
+      price: pos(f[3]),
+      pe_ttm: pos(f[57]),
+      pb_mrq: pos(f[58]),
+      dividend_yield_pct: (() => { const v = parseFloat(f[59]); return isFinite(v) && v >= 0 ? v : undefined; })(),
+      market_cap_billion: pos(f[44]),
+      source: ["gtimg-hk"],
+    };
+  } catch (e: any) { return { errors: [`gtimg-hk ${e.message}`] }; }
 }
 
 // === 美股: Sina hq.sinajs.cn/list=gb_xxx — 字段 14 = PE TTM, 字段 13 = EPS ===
@@ -286,13 +318,31 @@ export async function gatherFacts(t: Ticker): Promise<StockFactsTyped> {
       errors: [...(quote.errors || []), ...(peP.errors || []), ...(fin.errors || [])] };
   }
   if (t.market === 'HK') {
-    const [quote, fin] = await Promise.all([
+    // v60.9.2: 港股三源并行 — gtimg(PE 唯一源) + eastmoney(PB/股息/市值 主) + HK F10(财务, 多半已废)
+    const [quote, gtimg, fin] = await Promise.all([
       fetchEastmoneyQuote(t),
+      fetchGtimgHK(t.code),
       fetchHKFinancials(t.code),
     ]);
-    return { ...base, ...quote, ...fin,
-      source: [...(quote.source || []), ...(fin.source || [])],
-      errors: [...(quote.errors || []), ...(fin.errors || [])] };
+    const hk: StockFactsTyped = {
+      ...base,
+      // PE: 只有 gtimg 给得出（eastmoney 港股 f162 恒 0）
+      pe_ttm: gtimg.pe_ttm,
+      // 价格/PB/股息/市值: eastmoney 优先, gtimg 兜底
+      price: quote.price ?? gtimg.price,
+      pb_mrq: quote.pb_mrq ?? gtimg.pb_mrq,
+      dividend_yield_pct: quote.dividend_yield_pct ?? gtimg.dividend_yield_pct,
+      market_cap_billion: quote.market_cap_billion ?? gtimg.market_cap_billion,
+      change_today_pct: quote.change_today_pct,
+      // 财务: HK F10（已被东财 302 改版废弃, 基本返回空, 留作以后修复）
+      revenue_billion: fin.revenue_billion,
+      net_income_billion: fin.net_income_billion,
+      roe_pct: fin.roe_pct,
+      gross_margin_pct: fin.gross_margin_pct,
+      source: [...(quote.source || []), ...(gtimg.source || []), ...(fin.source || [])],
+      errors: [...(quote.errors || []), ...(gtimg.errors || []), ...(fin.errors || [])],
+    };
+    return hk;
   }
   // US: 多源融合（v60.8.6 加 sina hq.sinajs.cn 拿 PE TTM）
   const [sina, eastmoneyUS, stooq, bocha] = await Promise.all([
