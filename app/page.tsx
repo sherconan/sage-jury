@@ -125,6 +125,13 @@ function injectCitationChips(text: string): string {
   return text.replace(/\[原文\s*(\d+)\]/g, (_, n) => `[\`#${n}\`](#cite-${n})`);
 }
 
+// v61: 把分析里的〔小标题〕转成 #### 标题 —— 让 ReactMarkdown 渲染出分层，
+// 解决"一坨文字没人看得下去"的排版问题
+function formatSageStructure(text: string): string {
+  if (!text) return text;
+  return text.replace(/〔\s*([^〕\n]{2,24})\s*〕/g, "\n\n#### $1\n\n");
+}
+
 function fmtTime(ts: number) {
   const d = new Date(ts);
   const now = Date.now();
@@ -672,6 +679,12 @@ export default function ChatPage() {
                           <p className="whitespace-pre-wrap m-0">{m.content}</p>
                         ) : (
                           <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                            h4: ({ children }: any) => (
+                              <h4 className="not-prose mb-2 mt-6 flex items-center gap-2 text-[13.5px] font-bold tracking-wide text-slate-800 first:mt-0">
+                                <span className="inline-block h-4 w-[3px] rounded-full bg-blue-500" />
+                                {children}
+                              </h4>
+                            ),
                             a: ({ href, children }: any) => {
                               const m2 = href?.match(/^#cite-(\d+)/);
                               if (m2) {
@@ -693,7 +706,7 @@ export default function ChatPage() {
                               return <a href={href} target="_blank" rel="noreferrer">{children}</a>;
                             }
                           }}>
-                            {injectCitationChips(m.content)}
+                            {injectCitationChips(formatSageStructure(m.content))}
                           </ReactMarkdown>
                         )}
                         {m.role === "sage" && isActiveStreaming && messages[messages.length - 1] === m && (
