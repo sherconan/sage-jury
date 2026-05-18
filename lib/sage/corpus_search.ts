@@ -133,7 +133,11 @@ export async function searchSagePosts(
       url: q.url || "",
       score: scoreQuote(q, qTokens, stockHint),
     }))
-    .filter(q => q.score > 0 && q.text.length > 30) // 至少有命中且非超短
+    // v60.9.3: 阈值收紧 —— 防跑题引用。
+    // 之前"海力士"问询命中"买/回调/现在"等通用词 → 引出 4 条无关高赞发言。
+    // 有股票命中(stockHint)：score≥4，要求实质相关（不只是通用词命中）
+    // 无股票命中(泛问/不支持标的)：score≥8，宁缺毋滥 —— 返回空 > 返回无关
+    .filter(q => q.text.length > 30 && q.score >= (stockHint ? 4 : 8))
     .sort((a, b) => b.score - a.score)
     .slice(0, topN);
 

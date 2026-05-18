@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Send, Loader2, MessageSquarePlus, Trash2, Download, Sparkles, ExternalLink,
-  Hash, Twitter, Menu, X, ChevronDown, Wrench,
+  Hash, Twitter, Menu, X, ChevronDown, Wrench, ChevronRight, Quote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -148,6 +148,8 @@ export default function ChatPage() {
   const removeStreaming = (id: string) => setStreamingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sagePickerOpen, setSagePickerOpen] = useState(false);
+  // v60.9.3: 溯源侧边栏 —— 引用发言不再平铺在对话下方，改为点 chip 抽屉展示
+  const [sourcePanel, setSourcePanel] = useState<QuoteRef[] | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -710,54 +712,13 @@ export default function ChatPage() {
                         </div>
                       )}
                       {m.quotes && m.quotes.length > 0 && (
-                        <details open className="mt-4 border-t border-slate-100 pt-3">
-                          <summary className="cursor-pointer flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-slate-400 hover:text-slate-600">
-                            <Hash className="h-3 w-3" /> 引用 {m.quotes.length} 条历史原帖（点击文中 #N 跳转）
-                          </summary>
-                          <ul className="mt-2.5 space-y-2">
-                            {m.quotes.map((q, j) => {
-                              // v57.2: 暴露"为什么被选"的 score 标签
-                              const recMul = q._rec_mul;
-                              const relScore = q._rel_score;
-                              const recLabel = recMul == null ? null :
-                                recMul >= 1.5 ? "近期 🔥" :
-                                recMul >= 1.15 ? "近期" :
-                                recMul >= 0.9 ? "去年" :
-                                recMul >= 0.65 ? "1-2 年前" : "更早";
-                              const relLabel = relScore == null ? null :
-                                relScore >= 10 ? "强相关" :
-                                relScore >= 5 ? "相关" : "弱相关";
-                              return (
-                                <li key={j} id={`cite-card-${m.ts}-${j + 1}`} className="rounded-xl border border-slate-200 bg-sky-50/60 px-3.5 py-2.5 text-xs transition-all">
-                                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-sky-500 px-1 text-[10px] font-mono font-bold text-white">#{j + 1}</span>
-                                    <Twitter className="h-3 w-3 text-sky-500" />
-                                    <span className="font-medium text-slate-600">雪球</span>
-                                    <span className="text-slate-300">·</span>
-                                    <a href={q.url} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-blue-600 transition">{q.date} · 👍{q.likes}</a>
-                                    <ExternalLink className="h-3 w-3 text-slate-400" />
-                                    {relLabel && (
-                                      <span className={cn("ml-auto inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium",
-                                        relScore! >= 10 ? "bg-emerald-100 text-emerald-700" :
-                                        relScore! >= 5 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500")}>
-                                        {relLabel}
-                                      </span>
-                                    )}
-                                    {recLabel && (
-                                      <span className={cn("inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium",
-                                        recMul! >= 1.5 ? "bg-rose-100 text-rose-700" :
-                                        recMul! >= 1.15 ? "bg-amber-100 text-amber-700" :
-                                        recMul! >= 0.9 ? "bg-slate-100 text-slate-600" : "bg-slate-100 text-slate-400")}>
-                                        {recLabel}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-slate-700 line-clamp-3 leading-relaxed">{q.text}</p>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </details>
+                        <button
+                          onClick={() => setSourcePanel(m.quotes!)}
+                          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-medium text-slate-500 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700">
+                          <Hash className="h-3 w-3" />
+                          {m.quotes.length} 条历史发言溯源
+                          <ChevronRight className="h-3 w-3" />
+                        </button>
                       )}
                     </>
                   )}
@@ -789,6 +750,57 @@ export default function ChatPage() {
       {/* mobile sidebar overlay */}
       {sidebarOpen && (
         <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/30 z-20 md:hidden" />
+      )}
+
+      {/* v60.9.3 溯源侧边栏 — 引用发言默认收起，点 chip 抽屉展示 */}
+      {sourcePanel && (
+        <>
+          <div onClick={() => setSourcePanel(null)} className="fixed inset-0 z-40 bg-slate-900/25" />
+          <aside className="fixed right-0 top-0 bottom-0 z-50 flex w-full max-w-md flex-col bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100">
+                  <Quote className="h-4 w-4 text-sky-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-800">引用来源</h3>
+                  <p className="text-[11px] text-slate-400">{sourcePanel.length} 条雪球历史发言 · 仅供参考语气</p>
+                </div>
+              </div>
+              <button onClick={() => setSourcePanel(null)}
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+              {sourcePanel.map((q, j) => {
+                const relScore = q._rel_score;
+                const relLabel = relScore == null ? null :
+                  relScore >= 10 ? "强相关" : relScore >= 5 ? "相关" : "弱相关";
+                return (
+                  <div key={j} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 text-xs">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-sky-500 px-1 text-[10px] font-mono font-bold text-white">#{j + 1}</span>
+                      <Twitter className="h-3 w-3 text-sky-500" />
+                      <span className="font-medium text-slate-600">雪球</span>
+                      <span className="text-slate-300">·</span>
+                      <a href={q.url} target="_blank" rel="noreferrer" className="text-slate-500 transition hover:text-blue-600">{q.date} · 👍{q.likes}</a>
+                      <ExternalLink className="h-3 w-3 text-slate-400" />
+                      {relLabel && (
+                        <span className={cn("ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-medium",
+                          relScore! >= 10 ? "bg-emerald-100 text-emerald-700" :
+                          relScore! >= 5 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500")}>
+                          {relLabel}
+                        </span>
+                      )}
+                    </div>
+                    <p className="leading-relaxed text-slate-700">{q.text}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </aside>
+        </>
       )}
     </main>
   );
