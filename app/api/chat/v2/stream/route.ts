@@ -25,6 +25,9 @@
 import { NextRequest } from "next/server";
 import { resolveTicker, gatherFacts, type StockFactsTyped, type Ticker } from "@/lib/sage/stock_tools";
 import { searchSagePosts, formatHistoricalPosts, type RelevantQuote } from "@/lib/sage/corpus_search";
+// v62: A股+段永平 走「研究层+分析层」新 pipeline（10 年真实财务数据）
+import { buildDossier, type ResearchDossier } from "@/lib/sage/v62/research";
+import { analyzeDuan, formatAnalysis } from "@/lib/sage/v62/analysis";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -224,7 +227,8 @@ function buildVoicePrompt(
   facts: StockFactsTyped | null,
   verdict: SageVerdict | null,
   historicalPosts: RelevantQuote[],
-  skillMd: string
+  skillMd: string,
+  v62AnalysisText?: string | null
 ): { system: string; user: string } {
   const isDuan = sage_id === "duan-yongping";
   const sageName = isDuan ? "段永平" : "管我财";
@@ -288,7 +292,14 @@ ${isDuan ? `- 禁说: 茶餐厅 / 在香港 / 放长线钓大鱼 / 5% 股息打�
 ${isDuan ? '' : '- 必须简体普通话：粤字 / 繁体字一个不要（嘅咗喺啲冇咁唔睇識靚呢佢 → 全部改为简体普通话）'}
 ${verdictBlock}`;
 
-  const factsBlock = facts ? `
+  const factsBlock = v62AnalysisText ? `
+# 📊 投资分析底稿（v62 — 基于 10 年真实财务数据，研究层 + 分析层已算好）
+${v62AnalysisText}
+
+⚠️ 上面是真实数据算出来的分析底稿。你的工作是在此之上用段永平的视角做**最终判断和表达**——
+消化它、用段永平的话讲出来，不是逐条复述。底稿里的数字必须用进去算账，绝不准编新数字。
+底稿说"数据缺口"的，如实告诉用户，不要编。
+` : facts ? `
 # Analysis JSON (真实数据，禁瞎编)
 \`\`\`json
 ${JSON.stringify({
@@ -349,36 +360,61 @@ export async function POST(req: NextRequest) {
         send("phase", { name: "analyzing", message: "Python 端分析中..." });
 
         const stock = extractStock(userMsg);
+        // v62: A股 + 段永平 → 走「研究层 + 分析层」新 pipeline
+        const useV62 = !!stock && stock.market === 'A' && sage_id === 'duan-yongping';
+        if (useV62) send("phase", { name: "analyzing", message: "研究公司 10 年财务..." });
 
-        // 并行：取数 + 检索历史
-        const [factsResult, historyResult] = await Promise.all([
-          stock ? gatherFacts(stock).catch(() => null) : Promise.resolve(null),
+        // 并行：取数（v62=研究档案 / 旧=gatherFacts）+ 检索历史
+        const [dataResult, historyResult] = await Promise.all([
+          useV62
+            ? buildDossier(stock!).catch(() => null)
+            : (stock ? gatherFacts(stock).catch(() => null) : Promise.resolve(null)),
           // v60.9.4: 识别不出股票（海力士韩股/泛问）→ 不检索 corpus。
-          // 否则 LLM 会抄不相关历史发言（海力士曾抄到段永平讲"三个篮子"的发言）。
           stock
             ? searchSagePosts(sage_id, userMsg, stock.name, req, 4).catch(() => [] as RelevantQuote[])
             : Promise.resolve([] as RelevantQuote[]),
         ]);
-
-        const facts: StockFactsTyped | null = factsResult;
         const history: RelevantQuote[] = historyResult || [];
 
-        if (facts) send("facts", { ticker: stock, facts });
-        else send("facts", { ticker: null, note: "无识别股票" });
+        let facts: StockFactsTyped | null = null;
+        let verdict: SageVerdict | null = null;
+        let v62Text: string | null = null;
+
+        if (useV62 && dataResult) {
+          const dossier = dataResult as ResearchDossier;
+          const analysis = analyzeDuan(dossier);
+          v62Text = formatAnalysis(analysis);
+          send("facts", { ticker: stock, v62: true, depth: dossier.depth, years: dossier.yearly.length });
+          send("verdict", {
+            sage: 'duan-yongping', v62: true,
+            signal: analysis.preliminarySignal, confidence: 0,
+            headline: analysis.headline, keyMetrics: analysis.keyMetrics,
+            dims: Object.fromEntries(analysis.findings.map(f =>
+              [f.dimension, { note: f.points.join('；'), pass: f.signal !== 'weak', score: 0, weight: 0 }])),
+          });
+        } else {
+          facts = (dataResult as StockFactsTyped | null) || null;
+          if (facts) send("facts", { ticker: stock, facts });
+          else send("facts", { ticker: null, note: "无识别股票" });
+          verdict = sage_id === 'duan-yongping' ? scoreDuan(facts, userMsg) : scoreGuan(facts, userMsg);
+          send("verdict", verdict);
+        }
+
         if (history.length) {
           send("history", { count: history.length, posts: history });
-          // v60.8.4: 兼容 v1 frontend — 把 history 也作为 quotes 事件 emit，让 quote 卡能显示
-          send("quotes", history.map((p, i) => ({
+          // v60.8.4: 兼容 v1 frontend — 把 history 也作为 quotes 事件 emit
+          send("quotes", history.map((p) => ({
             date: p.date, text: p.text, likes: p.likes, url: p.url,
             _rel_score: Math.round(p.score), _rec_mul: 1, _final_score: Math.round(p.score),
           })));
         }
 
-        const verdict: SageVerdict = sage_id === 'duan-yongping' ? scoreDuan(facts, userMsg) : scoreGuan(facts, userMsg);
-        send("verdict", verdict);
-
-        // v60.8.4: 兼容 v1 frontend — emit synthetic tool_call/result 让"用了 X 工具"显示
-        if (facts) {
+        // 兼容 v1 frontend — synthetic tool_call/result 让"用了 X 工具"显示
+        if (useV62 && v62Text) {
+          const toolId = `v62-${Date.now()}`;
+          send("tool_call", { name: "get_realtime_quote", args: { stock: stock?.name }, id: toolId });
+          send("tool_result", { name: "get_realtime_quote", id: toolId, result: `${stock?.name} · v62 研究档案（10 年财务 + 估值）已生成` });
+        } else if (facts) {
           const toolId = `v608-fetch-${Date.now()}`;
           send("tool_call", { name: "get_realtime_quote", args: { stock: stock?.name }, id: toolId });
           send("tool_result", {
@@ -386,11 +422,11 @@ export async function POST(req: NextRequest) {
             result: `${stock?.name}(${stock?.code}) 现价 ${facts.price?.toFixed?.(2) || '?'} | PE ${facts.pe_ttm || '?'} | PB ${facts.pb_mrq?.toFixed?.(2) || '?'} | 股息率 ${facts.dividend_yield_pct?.toFixed?.(2) || '?'}% | ROE ${facts.roe_pct?.toFixed?.(1) || '?'}% | 营收 ${facts.revenue_billion?.toFixed?.(0) || '?'}亿 | 数据源 ${facts.source.join(',')}`,
           });
         }
-        // v60.8.4: 兼容 — emit phase writer 让 UI 关闭"内心分析中"loader
+        // v60.8.4: emit phase writer 让 UI 关闭"内心分析中"loader
         send("phase", { name: "writer", message: `${sage_id === 'duan-yongping' ? '段永平' : '管哥'}写答案...` });
         // v60.9: 加载 SKILL.md 作为 system prompt 主体
         const skillMd = await loadSageSkill(sage_id, req);
-        const { system, user } = buildVoicePrompt(sage_id, userMsg, facts, verdict, history, skillMd);
+        const { system, user } = buildVoicePrompt(sage_id, userMsg, facts, verdict, history, skillMd, v62Text);
 
         const llmRes = await fetch(`${LLM_BASE}/chat/completions`, {
           method: "POST",
