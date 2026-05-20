@@ -105,11 +105,14 @@ function analyzeCircleCycle(d: ResearchDossier): DuanFinding {
   if (yoys.length >= 4) {
     const neg = yoys.filter((v) => v < 0).length;
     const swing = Math.max(...yoys) - Math.min(...yoys);
-    if (neg >= 2 || swing > 50) {
+    // v62.1: 周期判定 — 仅看 neg 年数 + 极端波幅 (>100% 才算强周期，茅台波幅 53% 不算)
+    if (neg >= 3 || (neg >= 2 && swing > 100)) {
       pts.push(`营收增速多年大起大落（波幅 ${pct(swing)}，${neg} 年负增长）——典型周期生意，段永平对强周期一向回避`);
       sig = "weak";
+    } else if (neg >= 1 || swing > 50) {
+      pts.push(`营收增速有波动（波幅 ${pct(swing)}，${neg} 年负增长）——非强周期，但有波动`);
     } else {
-      pts.push(`营收增速多年平稳（波幅 ${pct(swing)}）——不是强周期生意，可预测性好`);
+      pts.push(`营收增速多年平稳（波幅 ${pct(swing)}）——稳定生意，可预测性好`);
     }
   } else {
     pts.push("数据不足以判断周期性");
