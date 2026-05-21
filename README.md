@@ -1,8 +1,21 @@
 # 大佬陪审团 · Sage Jury
 
-> 让 6 位投资大佬替你审判每一笔交易。
+> 让段永平 / 管哥 这种投资大佬替你做真分析。
 
 **🌐 线上地址**：[https://sage-jury.vercel.app](https://sage-jury.vercel.app)
+
+> ⚠️ **README 下半部分过时**：v60+ 起产品形态已变——从「陪审团评分卡」改为「Sage Chat + v62 真投资分析引擎」。当前实际形态 + 接手入口见下方文档导航。
+
+## 📚 文档导航（接手 / 团队同步必读）
+
+| 文档 | 用途 |
+|---|---|
+| [`docs/PROJECT-HANDOFF.md`](./docs/PROJECT-HANDOFF.md) | 🎯 **接手入口** — 新人 1 小时上手 |
+| [`docs/v1.0-goal.md`](./docs/v1.0-goal.md) | V1.0 北极星 + 10 Projects + 12 周路线 |
+| [`docs/v62-architecture-review.md`](./docs/v62-architecture-review.md) | 架构审视 — V61→V62 为什么从地基重做 |
+| [`docs/v62-integration-handoff.md`](./docs/v62-integration-handoff.md) | 把 v62 嫁接到别的产品的对接文档 |
+
+---
 
 ## 这是什么
 
