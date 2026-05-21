@@ -10,8 +10,9 @@
 
 | 文档 | 用途 |
 |---|---|
-| [`docs/PROJECT-HANDOFF.md`](./docs/PROJECT-HANDOFF.md) | 🎯 **接手入口** — 新人 1 小时上手 |
-| [`docs/v1.0-goal.md`](./docs/v1.0-goal.md) | V1.0 北极星 + 10 Projects + 12 周路线 |
+| [`docs/PROJECT-HANDOFF.md`](./docs/PROJECT-HANDOFF.md) | 🎯 **接手入门** — 新人 1 小时上手项目 |
+| [`docs/v1.0-goal.md`](./docs/v1.0-goal.md) | V1.0 北极星 Goal + 10 Projects + Weekly Tracker |
+| [`docs/v1.0-dev-handoff.md`](./docs/v1.0-dev-handoff.md) | 🚀 **开发派单包** — 10 个 dev-ready 工单（按 Goal 拆，拿走就开干）|
 | [`docs/v62-architecture-review.md`](./docs/v62-architecture-review.md) | 架构审视 — V61→V62 为什么从地基重做 |
 | [`docs/v62-integration-handoff.md`](./docs/v62-integration-handoff.md) | 把 v62 嫁接到别的产品的对接文档 |
 
