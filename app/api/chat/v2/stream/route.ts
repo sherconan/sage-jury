@@ -360,12 +360,17 @@ export async function POST(req: NextRequest) {
         send("phase", { name: "analyzing", message: "Python 端分析中..." });
 
         const stock = extractStock(userMsg);
-        // v62: A股/美股 + 段永平 → 走「研究层 + 分析层」新 pipeline
-        // P1.2 (2026-05-22)：US 接入 datacenter RPT_USF10_FN_* 拿 10 年财务（营收/净利/毛利/股东权益自算 ROE）。
-        const useV62 = !!stock && (stock.market === 'A' || stock.market === 'US') && sage_id === 'duan-yongping';
+        // v62: A股/美股/港股 + 段永平 → 走「研究层 + 分析层」新 pipeline
+        // P1.2 (2026-05-22)：US 接入 datacenter RPT_USF10_FN_*。
+        // P2   (2026-05-22)：HK 接入 datacenter RPT_HKF10_FN_*（schema 同 US，字典不同）。
+        const useV62 = !!stock && ['A', 'US', 'HK'].includes(stock.market) && sage_id === 'duan-yongping';
         if (useV62) {
-          const msg = stock!.market === 'US' ? '研究美股 10 年财务...' : '研究公司 10 年财务...';
-          send("phase", { name: "analyzing", message: msg });
+          const msgMap: Record<string, string> = {
+            US: '研究美股 10 年财务...',
+            HK: '研究港股 10 年财务...',
+            A:  '研究公司 10 年财务...',
+          };
+          send("phase", { name: "analyzing", message: msgMap[stock!.market] });
         }
 
         // 并行：取数（v62=研究档案 / 旧=gatherFacts）+ 检索历史
@@ -414,10 +419,31 @@ export async function POST(req: NextRequest) {
         }
 
         // 兼容 v1 frontend — synthetic tool_call/result 让"用了 X 工具"显示
+        // P2 (2026-05-22)：v62 路径多发 4 个工具 event，UI 工具调用证据补强（之前只 1 个 get_realtime_quote）。
         if (useV62 && v62Text) {
-          const toolId = `v62-${Date.now()}`;
-          send("tool_call", { name: "get_realtime_quote", args: { stock: stock?.name }, id: toolId });
-          send("tool_result", { name: "get_realtime_quote", id: toolId, result: `${stock?.name} · v62 研究档案（10 年财务 + 估值）已生成` });
+          const dossier = dataResult as ResearchDossier;
+          const ts = Date.now();
+          // 工具 1: 实时行情
+          const t1 = `v62-quote-${ts}`;
+          send("tool_call", { name: "get_realtime_quote", args: { stock: stock?.name, market: stock?.market }, id: t1 });
+          send("tool_result", { name: "get_realtime_quote", id: t1,
+            result: `${stock?.name}(${stock?.code}) 现价 ${dossier.price?.toFixed?.(2) || '?'} | 市值 ${dossier.marketCapBillion?.toFixed?.(0) || '?'}亿 | 数据源 push2/eastmoney` });
+          // 工具 2: 10 年财务
+          const t2 = `v62-fin-${ts}`;
+          send("tool_call", { name: "get_10y_financials", args: { stock: stock?.name, years: dossier.yearly.length }, id: t2 });
+          const km = dossier.yearly[0];
+          send("tool_result", { name: "get_10y_financials", id: t2,
+            result: `${stock?.name} · ${dossier.yearly.length}年年报 · 最新年 营收 ${km?.revenue?.toFixed?.(1) || '?'}亿 | ROE ${km?.roe?.toFixed?.(1) || '?'}% | 毛利率 ${km?.grossMargin?.toFixed?.(1) || '?'}% | 净利率 ${km?.netMargin?.toFixed?.(1) || '?'}% · 数据源 ${dossier.source.join(',')}` });
+          // 工具 3: 估值派生
+          const t3 = `v62-val-${ts}`;
+          send("tool_call", { name: "get_valuation_metrics", args: { stock: stock?.name }, id: t3 });
+          send("tool_result", { name: "get_valuation_metrics", id: t3,
+            result: `${stock?.name} · PE ${dossier.peTTM?.toFixed?.(1) || '?'} | PB ${dossier.pbMRQ?.toFixed?.(2) || '?'} | EY ${dossier.earningsYield?.toFixed?.(1) || '?'}% | 营收5年CAGR ${dossier.revenueCAGR5?.toFixed?.(1) || '?'}% | 净利5年CAGR ${dossier.netProfitCAGR5?.toFixed?.(1) || '?'}% | ROE5年均 ${dossier.roeAvg5?.toFixed?.(1) || '?'}%` });
+          // 工具 4: 段永平 4 维分析
+          const t4 = `v62-analyze-${ts}`;
+          send("tool_call", { name: "analyze_with_duan_framework", args: { stock: stock?.name, dimensions: 4 }, id: t4 });
+          send("tool_result", { name: "analyze_with_duan_framework", id: t4,
+            result: `${stock?.name} · 段永平 4 维（生意本质/管理与资本配置/现在的价/能力圈与周期）已分析 · 历史发言 ${history.length} 条已检索` });
         } else if (facts) {
           const toolId = `v608-fetch-${Date.now()}`;
           send("tool_call", { name: "get_realtime_quote", args: { stock: stock?.name }, id: toolId });

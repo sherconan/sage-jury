@@ -206,6 +206,74 @@ async function fetchUSFinancials(secucode: string): Promise<{ yearly: YearlyFin[
   }
 }
 
+// --- HK datacenter 单字段查询（与 US 同 schema，不同 STD_ITEM_CODE 字典）---
+// HK schema 字典（2026-05-22 实测验证 POP MART 09992 + 腾讯 00700）：
+//   INCOME 004001001 = 营业额（港股术语）
+//   INCOME 004007999 = 毛利
+//   INCOME 004025002 = 股东应占溢利（即净利，港股术语）
+//   BALANCE 004013999 = 归属于母公司股东权益
+async function fetchHKItem(
+  table: "INCOME" | "BALANCE",
+  stdCode: string,
+  secucode: string
+): Promise<Array<{ year: string; amount: number }>> {
+  try {
+    const u = `https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_HKF10_FN_${table}&columns=REPORT_DATE,AMOUNT&filter=(SECUCODE%3D%22${secucode}%22)(REPORT_TYPE%3D%22%E5%B9%B4%E6%8A%A5%22)(STD_ITEM_CODE%3D%22${stdCode}%22)&pageSize=15&sortColumns=REPORT_DATE&sortTypes=-1`;
+    const r = await fetch(u, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(TIMEOUT) });
+    if (!r.ok) return [];
+    const rows: any[] = (await r.json())?.result?.data || [];
+    return rows
+      .map((x) => ({ year: String(x.REPORT_DATE || "").slice(0, 4), amount: num(x.AMOUNT) ?? 0 }))
+      .filter((x) => x.year);
+  } catch { return []; }
+}
+
+// --- HK 10 年财务（4 字段并发，港股专用 STD_ITEM_CODE）---
+async function fetchHKFinancials(secucode: string): Promise<{ yearly: YearlyFin[]; err?: string }> {
+  try {
+    const [rev, np, gp, eq] = await Promise.all([
+      fetchHKItem("INCOME", "004001001", secucode),   // 营业额
+      fetchHKItem("INCOME", "004025002", secucode),   // 股东应占溢利（净利）
+      fetchHKItem("INCOME", "004007999", secucode),   // 毛利
+      fetchHKItem("BALANCE", "004013999", secucode),  // 股东权益
+    ]);
+    if (!rev.length) return { yearly: [], err: `HK financials no data (${secucode})` };
+
+    const toMap = (arr: Array<{ year: string; amount: number }>) =>
+      new Map(arr.map((x) => [x.year, x.amount]));
+    const mRev = toMap(rev), mNp = toMap(np), mGp = toMap(gp), mEq = toMap(eq);
+    const years = Array.from(mRev.keys()).sort((a, b) => b.localeCompare(a)).slice(0, 12);
+
+    const yearly: YearlyFin[] = years.map((yr, i) => {
+      const prev = years[i + 1];
+      const r = mRev.get(yr) ?? 0;
+      const r_p = prev ? mRev.get(prev) ?? null : null;
+      const n = mNp.get(yr) ?? null;
+      const n_p = prev ? mNp.get(prev) ?? null : null;
+      const g = mGp.get(yr) ?? null;
+      const e = mEq.get(yr) ?? null;
+      const e_p = prev ? mEq.get(prev) ?? null : null;
+      const avgEq = e != null && e_p != null ? (e + e_p) / 2 : e;
+      return {
+        year: yr,
+        revenue: r / 1e8,                                                        // 亿港元
+        netProfit: (n ?? 0) / 1e8,
+        revenueYoY: r > 0 && r_p && r_p > 0 ? ((r - r_p) / r_p) * 100 : null,
+        netProfitYoY: n != null && n_p != null && n_p !== 0 ? ((n - n_p) / Math.abs(n_p)) * 100 : null,
+        roe: n != null && avgEq != null && avgEq > 0 ? (n / avgEq) * 100 : null,
+        roic: null,
+        grossMargin: g != null && r > 0 ? (g / r) * 100 : null,
+        netMargin: n != null && r > 0 ? (n / r) * 100 : null,
+        debtRatio: null,
+        opCashflowPS: null,
+      };
+    });
+    return { yearly };
+  } catch (e: any) {
+    return { yearly: [], err: `HK financials ${e.message}` };
+  }
+}
+
 // --- 派生计算 ---
 // series 最近在前；算最早→最近的复合年增速
 function cagr(series: number[]): number | null {
@@ -234,14 +302,34 @@ export async function buildDossier(ticker: Ticker): Promise<ResearchDossier> {
     errors: [],
   };
 
-  // 港股仍走 thin（P2 待接入历史财务源）
+  // 港股：实时价 + 10 年财务并行（P2 / 2026-05-22 上线）
+  // datacenter RPT_HKF10_FN_* 与美股 USF10 同 schema，STD_ITEM_CODE 字典不同。
   if (ticker.market === "HK") {
-    const q = await fetchQuote(ticker.secid);
+    const secucodeHK = `${ticker.code.padStart(5, "0")}.HK`; // 00700.HK / 09992.HK
+    const [q, fin] = await Promise.all([
+      fetchQuote(ticker.secid),
+      fetchHKFinancials(secucodeHK),
+    ]);
     base.price = q.price;
     base.marketCapBillion = q.mktcap;
+    base.yearly = fin.yearly;
+    base.source = ["push2", "datacenter/hkf10-income", "datacenter/hkf10-balance"];
     if (q.err) base.errors.push(q.err);
-    base.errors.push("v62 港股深度档案待 P2 接入（gtimg 只有当期估值）");
-    base.source.push("push2");
+    if (fin.err) base.errors.push(fin.err);
+
+    if (fin.yearly.length >= 2) {
+      base.depth = "full";
+      const rev = fin.yearly.map((y) => y.revenue);
+      const np = fin.yearly.map((y) => y.netProfit);
+      base.revenueCAGR3 = cagr(rev.slice(0, 4)) ?? undefined;
+      base.revenueCAGR5 = cagr(rev.slice(0, 6)) ?? undefined;
+      base.netProfitCAGR5 = cagr(np.slice(0, 6)) ?? undefined;
+      base.grossMarginTrend = marginTrend(fin.yearly.map((y) => y.grossMargin));
+      const roes = fin.yearly.slice(0, 5).map((y) => y.roe).filter((r): r is number => r != null);
+      base.roeAvg5 = roes.length ? roes.reduce((a, b) => a + b, 0) / roes.length : undefined;
+    }
+    // PE/PB 港股走 gtimg-hk（stock_tools.ts 已有 fetchGtimgHK），buildDossier 暂不取 PE（thin 时也没取），
+    // 待 valuation 层统一接入再补；analysis.ts:87 看 d.peTTM == null 直接判 unknown 不会崩。
     return base;
   }
 
