@@ -116,6 +116,96 @@ async function fetchFinancials(secucode: string): Promise<{ yearly: YearlyFin[];
   } catch (e: any) { return { yearly: [], err: `financials ${e.message}` }; }
 }
 
+// --- US push2 实时价（f43 美股是 ×1000，与 A 股 ×100 不同；2026-05-22 实测）---
+async function fetchQuoteUS(secid: string): Promise<{ price?: number; mktcap?: number; err?: string }> {
+  try {
+    const u = `https://push2.eastmoney.com/api/qt/stock/get?secid=${secid}&fields=f43,f116`;
+    const r = await fetch(u, {
+      headers: { "User-Agent": UA, Referer: "https://quote.eastmoney.com/" },
+      signal: AbortSignal.timeout(TIMEOUT),
+    });
+    if (!r.ok) return { err: `push2-us ${r.status}` };
+    const d: any = (await r.json())?.data;
+    if (!d) return { err: "push2-us no data" };
+    return {
+      price: num(d.f43) != null ? d.f43 / 1000 : undefined,
+      mktcap: num(d.f116) != null ? d.f116 / 1e8 : undefined, // 亿美元
+    };
+  } catch (e: any) { return { err: `push2-us ${e.message}` }; }
+}
+
+// --- US datacenter 单字段查询（row-store schema，一字段一 query）---
+// 美股 RPT_USF10_FN_* 接口是「行存」：每个 STD_ITEM_CODE 一行 × 多年。
+// 与 A 股 RPT_F10_FINANCE_MAINFINADATA 一行多列不同，必须按字段并发查。
+async function fetchUSItem(
+  table: "INCOME" | "BALANCE",
+  stdCode: string,
+  secucode: string
+): Promise<Array<{ year: string; amount: number }>> {
+  try {
+    const u = `https://datacenter.eastmoney.com/securities/api/data/v1/get?reportName=RPT_USF10_FN_${table}&columns=REPORT_DATE,AMOUNT&filter=(SECUCODE%3D%22${secucode}%22)(REPORT_TYPE%3D%22%E5%B9%B4%E6%8A%A5%22)(STD_ITEM_CODE%3D%22${stdCode}%22)&pageSize=15&sortColumns=REPORT_DATE&sortTypes=-1`;
+    const r = await fetch(u, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(TIMEOUT) });
+    if (!r.ok) return [];
+    const rows: any[] = (await r.json())?.result?.data || [];
+    return rows
+      .map((x) => ({ year: String(x.REPORT_DATE || "").slice(0, 4), amount: num(x.AMOUNT) ?? 0 }))
+      .filter((x) => x.year);
+  } catch { return []; }
+}
+
+// --- US 10 年财务（4 字段并发：营收/净利/毛利/股东权益）---
+// STD_ITEM_CODE 字典（2026-05-22 实测验证 AAPL/NVDA）：
+//   INCOME  004001001 = 主营收入
+//   INCOME  004013999 = 净利润
+//   INCOME  004005999 = 毛利
+//   BALANCE 004013999 = 归属于母公司股东权益
+// ROE / 毛利率 / 净利率 / YoY 自算；资产负债率 / 现金流 datacenter US 接口未暴露，留 null。
+async function fetchUSFinancials(secucode: string): Promise<{ yearly: YearlyFin[]; err?: string }> {
+  try {
+    const [rev, np, gp, eq] = await Promise.all([
+      fetchUSItem("INCOME", "004001001", secucode),
+      fetchUSItem("INCOME", "004013999", secucode),
+      fetchUSItem("INCOME", "004005999", secucode),
+      fetchUSItem("BALANCE", "004013999", secucode),
+    ]);
+    if (!rev.length) return { yearly: [], err: `US financials no data (${secucode})` };
+
+    const toMap = (arr: Array<{ year: string; amount: number }>) =>
+      new Map(arr.map((x) => [x.year, x.amount]));
+    const mRev = toMap(rev), mNp = toMap(np), mGp = toMap(gp), mEq = toMap(eq);
+    const years = Array.from(mRev.keys()).sort((a, b) => b.localeCompare(a)).slice(0, 12);
+
+    const yearly: YearlyFin[] = years.map((yr, i) => {
+      const prev = years[i + 1];
+      const r = mRev.get(yr) ?? 0;
+      const r_p = prev ? mRev.get(prev) ?? null : null;
+      const n = mNp.get(yr) ?? null;
+      const n_p = prev ? mNp.get(prev) ?? null : null;
+      const g = mGp.get(yr) ?? null;
+      const e = mEq.get(yr) ?? null;
+      const e_p = prev ? mEq.get(prev) ?? null : null;
+      // ROE 用平均权益（期初+期末）/2；首年无期初，退化为期末
+      const avgEq = e != null && e_p != null ? (e + e_p) / 2 : e;
+      return {
+        year: yr,
+        revenue: r / 1e8,                                                        // 亿美元
+        netProfit: (n ?? 0) / 1e8,                                               // 亿美元
+        revenueYoY: r > 0 && r_p && r_p > 0 ? ((r - r_p) / r_p) * 100 : null,
+        netProfitYoY: n != null && n_p != null && n_p !== 0 ? ((n - n_p) / Math.abs(n_p)) * 100 : null,
+        roe: n != null && avgEq != null && avgEq > 0 ? (n / avgEq) * 100 : null,
+        roic: null,
+        grossMargin: g != null && r > 0 ? (g / r) * 100 : null,
+        netMargin: n != null && r > 0 ? (n / r) * 100 : null,
+        debtRatio: null,
+        opCashflowPS: null,
+      };
+    });
+    return { yearly };
+  } catch (e: any) {
+    return { yearly: [], err: `US financials ${e.message}` };
+  }
+}
+
 // --- 派生计算 ---
 // series 最近在前；算最早→最近的复合年增速
 function cagr(series: number[]): number | null {
@@ -144,14 +234,44 @@ export async function buildDossier(ticker: Ticker): Promise<ResearchDossier> {
     errors: [],
   };
 
-  // v62 第一版只做 A 股深度档案
-  if (ticker.market !== "A") {
+  // 港股仍走 thin（P2 待接入历史财务源）
+  if (ticker.market === "HK") {
     const q = await fetchQuote(ticker.secid);
     base.price = q.price;
     base.marketCapBillion = q.mktcap;
     if (q.err) base.errors.push(q.err);
-    base.errors.push("v62 暂仅 A 股深度档案，港股/美股待后续接入");
+    base.errors.push("v62 港股深度档案待 P2 接入（gtimg 只有当期估值）");
     base.source.push("push2");
+    return base;
+  }
+
+  // 美股：实时价 + 10 年财务并行（P1.2 / 2026-05-22 上线）
+  if (ticker.market === "US") {
+    const secucodeUS = `${ticker.code}.O`; // 默认 NASDAQ；NYSE 的 .N 后缀待 NYSE 标的扩展时支持
+    const [q, fin] = await Promise.all([
+      fetchQuoteUS(ticker.secid),
+      fetchUSFinancials(secucodeUS),
+    ]);
+    base.price = q.price;
+    base.marketCapBillion = q.mktcap;
+    base.yearly = fin.yearly;
+    base.source = ["push2", "datacenter/usf10-income", "datacenter/usf10-balance"];
+    if (q.err) base.errors.push(q.err);
+    if (fin.err) base.errors.push(fin.err);
+
+    if (fin.yearly.length >= 2) {
+      base.depth = "full";
+      const rev = fin.yearly.map((y) => y.revenue);
+      const np = fin.yearly.map((y) => y.netProfit);
+      base.revenueCAGR3 = cagr(rev.slice(0, 4)) ?? undefined;
+      base.revenueCAGR5 = cagr(rev.slice(0, 6)) ?? undefined;
+      base.netProfitCAGR5 = cagr(np.slice(0, 6)) ?? undefined;
+      base.grossMarginTrend = marginTrend(fin.yearly.map((y) => y.grossMargin));
+      const roes = fin.yearly.slice(0, 5).map((y) => y.roe).filter((r): r is number => r != null);
+      base.roeAvg5 = roes.length ? roes.reduce((a, b) => a + b, 0) / roes.length : undefined;
+    }
+    // 美股 PE/PB/PS datacenter 接口未稳定（push2 f114 也返回 0），暂留 undefined；
+    // analysis.ts:87 看 d.earningsYield ?? 100/pe，pe 也是 undefined 时 analyzePrice 输出 unknown 而不会崩。
     return base;
   }
 

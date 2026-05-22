@@ -360,9 +360,13 @@ export async function POST(req: NextRequest) {
         send("phase", { name: "analyzing", message: "Python 端分析中..." });
 
         const stock = extractStock(userMsg);
-        // v62: A股 + 段永平 → 走「研究层 + 分析层」新 pipeline
-        const useV62 = !!stock && stock.market === 'A' && sage_id === 'duan-yongping';
-        if (useV62) send("phase", { name: "analyzing", message: "研究公司 10 年财务..." });
+        // v62: A股/美股 + 段永平 → 走「研究层 + 分析层」新 pipeline
+        // P1.2 (2026-05-22)：US 接入 datacenter RPT_USF10_FN_* 拿 10 年财务（营收/净利/毛利/股东权益自算 ROE）。
+        const useV62 = !!stock && (stock.market === 'A' || stock.market === 'US') && sage_id === 'duan-yongping';
+        if (useV62) {
+          const msg = stock!.market === 'US' ? '研究美股 10 年财务...' : '研究公司 10 年财务...';
+          send("phase", { name: "analyzing", message: msg });
+        }
 
         // 并行：取数（v62=研究档案 / 旧=gatherFacts）+ 检索历史
         const [dataResult, historyResult] = await Promise.all([
