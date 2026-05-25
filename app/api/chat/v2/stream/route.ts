@@ -28,6 +28,7 @@ import { searchSagePosts, formatHistoricalPosts, type RelevantQuote } from "@/li
 // v62: A股+段永平 走「研究层+分析层」新 pipeline（10 年真实财务数据）
 import { buildDossier, type ResearchDossier } from "@/lib/sage/v62/research";
 import { analyzeDuan, formatAnalysis } from "@/lib/sage/v62/analysis";
+import { analyzeGuan, formatAnalysisGuan } from "@/lib/sage/v62/analysis-guan";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -363,7 +364,8 @@ export async function POST(req: NextRequest) {
         // v62: A股/美股/港股 + 段永平 → 走「研究层 + 分析层」新 pipeline
         // P1.2 (2026-05-22)：US 接入 datacenter RPT_USF10_FN_*。
         // P2   (2026-05-22)：HK 接入 datacenter RPT_HKF10_FN_*（schema 同 US，字典不同）。
-        const useV62 = !!stock && ['A', 'US', 'HK'].includes(stock.market) && sage_id === 'duan-yongping';
+        // P3-B (2026-05-25)：管哥 v62 化 5 维度（分位/排雷/股息/稳态/荒岛），useV62 扩 guan-wo-cai。
+        const useV62 = !!stock && ['A', 'US', 'HK'].includes(stock.market) && (sage_id === 'duan-yongping' || sage_id === 'guan-wo-cai');
         if (useV62) {
           const msgMap: Record<string, string> = {
             US: '研究美股 10 年财务...',
@@ -391,16 +393,29 @@ export async function POST(req: NextRequest) {
 
         if (useV62 && dataResult) {
           const dossier = dataResult as ResearchDossier;
-          const analysis = analyzeDuan(dossier);
-          v62Text = formatAnalysis(analysis);
           send("facts", { ticker: stock, v62: true, depth: dossier.depth, years: dossier.yearly.length });
-          send("verdict", {
-            sage: 'duan-yongping', v62: true,
-            signal: analysis.preliminarySignal, confidence: 0,
-            headline: analysis.headline, keyMetrics: analysis.keyMetrics,
-            dims: Object.fromEntries(analysis.findings.map(f =>
-              [f.dimension, { note: f.points.join('；'), pass: f.signal !== 'weak', score: 0, weight: 0 }])),
-          });
+          if (sage_id === 'duan-yongping') {
+            const analysis = analyzeDuan(dossier);
+            v62Text = formatAnalysis(analysis);
+            send("verdict", {
+              sage: 'duan-yongping', v62: true,
+              signal: analysis.preliminarySignal, confidence: 0,
+              headline: analysis.headline, keyMetrics: analysis.keyMetrics,
+              dims: Object.fromEntries(analysis.findings.map(f =>
+                [f.dimension, { note: f.points.join('；'), pass: f.signal !== 'weak', score: 0, weight: 0 }])),
+            });
+          } else {
+            // guan-wo-cai: 5 维度（分位/排雷/股息/稳态/荒岛）
+            const analysis = analyzeGuan(dossier);
+            v62Text = formatAnalysisGuan(analysis);
+            send("verdict", {
+              sage: 'guan-wo-cai', v62: true,
+              signal: analysis.preliminarySignal, confidence: 0,
+              headline: analysis.headline, keyMetrics: analysis.keyMetrics,
+              dims: Object.fromEntries(analysis.findings.map(f =>
+                [f.dimension, { note: f.points.join('；'), pass: f.signal !== 'weak', score: 0, weight: 0 }])),
+            });
+          }
         } else {
           facts = (dataResult as StockFactsTyped | null) || null;
           if (facts) send("facts", { ticker: stock, facts });

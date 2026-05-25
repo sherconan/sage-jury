@@ -42,6 +42,7 @@ export interface ResearchDossier {
   pbMRQ?: number;
   psTTM?: number;
   pcfTTM?: number;
+  dividendYieldPct?: number;     // 股息率 %（管哥 v62 「股息」维度用）
   // 多年财务（最近年报在前，最多 10 年）
   yearly: YearlyFin[];
   // 数据层算出的客观派生事实（不是 sage 判断）
@@ -114,6 +115,33 @@ async function fetchFinancials(secucode: string): Promise<{ yearly: YearlyFin[];
     }));
     return { yearly };
   } catch (e: any) { return { yearly: [], err: `financials ${e.message}` }; }
+}
+
+// --- HK gtimg 实时价 + PE/PB/股息率（gtimg-hk 是港股 PE 唯一稳定源，2026-05-22）---
+// 字段 [3]=价 [44]=市值亿港元 [57]=PE_TTM [58]=PB_MRQ [59]=股息率%
+async function fetchQuoteHK(code: string): Promise<{
+  price?: number; mktcap?: number; peTTM?: number; pbMRQ?: number; divYield?: number; err?: string
+}> {
+  try {
+    const u = `https://qt.gtimg.cn/q=hk${code.padStart(5, "0")}`;
+    const r = await fetch(u, { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(TIMEOUT) });
+    if (!r.ok) return { err: `gtimg-hk ${r.status}` };
+    const txt = await r.text();
+    const m = txt.match(/="([^"]+)"/);
+    if (!m) return { err: "gtimg-hk no match" };
+    const f = m[1].split("~");
+    if (f.length < 60) return { err: "gtimg-hk fields short" };
+    const pos = (s: string): number | undefined => {
+      const v = parseFloat(s); return isFinite(v) && v > 0 ? v : undefined;
+    };
+    return {
+      price: pos(f[3]),
+      mktcap: pos(f[44]),                                                              // 亿港元
+      peTTM: pos(f[57]),
+      pbMRQ: pos(f[58]),
+      divYield: (() => { const v = parseFloat(f[59]); return isFinite(v) && v >= 0 ? v : undefined; })(),
+    };
+  } catch (e: any) { return { err: `gtimg-hk ${e.message}` }; }
 }
 
 // --- US push2 实时价（f43 美股是 ×1000，与 A 股 ×100 不同；2026-05-22 实测）---
@@ -307,13 +335,17 @@ export async function buildDossier(ticker: Ticker): Promise<ResearchDossier> {
   if (ticker.market === "HK") {
     const secucodeHK = `${ticker.code.padStart(5, "0")}.HK`; // 00700.HK / 09992.HK
     const [q, fin] = await Promise.all([
-      fetchQuote(ticker.secid),
+      fetchQuoteHK(ticker.code),                            // gtimg-hk: price/mktcap/PE/PB/股息
       fetchHKFinancials(secucodeHK),
     ]);
     base.price = q.price;
     base.marketCapBillion = q.mktcap;
+    base.peTTM = q.peTTM;                                   // P3-A (2026-05-25): 港股 PE 接入
+    base.pbMRQ = q.pbMRQ;
+    base.dividendYieldPct = q.divYield;
+    if (q.peTTM && q.peTTM > 0) base.earningsYield = 100 / q.peTTM;
     base.yearly = fin.yearly;
-    base.source = ["push2", "datacenter/hkf10-income", "datacenter/hkf10-balance"];
+    base.source = ["gtimg-hk", "datacenter/hkf10-income", "datacenter/hkf10-balance"];
     if (q.err) base.errors.push(q.err);
     if (fin.err) base.errors.push(fin.err);
 
