@@ -48,8 +48,10 @@ async function loadSageSkill(slug: string, req: { url: string }): Promise<string
   } catch { return ""; }
 }
 
-const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.bochaai.com/v1";
-const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
+// 2026-05-25: Bocha LLM 端点修正 — api.bochaai.com 是搜索域，api.bocha.cn 才是模型域。
+// 如果 SAGE_LLM_KEY 未设但 BOCHA_API_KEY 已设，自动 fallback 用 BOCHA key（生产 env 旧 deepseek key 已过期）。
+const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.bocha.cn/v1";
+const LLM_KEY  = process.env.SAGE_LLM_KEY  || process.env.BOCHA_API_KEY || "";
 const LLM_FAST_MODEL = process.env.SAGE_LLM_FAST_MODEL || "deepseek-v4-pro";
 
 function sse(event: string, data: any): string {
