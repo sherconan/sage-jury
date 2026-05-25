@@ -11,7 +11,7 @@ import { SAGE_BY_ID } from "@/data/sages";
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
+const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.bochaai.com/v1";
 const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
 const BOCHA_KEY = process.env.BOCHA_API_KEY || "";

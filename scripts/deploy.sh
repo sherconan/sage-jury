@@ -16,7 +16,8 @@ bun run build
 
 # 2. deploy
 echo "▶︎ Step 2: vercel --prod"
-URL=$(vercel --prod --yes 2>&1 | tee /tmp/sage-jury-deploy.log | grep -E "https://" | tail -1 | sed 's/.* //')
+vercel --prod --yes 2>&1 | tee /tmp/sage-jury-deploy.log
+URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.vercel\.app' /tmp/sage-jury-deploy.log | grep -v '^https://api\.vercel\.com' | tail -1)
 
 echo "▶︎ Deployed: ${URL}"
 

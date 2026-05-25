@@ -14,12 +14,12 @@ export const dynamic = "force-dynamic";
 // 默认 Vercel edge 25-60s 会切断流，导致前端"内心分析中"永远转
 export const maxDuration = 300;
 
-const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
+const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.bochaai.com/v1";
 const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
 const LLM_MODEL = process.env.SAGE_LLM_MODEL || "deepseek-v4-pro";
 // v60.3: 最后一轮（合成答案）用 fast non-thinking 模型，TTFT 从 25s+ 降到 3-5s
 // 深度已经在 reasoning_content 里累积，最后只需要按 sage 口吻写出来，不需要 thinking
-const LLM_FAST_MODEL = process.env.SAGE_LLM_FAST_MODEL || "deepseek-chat";
+const LLM_FAST_MODEL = process.env.SAGE_LLM_FAST_MODEL || "deepseek-v4-pro";
 const BOCHA_KEY = process.env.BOCHA_API_KEY || "";
 
 interface Quote { id: number; date: string; ts?: number; text: string; text_n?: string; kw?: string[]; likes: number; rt?: number; url: string;

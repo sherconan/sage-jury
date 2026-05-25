@@ -48,9 +48,9 @@ async function loadSageSkill(slug: string, req: { url: string }): Promise<string
   } catch { return ""; }
 }
 
-const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.deepseek.com";
+const LLM_BASE = process.env.SAGE_LLM_BASE || "https://api.bochaai.com/v1";
 const LLM_KEY  = process.env.SAGE_LLM_KEY  || "";
-const LLM_FAST_MODEL = process.env.SAGE_LLM_FAST_MODEL || "deepseek-chat";
+const LLM_FAST_MODEL = process.env.SAGE_LLM_FAST_MODEL || "deepseek-v4-pro";
 
 function sse(event: string, data: any): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
