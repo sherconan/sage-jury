@@ -7,7 +7,7 @@
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#ffffff",
-    "navigationBarTitleText": "Sage Chat",
+    "navigationBarTitleText": "交易对线",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#f8fafc",
     "enablePullDownRefresh": false

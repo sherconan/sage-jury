@@ -74,9 +74,16 @@
       <view class="header-arrow">{{sagePickerOpen ? '▲' : '▼'}}</view>
     </view>
     <view class="header-right">
-      <button class="header-btn header-btn-jury" bindtap="onGoJury" hover-class="hover">陪审团</button>
-      <button class="header-btn" bindtap="onNewSession" hover-class="hover">+ 新</button>
-      <button class="header-btn" bindtap="onGoSessions" hover-class="hover">历史</button>
+      <view class="hdr-chip hdr-chip-jury" bindtap="onGoJury" hover-class="hdr-chip-hover" catchtap="onGoJury">
+        <text class="hdr-chip-emoji">⚖️</text>
+        <text class="hdr-chip-label">陪审团</text>
+      </view>
+      <view class="hdr-icon-btn" bindtap="onNewSession" hover-class="hdr-icon-btn-hover" aria-label="新对话">
+        <text class="hdr-icon-glyph">＋</text>
+      </view>
+      <view class="hdr-icon-btn" bindtap="onGoSessions" hover-class="hdr-icon-btn-hover" aria-label="历史">
+        <text class="hdr-icon-glyph hdr-icon-history">≡</text>
+      </view>
     </view>
   </view>
 

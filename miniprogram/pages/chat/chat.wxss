@@ -57,26 +57,45 @@ page { height: 100%; }
 }
 .header-right {
   display: flex;
-  gap: 8rpx;
-  flex-shrink: 0; /* 关键: 按钮不被压 */
+  align-items: center;
+  gap: 10rpx;
+  flex-shrink: 0; /* 按钮不被压 */
 }
-.header-btn {
-  font-size: 22rpx;
-  padding: 8rpx 16rpx;
-  background: #f1f5f9;
-  color: #475569;
-  border: none;
+/* v62-mp.3: 陪审团 chip — 蓝色渐变 pill，emoji + 文字，区别于普通图标按钮 */
+.hdr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4rpx;
+  padding: 8rpx 18rpx;
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
   border-radius: 9999rpx;
-  margin: 0;
-  line-height: 1.6;
+  box-shadow: 0 2rpx 8rpx rgba(59,130,246,0.3);
+  flex-shrink: 0;
+  height: 52rpx;
+  box-sizing: border-box;
+}
+.hdr-chip-hover { transform: scale(0.96); opacity: 0.92; }
+.hdr-chip-emoji { font-size: 22rpx; line-height: 1; }
+.hdr-chip-label { font-size: 22rpx; font-weight: 600; color: #fff; letter-spacing: 1rpx; }
+/* v62-mp.3: 紧凑图标按钮 — 52x52 圆角方块，灰底 */
+.hdr-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52rpx;
+  height: 52rpx;
+  background: #f1f5f9;
+  border-radius: 14rpx;
   flex-shrink: 0;
 }
-.header-btn::after { border: none; }
-.header-btn-jury {
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-  color: #fff;
-  font-weight: 600;
+.hdr-icon-btn-hover { background: #e2e8f0; transform: scale(0.94); }
+.hdr-icon-glyph {
+  font-size: 32rpx;
+  color: #475569;
+  font-weight: 500;
+  line-height: 1;
 }
+.hdr-icon-history { font-size: 36rpx; }
 
 .sage-avatar {
   width: 56rpx;
