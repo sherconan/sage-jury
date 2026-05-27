@@ -1,10 +1,10 @@
 # 交易对线 微信小程序
 
-> 和 2 位投资大佬 1v1 聊天 + 多大佬陪审团（段永平 / 管我财）。基于 v62 真投资分析引擎（Phase1 取数 → Phase2 5 维加权评分 → Phase3 LLM voice）。
+> 和 2 位投资大佬 1v1 聊天 + 多大佬多人对线（段永平 / 管我财）。基于 v62 真投资分析引擎（Phase1 取数 → Phase2 5 维加权评分 → Phase3 LLM voice）。
 
-> **v62-mp.3** — 改名「交易对线」+ header 按钮重设计（取消平铺像 tab 的样式，改紧凑右上角图标 + 陪审团 chip）。
+> **v62-mp.3** — 改名「交易对线」+ header 按钮重设计（取消平铺像 tab 的样式，改紧凑右上角图标 + 多人对线 chip）。
 > v62-mp.2 — 〔xxx〕分层小节渲染 + markdown 排版呼吸感。
-> v62-mp.1 — 追平 web v62.1（v60.5 → v62 跨 ~12 个版本）。endpoint 切到 `/api/chat/v2/stream`；新增 verdict 卡 / facts 卡 / analyzing 徽章 / 陪审团页（`/api/jury/stream`）。详见 `../CHANGELOG_MINIPROGRAM_v62.md`。
+> v62-mp.1 — 追平 web v62.1（v60.5 → v62 跨 ~12 个版本）。endpoint 切到 `/api/chat/v2/stream`；新增 verdict 卡 / facts 卡 / analyzing 徽章 / 多人对线页（`/api/jury/stream`）。详见 `../CHANGELOG_MINIPROGRAM_v62.md`。
 
 ## 项目结构
 
@@ -17,7 +17,7 @@ miniprogram/
 ├── pages/
 │   ├── chat/                        主对话页（sage 切换 / 工具折叠 / verdict 卡 / facts 卡 / analyzing 徽章）
 │   ├── sessions/                    历史列表（搜索 / 预览 / streaming 脉冲 / 长按操作）
-│   └── jury/                        🆕 陪审团页（多 sage 并行 SSE，每位独立 result card）
+│   └── jury/                        🆕 多人对线页（多 sage 并行 SSE，每位独立 result card）
 └── utils/
     ├── api.js                       SSE 解析 + decorate helpers
     │                                · callChatStream (v2 三阶段) / callJurySSE / callChatTitle

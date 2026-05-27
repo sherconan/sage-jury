@@ -2,7 +2,7 @@
 App({
   onLaunch() {
     // 启动时打印版本
-    console.log('交易对线 启动 · miniprogram v62-mp.3（v2 三阶段 + 陪审团 + header 重设计）');
+    console.log('交易对线 启动 · miniprogram v62-mp.4（v2 三阶段 + 多人对线 + header 重设计）');
   },
   globalData: {
     apiBase: 'https://sage-jury.vercel.app',  // 生产域名（开发版需在小程序后台开"不校验合法域名"）

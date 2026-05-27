@@ -1,4 +1,4 @@
-/* pages/jury/jury.wxss — v62-mp.1 multi-sage 陪审团 */
+/* pages/jury/jury.wxss — v62-mp.1 multi-sage 多人对线 */
 page { background: #f8fafc; height: 100%; }
 .jury-container {
   display: flex; flex-direction: column;

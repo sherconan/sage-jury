@@ -1,4 +1,4 @@
-<!-- pages/jury/jury.wxml — v62-mp.1 multi-sage 陪审团 -->
+<!-- pages/jury/jury.wxml — v62-mp.1 multi-sage 多人对线 -->
 <!-- 复用 chat.wxml 同款 markdown template -->
 <template name="md-jury-inlines">
   <block wx:for="{{inlines}}" wx:for-item="seg" wx:key="index">
@@ -45,11 +45,11 @@
 <view class="jury-container">
   <view class="jury-header">
     <view class="jury-back" bindtap="onBack" hover-class="jury-back-hover">‹</view>
-    <view class="jury-title">陪审团 · 多大佬并行评分</view>
+    <view class="jury-title">多人对线 · 大佬并行评分</view>
   </view>
 
   <view class="jury-intro">
-    <text class="jury-intro-text">选 2-5 位大佬同时审议同一笔交易决策。</text>
+    <text class="jury-intro-text">选 2-5 位大佬，一起对线你这笔交易决策。</text>
   </view>
 
   <view class="jury-sage-row">
@@ -72,8 +72,8 @@
       bindinput="onInputChange" disabled="{{loading}}" maxlength="500"
       auto-height adjust-position cursor-spacing="20" placeholder-class="jury-input-ph" />
     <button class="jury-send" bindtap="onSubmit" disabled="{{loading || !input}}" loading="{{loading}}" hover-class="jury-send-hover">
-      <text wx:if="{{!loading}}">开庭</text>
-      <text wx:else>审议中</text>
+      <text wx:if="{{!loading}}">开始对线</text>
+      <text wx:else>对线中</text>
     </button>
   </view>
 
@@ -89,7 +89,7 @@
           <view class="jury-result-avatar" style="background:{{sageStates[slug].color}}">{{sageStates[slug].initials}}</view>
           <view class="jury-result-name">{{sageStates[slug].display}}</view>
           <view wx:if="{{sageStates[slug].error}}" class="jury-result-badge jury-result-badge-err">异常</view>
-          <view wx:elif="{{sageStates[slug].done}}" class="jury-result-badge jury-result-badge-done">已审 ✓</view>
+          <view wx:elif="{{sageStates[slug].done}}" class="jury-result-badge jury-result-badge-done">已对线 ✓</view>
           <view wx:elif="{{sageStates[slug].writerStarted}}" class="jury-result-badge jury-result-badge-writing">落笔中…</view>
           <view wx:else class="jury-result-badge jury-result-badge-running">分析中⟳</view>
         </view>

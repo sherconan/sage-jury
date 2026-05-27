@@ -1,4 +1,4 @@
-// pages/jury/jury.js — v62-mp.1 multi-sage 陪审团
+// pages/jury/jury.js — v62-mp.1 multi-sage 多人对线
 const app = getApp();
 const { callJurySSE, decorateToolCall, parseCitationSegments } = require('../../utils/api');
 const { parseMarkdown } = require('../../utils/markdown');
@@ -58,7 +58,7 @@ Page({
     }
     const sage_ids = this.data.selectedSlugs.slice();
     if (sage_ids.length < 2) {
-      wx.showToast({ title: '陪审团至少 2 位大佬', icon: 'none', duration: 1600 });
+      wx.showToast({ title: '多人对线至少 2 位大佬', icon: 'none', duration: 1600 });
       return;
     }
 

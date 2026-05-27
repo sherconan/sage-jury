@@ -76,7 +76,7 @@
     <view class="header-right">
       <view class="hdr-chip hdr-chip-jury" bindtap="onGoJury" hover-class="hdr-chip-hover" catchtap="onGoJury">
         <text class="hdr-chip-emoji">⚖️</text>
-        <text class="hdr-chip-label">陪审团</text>
+        <text class="hdr-chip-label">多人对线</text>
       </view>
       <view class="hdr-icon-btn" bindtap="onNewSession" hover-class="hdr-icon-btn-hover" aria-label="新对话">
         <text class="hdr-icon-glyph">＋</text>

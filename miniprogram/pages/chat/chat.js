@@ -136,7 +136,7 @@ Page({
     wx.navigateTo({ url: '/pages/sessions/sessions' });
   },
 
-  // v62-mp.1: 跳转到陪审团页（multi-sage 并行）
+  // v62-mp.1: 跳转到多人对线页（multi-sage 并行）
   onGoJury() {
     wx.navigateTo({ url: '/pages/jury/jury' });
   },

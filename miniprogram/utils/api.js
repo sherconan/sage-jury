@@ -373,7 +373,7 @@ function callChatStream({ sage_id, message, history, useV1 }, onProgress) {
   });
 }
 
-// v62-mp.1: 调 /api/jury/stream 跑 multi-sage 陪审团
+// v62-mp.1: 调 /api/jury/stream 跑 multi-sage 多人对线
 // SSE 事件包装为 jury_event / jury_done，本函数把 jury_event 按 sage_id 路由给 onSageProgress(sage_id, patch)
 // onAllDone(sageStates) 在 jury_done 触发。
 //

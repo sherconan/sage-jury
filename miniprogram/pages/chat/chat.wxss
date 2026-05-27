@@ -61,7 +61,7 @@ page { height: 100%; }
   gap: 10rpx;
   flex-shrink: 0; /* 按钮不被压 */
 }
-/* v62-mp.3: 陪审团 chip — 蓝色渐变 pill，emoji + 文字，区别于普通图标按钮 */
+/* v62-mp.3: 多人对线 chip — 蓝色渐变 pill，emoji + 文字，区别于普通图标按钮 */
 .hdr-chip {
   display: inline-flex;
   align-items: center;
