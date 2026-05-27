@@ -466,11 +466,38 @@ page { height: 100%; }
 .md-h4, .md-h5, .md-h6 { font-size: 28rpx; margin: 8rpx 0 6rpx; }
 .md-p {
   font-size: 28rpx;
-  line-height: 1.7;
-  margin: 6rpx 0;
+  line-height: 1.85; /* v62-mp.2: 提呼吸感 1.7→1.85 */
+  margin: 10rpx 0;   /* v62-mp.2: 段间距 6→10 */
   color: inherit;
+  letter-spacing: 0.4rpx;
 }
-.md-p + .md-p { margin-top: 10rpx; }
+.md-p + .md-p { margin-top: 14rpx; }
+/* v62-mp.2: 〔xxx〕 分层小节 — 左侧色条 + 加粗标题，给段永平/管哥的 framework 一个视觉锚点 */
+.md-section {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 22rpx 0 10rpx;
+  padding-bottom: 6rpx;
+  border-bottom: 1rpx dashed rgba(59,130,246,0.18);
+}
+.md-section:first-child { margin-top: 4rpx; }
+.md-section-bar {
+  width: 6rpx;
+  height: 30rpx;
+  background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%);
+  border-radius: 4rpx;
+  flex-shrink: 0;
+}
+.md-section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #1e40af;
+  letter-spacing: 1rpx;
+}
+.bubble-user .md-section-bar { background: linear-gradient(180deg, #fff 0%, #c7d2fe 100%); }
+.bubble-user .md-section-title { color: #fff; }
+.bubble-user .md-section { border-bottom-color: rgba(255,255,255,0.25); }
 .md-ul, .md-ol {
   margin: 8rpx 0 8rpx 8rpx;
   display: flex;

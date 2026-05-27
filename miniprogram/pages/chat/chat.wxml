@@ -38,6 +38,10 @@
     <view wx:elif="{{b.type === 'p'}}" class="md-p">
       <template is="md-inlines" data="{{inlines: b.inlines, mi: mi}}" />
     </view>
+    <view wx:elif="{{b.type === 'section'}}" class="md-section">
+      <text class="md-section-bar"></text>
+      <text class="md-section-title">{{b.title}}</text>
+    </view>
     <view wx:elif="{{b.type === 'ul'}}" class="md-ul">
       <view wx:for="{{b.items}}" wx:for-item="li" wx:for-index="lii" wx:key="lii" class="md-li">
         <text class="md-bullet">•</text>

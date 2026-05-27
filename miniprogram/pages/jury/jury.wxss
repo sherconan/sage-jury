@@ -176,7 +176,22 @@ page { background: #f8fafc; height: 100%; }
 .md-h1 { font-size: 32rpx; }
 .md-h2 { font-size: 28rpx; }
 .md-h3 { font-size: 26rpx; }
-.md-p { font-size: 26rpx; line-height: 1.65; color: #1e293b; margin: 4rpx 0; }
+.md-p { font-size: 26rpx; line-height: 1.85; color: #1e293b; margin: 8rpx 0; letter-spacing: 0.3rpx; }
+.md-p + .md-p { margin-top: 12rpx; }
+/* v62-mp.2: 分层小节 */
+.md-section {
+  display: flex; align-items: center; gap: 10rpx;
+  margin: 18rpx 0 8rpx;
+  padding-bottom: 5rpx;
+  border-bottom: 1rpx dashed rgba(59,130,246,0.18);
+}
+.md-section:first-child { margin-top: 4rpx; }
+.md-section-bar {
+  width: 5rpx; height: 26rpx;
+  background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%);
+  border-radius: 4rpx; flex-shrink: 0;
+}
+.md-section-title { font-size: 26rpx; font-weight: 700; color: #1e40af; letter-spacing: 1rpx; }
 .md-ul, .md-ol { margin: 4rpx 0; padding-left: 8rpx; }
 .md-li { display: flex; gap: 8rpx; font-size: 26rpx; line-height: 1.65; color: #1e293b; }
 .md-bullet, .md-num { color: #94a3b8; flex-shrink: 0; }

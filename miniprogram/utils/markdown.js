@@ -65,9 +65,21 @@ function parseInlines(text) {
 // === block parser ===
 function parseMarkdown(text) {
   if (!text) return [];
-  const lines = String(text).replace(/\r\n?/g, '\n').split('\n');
+  // v62-mp.2: 〔xxx〕 section header 前置归一化
+  // 1) 段永平/管哥 stream 有时把多个〔xxx〕粘在一段：「...〔结论〕还能买...〔生意本质〕...」
+  //    在每个〔前强制插换行，让 block parser 当独立 section 切
+  // 2) 已经在行首的〔xxx〕保持原样
+  let normalized = String(text).replace(/\r\n?/g, '\n');
+  // 不在行首的 〔 前补换行（前面有非空白字符 + 紧跟〔）
+  normalized = normalized.replace(/([^\n\s])\s*〔/g, '$1\n\n〔');
+  const lines = normalized.split('\n');
   const blocks = [];
   let i = 0;
+
+  // helper: 该行是否会启动一个新 block（用于段落终止判断）
+  const startsNewBlock = (L) => {
+    return /^(#{1,6}\s|```|\s*[-*+]\s|\s*\d+\.\s|\s*>\s?|\s*(\*{3,}|-{3,}|_{3,})\s*$|〔[^〕]+〕)/.test(L);
+  };
 
   const pushBlock = (b) => {
     if (!b) return;
@@ -105,6 +117,25 @@ function parseMarkdown(text) {
     if (hMatch) {
       pushBlock({ type: 'heading', level: hMatch[1].length, inlines: parseInlines(hMatch[2].trim()) });
       i++; continue;
+    }
+
+    // ===== v62-mp.2: 分层小节 〔xxx〕 =====
+    // 段永平/管哥 v62 框架：〔结论〕〔生意本质〕〔管理与资本配置〕〔现在的价〕〔能力圈与周期〕...
+    // 渲染为 section chip（小标题，比 heading 弱，比 bold 强），后接段落正文
+    const secMatch = line.match(/^\s*〔([^〕]+)〕\s*(.*)$/);
+    if (secMatch) {
+      pushBlock({ type: 'section', title: secMatch[1].trim() });
+      const restOfLine = secMatch[2].trim();
+      i++;
+      // 把后续连续非空、非新块行（含 restOfLine）合成 body 段落
+      const bodyLines = restOfLine ? [restOfLine] : [];
+      while (i < lines.length && lines[i].trim() && !startsNewBlock(lines[i])) {
+        bodyLines.push(lines[i]); i++;
+      }
+      if (bodyLines.length) {
+        pushBlock({ type: 'p', inlines: parseInlines(bodyLines.join(' ')) });
+      }
+      continue;
     }
 
     // ===== 引用块 > =====
@@ -172,8 +203,7 @@ function parseMarkdown(text) {
     // ===== 段落：累计连续非空行 =====
     const paragraphLines = [line];
     i++;
-    while (i < lines.length && lines[i].trim() &&
-           !lines[i].match(/^(#{1,6}\s|```|\s*[-*+]\s|\s*\d+\.\s|\s*>\s?|\s*(\*{3,}|-{3,}|_{3,})\s*$)/)) {
+    while (i < lines.length && lines[i].trim() && !startsNewBlock(lines[i])) {
       paragraphLines.push(lines[i]); i++;
     }
     pushBlock({ type: 'p', inlines: parseInlines(paragraphLines.join(' ')) });
