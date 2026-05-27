@@ -1,0 +1,114 @@
+<!-- pages/jury/jury.wxml — v62-mp.1 multi-sage 陪审团 -->
+<!-- 复用 chat.wxml 同款 markdown template -->
+<template name="md-jury-inlines">
+  <block wx:for="{{inlines}}" wx:for-item="seg" wx:key="index">
+    <text wx:if="{{seg.type === 'text'}}" class="md-text">{{seg.text}}</text>
+    <text wx:elif="{{seg.type === 'code'}}" class="md-inline-code">{{seg.text}}</text>
+    <text wx:elif="{{seg.type === 'cite'}}" class="cite-chip-static">#{{seg.n}}</text>
+    <text wx:elif="{{seg.type === 'bold'}}" class="md-bold">{{seg.text}}</text>
+    <text wx:elif="{{seg.type === 'italic'}}" class="md-italic">{{seg.text}}</text>
+  </block>
+</template>
+
+<template name="md-jury-blocks">
+  <block wx:for="{{blocks}}" wx:for-item="b" wx:key="index">
+    <view wx:if="{{b.type === 'heading'}}" class="md-h md-h{{b.level}}">
+      <template is="md-jury-inlines" data="{{inlines: b.inlines}}" />
+    </view>
+    <view wx:elif="{{b.type === 'p'}}" class="md-p">
+      <template is="md-jury-inlines" data="{{inlines: b.inlines}}" />
+    </view>
+    <view wx:elif="{{b.type === 'ul'}}" class="md-ul">
+      <view wx:for="{{b.items}}" wx:for-item="li" wx:key="*this" class="md-li">
+        <text class="md-bullet">•</text>
+        <view class="md-li-body"><template is="md-jury-inlines" data="{{inlines: li.inlines}}" /></view>
+      </view>
+    </view>
+    <view wx:elif="{{b.type === 'ol'}}" class="md-ol">
+      <view wx:for="{{b.items}}" wx:for-item="li" wx:key="*this" class="md-li">
+        <text class="md-num">{{li.num}}.</text>
+        <view class="md-li-body"><template is="md-jury-inlines" data="{{inlines: li.inlines}}" /></view>
+      </view>
+    </view>
+    <view wx:elif="{{b.type === 'quote'}}" class="md-quote">
+      <template is="md-jury-inlines" data="{{inlines: b.inlines}}" />
+    </view>
+    <view wx:elif="{{b.type === 'code'}}" class="md-code-block">{{b.text}}</view>
+    <view wx:elif="{{b.type === 'hr'}}" class="md-hr"></view>
+  </block>
+</template>
+
+<view class="jury-container">
+  <view class="jury-header">
+    <view class="jury-back" bindtap="onBack" hover-class="jury-back-hover">‹</view>
+    <view class="jury-title">陪审团 · 多大佬并行评分</view>
+  </view>
+
+  <view class="jury-intro">
+    <text class="jury-intro-text">选 2-5 位大佬同时审议同一笔交易决策。</text>
+  </view>
+
+  <view class="jury-sage-row">
+    <view wx:for="{{sages}}" wx:key="slug"
+      class="jury-sage-card {{selectedSlugs.indexOf(item.slug) >= 0 ? 'jury-sage-on' : ''}}"
+      data-slug="{{item.slug}}" bindtap="onSageToggle" hover-class="jury-sage-card-hover">
+      <view class="jury-sage-avatar" style="background:{{item.color}}">{{item.initials}}</view>
+      <view class="jury-sage-meta">
+        <view class="jury-sage-name">{{item.display}}</view>
+        <view class="jury-sage-philo">{{item.philosophy}}</view>
+      </view>
+      <view class="jury-sage-check {{selectedSlugs.indexOf(item.slug) >= 0 ? 'on' : ''}}">
+        {{selectedSlugs.indexOf(item.slug) >= 0 ? '✓' : ''}}
+      </view>
+    </view>
+  </view>
+
+  <view class="jury-input-bar">
+    <textarea class="jury-input" placeholder="例如：茅台还能买吗？" value="{{input}}"
+      bindinput="onInputChange" disabled="{{loading}}" maxlength="500"
+      auto-height adjust-position cursor-spacing="20" placeholder-class="jury-input-ph" />
+    <button class="jury-send" bindtap="onSubmit" disabled="{{loading || !input}}" loading="{{loading}}" hover-class="jury-send-hover">
+      <text wx:if="{{!loading}}">开庭</text>
+      <text wx:else>审议中</text>
+    </button>
+  </view>
+
+  <view wx:if="{{!loading && !runUid}}" class="jury-starters">
+    <view class="jury-starters-label">试试这些问题</view>
+    <view wx:for="{{starters}}" wx:key="*this" class="jury-starter-chip" data-q="{{item}}" bindtap="onStarter">{{item}}</view>
+  </view>
+
+  <scroll-view class="jury-results" scroll-y wx:if="{{runUid > 0}}">
+    <view wx:for="{{selectedSlugs}}" wx:for-item="slug" wx:key="*this" class="jury-result-card">
+      <block wx:if="{{sageStates[slug]}}">
+        <view class="jury-result-head">
+          <view class="jury-result-avatar" style="background:{{sageStates[slug].color}}">{{sageStates[slug].initials}}</view>
+          <view class="jury-result-name">{{sageStates[slug].display}}</view>
+          <view wx:if="{{sageStates[slug].error}}" class="jury-result-badge jury-result-badge-err">异常</view>
+          <view wx:elif="{{sageStates[slug].done}}" class="jury-result-badge jury-result-badge-done">已审 ✓</view>
+          <view wx:elif="{{sageStates[slug].writerStarted}}" class="jury-result-badge jury-result-badge-writing">落笔中…</view>
+          <view wx:else class="jury-result-badge jury-result-badge-running">分析中⟳</view>
+        </view>
+
+        <view wx:if="{{sageStates[slug].toolCalls && sageStates[slug].toolCalls.length}}" class="jury-result-tools">
+          <text wx:for="{{sageStates[slug].toolCalls}}" wx:for-item="tc" wx:key="id" class="jury-tool-pill">
+            {{tc.icon}} {{tc.label}}{{tc.result ? ' ✓' : '⟳'}}
+          </text>
+        </view>
+
+        <view wx:if="{{sageStates[slug].error}}" class="jury-result-error">
+          ⚠️ {{sageStates[slug].error}}
+        </view>
+        <view wx:elif="{{sageStates[slug].contentBlocks && sageStates[slug].contentBlocks.length}}" class="jury-result-body">
+          <template is="md-jury-blocks" data="{{blocks: sageStates[slug].contentBlocks}}" />
+        </view>
+        <view wx:elif="{{sageStates[slug].content}}" class="jury-result-body">
+          <text>{{sageStates[slug].content}}</text>
+        </view>
+        <view wx:else class="jury-result-loading">
+          <text>{{sageStates[slug].display}} 正在调取数据 + 评分…</text>
+        </view>
+      </block>
+    </view>
+  </scroll-view>
+</view>

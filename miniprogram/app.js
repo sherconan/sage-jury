@@ -2,7 +2,7 @@
 App({
   onLaunch() {
     // 启动时打印版本
-    console.log('Sage Chat 启动 · miniprogram v60.4');
+    console.log('Sage Chat 启动 · miniprogram v62-mp.1（v2 三阶段 + 陪审团）');
   },
   globalData: {
     apiBase: 'https://sage-jury.vercel.app',  // 生产域名（开发版需在小程序后台开"不校验合法域名"）

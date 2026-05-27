@@ -1,8 +1,8 @@
 # Sage Chat 微信小程序
 
-> 和 2 位投资大佬 1v1 聊天的小程序版（段永平 / 管我财），DeepSeek thinking 模式 + 8 工具。
+> 和 2 位投资大佬 1v1 聊天的小程序版（段永平 / 管我财）+ 多大佬陪审团。基于 v62 真投资分析引擎（Phase1 取数 → Phase2 5 维加权评分 → Phase3 LLM voice）。
 
-> v60.5 — 完整追平 web 后端 v60.4。详见 `../CHANGELOG_MINIPROGRAM_v60.4.md`。
+> **v62-mp.1** — 追平 web v62.1（v60.5 → v62 跨 ~12 个版本）。endpoint 切到 `/api/chat/v2/stream`；新增 verdict 卡 / facts 卡 / analyzing 徽章 / 陪审团页（`/api/jury/stream`）。详见 `../CHANGELOG_MINIPROGRAM_v62.md`。
 
 ## 项目结构
 
@@ -13,10 +13,13 @@ miniprogram/
 ├── project.config.json              AppID = wx8b251c593a93d37e
 ├── sitemap.json
 ├── pages/
-│   ├── chat/                        主对话页（sage 切换 / 工具折叠 / 内心分析 / cite chip）
-│   └── sessions/                    历史列表（搜索 / 预览 / streaming 脉冲 / 长按操作）
+│   ├── chat/                        主对话页（sage 切换 / 工具折叠 / verdict 卡 / facts 卡 / analyzing 徽章）
+│   ├── sessions/                    历史列表（搜索 / 预览 / streaming 脉冲 / 长按操作）
+│   └── jury/                        🆕 陪审团页（多 sage 并行 SSE，每位独立 result card）
 └── utils/
-    ├── api.js                       SSE 解析 + decorate helpers (含 v60.1 analyst_chunk)
+    ├── api.js                       SSE 解析 + decorate helpers
+    │                                · callChatStream (v2 三阶段) / callJurySSE / callChatTitle
+    │                                · decorateVerdict / decorateFacts / decorateToolCall / decorateQuote
     ├── sessions.js                  lazy session + 容量护栏 (MAX 100/200)
     ├── markdown.js                  轻量 markdown parser (block + inline)
     └── dsml.js                      DSML 状态机（与 server 端 inDSML 对齐）

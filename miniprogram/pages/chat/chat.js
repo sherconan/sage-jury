@@ -1,6 +1,6 @@
 // chat.js
 const app = getApp();
-const { callChatStream, decorateToolCall, parseCitationSegments, decorateQuote } = require('../../utils/api');
+const { callChatStream, decorateToolCall, parseCitationSegments, decorateQuote, decorateVerdict, decorateFacts } = require('../../utils/api');
 const { parseMarkdown } = require('../../utils/markdown');
 const sess = require('../../utils/sessions');
 
@@ -91,10 +91,15 @@ Page({
         if (Array.isArray(out.quotes) && out.quotes.length) {
           out.quotes = out.quotes.map(decorateQuote);
         }
+        // v62-mp.1: storage 里的 verdict/facts 可能是 raw 形态（早期版本），重 decorate 一遍
+        if (out.verdict && !out.verdict.tone) out.verdict = decorateVerdict(out.verdict);
+        if (out.facts && out.facts.hasTicker === undefined) out.facts = decorateFacts(out.facts);
       }
-      // 历史消息默认折叠 tool + analyst（节省视觉空间）
+      // 历史消息默认折叠 tool + analyst + analyzing（节省视觉空间）；verdict 默认展开（核心结论）
       if (out.toolsOpen === undefined) out.toolsOpen = false;
       if (out.analystOpen === undefined) out.analystOpen = false;
+      if (out.analyzingOpen === undefined) out.analyzingOpen = false;
+      if (out.verdictOpen === undefined) out.verdictOpen = true;
       return out;
     });
   },
@@ -129,6 +134,11 @@ Page({
 
   onGoSessions() {
     wx.navigateTo({ url: '/pages/sessions/sessions' });
+  },
+
+  // v62-mp.1: 跳转到陪审团页（multi-sage 并行）
+  onGoJury() {
+    wx.navigateTo({ url: '/pages/jury/jury' });
   },
 
   onInputChange(e) { this.setData({ input: e.detail.value }); },
@@ -167,16 +177,23 @@ Page({
       .filter(m => !m.loading && m.content)
       .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
 
-    // 推 user + loading sage（含 v60.1 新字段初始化）
+    // 推 user + loading sage（含 v60.1 + v62-mp.1 新字段初始化）
     const userMsg = { role: 'user', content: text, ts: Date.now() };
     const sageMsg = {
       role: 'sage', content: '', loading: true, ts: Date.now() + 1,
       toolCalls: [], quotes: [], followups: [],
       contentBlocks: [], // v60.4-mp.3 markdown
-      // v60.1
+      // v60.1: analyst（v1 路径；v2 端不发 analyst_chunk）
       analystThinking: '', analystBlocks: [], analystDone: false, writerStarted: false,
-      // UI 折叠状态：tool 默认折叠（视觉干净），analyst 默认展开（实时看思考）
+      // v62-mp.1: v2 三阶段新字段
+      verdict: null,         // sage 5 维加权评分（signal/headline/dims/topConcerns）
+      facts: null,           // 股票识别 + 10 年数据深度
+      analyzing: '',         // Python 端 Phase1 取数提示（"Python 端分析中…"）
+      analyzingDone: false,  // 分析阶段完成 → 折叠
+      dataErrors: [],        // server 端 done 返回的数据源错误
+      // UI 折叠状态：tool/analyst/analyzing 默认展开（让用户看到工作），verdict 默认展开（核心结论）
       toolsOpen: false, analystOpen: true, toolsAllDone: false,
+      analyzingOpen: true, verdictOpen: true,
     };
     const newMsgs = [...(session.msgs || []), userMsg, sageMsg];
     session.msgs = newMsgs;
@@ -230,7 +247,21 @@ Page({
       if (p.writerStarted !== undefined) {
         sd[`messages[${lastIdx}].writerStarted`] = p.writerStarted;
         sd[`messages[${lastIdx}].analystOpen`] = false;
+        // v62-mp.1: writer 开始 → 折叠 analyzing 徽章
+        sd[`messages[${lastIdx}].analyzingOpen`] = false;
       }
+      // v62-mp.1: v2 三阶段新字段（已被 api.js decorate 过，wxml 直接渲染）
+      if (p.analyzing !== undefined) {
+        sd[`messages[${lastIdx}].analyzing`] = p.analyzing;
+        sd[`messages[${lastIdx}].loading`] = false;
+      }
+      if (p.analyzingDone !== undefined) {
+        sd[`messages[${lastIdx}].analyzingDone`] = p.analyzingDone;
+        if (p.analyzingDone) sd[`messages[${lastIdx}].analyzingOpen`] = false;
+      }
+      if (p.verdict !== undefined) sd[`messages[${lastIdx}].verdict`] = p.verdict;
+      if (p.facts !== undefined) sd[`messages[${lastIdx}].facts`] = p.facts;
+      if (p.dataErrors !== undefined) sd[`messages[${lastIdx}].dataErrors`] = p.dataErrors;
       if (_scrollDirty) {
         sd.scrollTo = 'm' + lastIdx;
         _scrollDirty = false;
@@ -272,7 +303,20 @@ Page({
             last.analystBlocks = parseMarkdown(patch.analystThinking);
           }
           if (patch.analystDone !== undefined) last.analystDone = patch.analystDone;
-          if (patch.writerStarted !== undefined) { last.writerStarted = patch.writerStarted; last.analystOpen = false; }
+          if (patch.writerStarted !== undefined) {
+            last.writerStarted = patch.writerStarted;
+            last.analystOpen = false;
+            last.analyzingOpen = false; // v62-mp.1
+          }
+          // v62-mp.1: v2 新字段持久化（即便用户切走也存住，切回时显示完整）
+          if (patch.analyzing !== undefined) last.analyzing = patch.analyzing;
+          if (patch.analyzingDone !== undefined) {
+            last.analyzingDone = patch.analyzingDone;
+            if (patch.analyzingDone) last.analyzingOpen = false;
+          }
+          if (patch.verdict !== undefined) last.verdict = patch.verdict;
+          if (patch.facts !== undefined) last.facts = patch.facts;
+          if (patch.dataErrors !== undefined) last.dataErrors = patch.dataErrors;
           msgs[msgs.length - 1] = last;
           session.msgs = msgs;
           session.ts_updated = Date.now();
@@ -287,6 +331,12 @@ Page({
         if (patch.followups !== undefined) _pendingPatch.followups = patch.followups;
         if (patch.analystDone !== undefined) _pendingPatch.analystDone = patch.analystDone;
         if (patch.writerStarted !== undefined) _pendingPatch.writerStarted = patch.writerStarted;
+        // v62-mp.1: v2 新事件合并（verdict/facts 是低频低带宽，直接立刻 flush 也 OK，但走相同窗口便于一次 setData）
+        if (patch.analyzing !== undefined) _pendingPatch.analyzing = patch.analyzing;
+        if (patch.analyzingDone !== undefined) _pendingPatch.analyzingDone = patch.analyzingDone;
+        if (patch.verdict !== undefined) _pendingPatch.verdict = patch.verdict;
+        if (patch.facts !== undefined) _pendingPatch.facts = patch.facts;
+        if (patch.dataErrors !== undefined) _pendingPatch.dataErrors = patch.dataErrors;
         // 高频字段（content / analystThinking）走 60ms throttle；
         // 低频字段（done/writerStarted/quotes/toolCalls）也合到同窗口里一起刷
         if (_flushTimer == null) _flushTimer = setTimeout(_doFlush, FLUSH_INTERVAL_MS);
@@ -316,7 +366,18 @@ Page({
         last.analystThinking = result.analystThinking;
         last.analystBlocks = parseMarkdown(result.analystThinking);
       }
-      if (result) { last.analystDone = true; last.writerStarted = true; last.analystOpen = false; }
+      // v62-mp.1: 把 v2 新字段从 finalize 结果回填，保证持久化后切回也完整
+      if (result && result.verdict) last.verdict = result.verdict;
+      if (result && result.facts) last.facts = result.facts;
+      if (result && result.analyzingMsg) last.analyzing = result.analyzingMsg;
+      if (result && result.dataErrors && result.dataErrors.length) last.dataErrors = result.dataErrors;
+      if (result) {
+        last.analystDone = true;
+        last.writerStarted = true;
+        last.analystOpen = false;
+        last.analyzingDone = true;
+        last.analyzingOpen = false;
+      }
       msgs[msgs.length - 1] = last;
       session.msgs = msgs;
       session.ts_updated = Date.now();
@@ -376,6 +437,24 @@ Page({
     const msgs = this.data.messages;
     if (msgs[mi]) {
       msgs[mi] = { ...msgs[mi], analystOpen: !msgs[mi].analystOpen };
+      this.setData({ messages: [...msgs] });
+    }
+  },
+  // v62-mp.1: verdict 卡（核心评分结论）折叠切换
+  onToggleVerdict(e) {
+    const mi = e.currentTarget.dataset.mi;
+    const msgs = this.data.messages;
+    if (msgs[mi]) {
+      msgs[mi] = { ...msgs[mi], verdictOpen: !msgs[mi].verdictOpen };
+      this.setData({ messages: [...msgs] });
+    }
+  },
+  // v62-mp.1: analyzing 徽章（Python Phase1 取数）折叠切换
+  onToggleAnalyzing(e) {
+    const mi = e.currentTarget.dataset.mi;
+    const msgs = this.data.messages;
+    if (msgs[mi]) {
+      msgs[mi] = { ...msgs[mi], analyzingOpen: !msgs[mi].analyzingOpen };
       this.setData({ messages: [...msgs] });
     }
   },

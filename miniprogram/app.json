@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/chat/chat",
-    "pages/sessions/sessions"
+    "pages/sessions/sessions",
+    "pages/jury/jury"
   ],
   "window": {
     "backgroundTextStyle": "light",

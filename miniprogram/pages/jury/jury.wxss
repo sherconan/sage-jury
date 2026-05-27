@@ -1,0 +1,215 @@
+/* pages/jury/jury.wxss — v62-mp.1 multi-sage 陪审团 */
+page { background: #f8fafc; height: 100%; }
+.jury-container {
+  display: flex; flex-direction: column;
+  min-height: 100vh;
+  padding: 0;
+}
+
+.jury-header {
+  display: flex; align-items: center;
+  padding: 24rpx 24rpx 16rpx;
+  background: #0f172a;
+  color: #fff;
+}
+.jury-back {
+  font-size: 44rpx; line-height: 1;
+  padding: 8rpx 20rpx 12rpx 0;
+  color: #fff;
+}
+.jury-back-hover { opacity: 0.5; }
+.jury-title { font-size: 30rpx; font-weight: 600; letter-spacing: 1rpx; }
+
+.jury-intro {
+  padding: 16rpx 24rpx 8rpx;
+}
+.jury-intro-text { font-size: 24rpx; color: #475569; }
+
+.jury-sage-row {
+  display: flex; gap: 16rpx; flex-wrap: wrap;
+  padding: 12rpx 24rpx 4rpx;
+}
+.jury-sage-card {
+  flex: 1 1 280rpx; min-width: 280rpx;
+  display: flex; align-items: center; gap: 14rpx;
+  padding: 16rpx 18rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  border: 2rpx solid #e2e8f0;
+  transition: all 0.15s;
+}
+.jury-sage-card-hover { transform: scale(0.99); }
+.jury-sage-on { border-color: #3b82f6; box-shadow: 0 4rpx 14rpx rgba(59,130,246,0.18); }
+.jury-sage-avatar {
+  width: 64rpx; height: 64rpx;
+  border-radius: 16rpx;
+  color: #fff; font-weight: 700; font-size: 22rpx;
+  font-family: ui-monospace, monospace;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.jury-sage-meta { flex: 1; min-width: 0; }
+.jury-sage-name {
+  font-size: 26rpx; font-weight: 600; color: #0f172a;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.jury-sage-philo {
+  font-size: 22rpx; color: #64748b; margin-top: 4rpx;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.jury-sage-check {
+  width: 36rpx; height: 36rpx; border-radius: 9999rpx;
+  background: #f1f5f9; color: transparent;
+  font-size: 22rpx; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.jury-sage-check.on { background: #3b82f6; color: #fff; }
+
+.jury-input-bar {
+  display: flex; align-items: flex-end; gap: 12rpx;
+  padding: 16rpx 24rpx 12rpx;
+  background: #fff;
+  border-top: 1rpx solid #e2e8f0;
+  margin-top: 12rpx;
+}
+.jury-input {
+  flex: 1; min-height: 64rpx; max-height: 200rpx;
+  padding: 14rpx 18rpx;
+  background: #f1f5f9;
+  border-radius: 16rpx;
+  font-size: 26rpx; color: #0f172a;
+  line-height: 1.5;
+}
+.jury-input-ph { color: #94a3b8; }
+.jury-send {
+  background: #3b82f6; color: #fff;
+  border-radius: 9999rpx;
+  padding: 0 32rpx; height: 72rpx; line-height: 72rpx;
+  font-size: 26rpx; font-weight: 600;
+  border: none; margin: 0;
+  box-shadow: 0 6rpx 18rpx rgba(59,130,246,0.25);
+}
+.jury-send::after { border: none; }
+.jury-send-hover { transform: scale(0.96); }
+.jury-send[disabled] { opacity: 0.4; box-shadow: none; }
+
+.jury-starters {
+  padding: 8rpx 24rpx 24rpx;
+  display: flex; flex-wrap: wrap; gap: 12rpx;
+}
+.jury-starters-label {
+  flex: 0 0 100%;
+  font-size: 22rpx; color: #94a3b8; margin-bottom: 4rpx;
+}
+.jury-starter-chip {
+  padding: 12rpx 20rpx;
+  background: #fff;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 9999rpx;
+  font-size: 24rpx; color: #334155;
+}
+
+.jury-results {
+  flex: 1;
+  padding: 16rpx 24rpx 32rpx;
+}
+.jury-result-card {
+  background: #fff;
+  border-radius: 18rpx;
+  padding: 18rpx 20rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 10rpx rgba(15,23,42,0.05);
+}
+.jury-result-head {
+  display: flex; align-items: center; gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+.jury-result-avatar {
+  width: 48rpx; height: 48rpx; border-radius: 12rpx;
+  color: #fff; font-weight: 700; font-size: 20rpx;
+  font-family: ui-monospace, monospace;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.jury-result-name { flex: 1; font-size: 28rpx; font-weight: 700; color: #0f172a; }
+.jury-result-badge {
+  font-size: 20rpx; padding: 4rpx 14rpx;
+  border-radius: 9999rpx;
+  font-weight: 600; flex-shrink: 0;
+}
+.jury-result-badge-running { background: #fef3c7; color: #92400e; }
+.jury-result-badge-writing { background: #dbeafe; color: #1d4ed8; }
+.jury-result-badge-done    { background: #d1fae5; color: #065f46; }
+.jury-result-badge-err     { background: #fee2e2; color: #991b1b; }
+
+.jury-result-tools {
+  display: flex; flex-wrap: wrap; gap: 8rpx;
+  margin-bottom: 10rpx;
+}
+.jury-tool-pill {
+  font-size: 20rpx; padding: 4rpx 12rpx;
+  background: #f1f5f9; color: #334155;
+  border-radius: 8rpx;
+}
+
+.jury-result-body {
+  font-size: 26rpx; line-height: 1.65;
+  color: #1e293b;
+  padding-top: 4rpx;
+}
+.jury-result-loading {
+  font-size: 24rpx; color: #94a3b8;
+  font-style: italic;
+}
+.jury-result-error {
+  font-size: 24rpx; color: #b91c1c;
+  background: #fef2f2;
+  padding: 10rpx 14rpx;
+  border-radius: 8rpx;
+  border-left: 3rpx solid #ef4444;
+}
+
+/* markdown 子集（与 chat 同色调，独立简化版 — 不依赖外部组件） */
+.md-h { font-weight: 700; color: #0f172a; margin: 12rpx 0 6rpx; }
+.md-h1 { font-size: 32rpx; }
+.md-h2 { font-size: 28rpx; }
+.md-h3 { font-size: 26rpx; }
+.md-p { font-size: 26rpx; line-height: 1.65; color: #1e293b; margin: 4rpx 0; }
+.md-ul, .md-ol { margin: 4rpx 0; padding-left: 8rpx; }
+.md-li { display: flex; gap: 8rpx; font-size: 26rpx; line-height: 1.65; color: #1e293b; }
+.md-bullet, .md-num { color: #94a3b8; flex-shrink: 0; }
+.md-li-body { flex: 1; }
+.md-quote {
+  border-left: 4rpx solid #cbd5e1;
+  padding: 4rpx 12rpx; color: #475569;
+  background: #f8fafc;
+  margin: 6rpx 0;
+}
+.md-code-block {
+  background: #0f172a; color: #e2e8f0;
+  font-family: ui-monospace, monospace;
+  font-size: 22rpx; padding: 12rpx 14rpx;
+  border-radius: 10rpx; margin: 6rpx 0;
+  white-space: pre-wrap;
+}
+.md-bold { font-weight: 700; }
+.md-italic { font-style: italic; }
+.md-inline-code {
+  font-family: ui-monospace, monospace; font-size: 24rpx;
+  background: #f1f5f9; padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+}
+.md-text { display: inline; }
+.md-hr {
+  height: 2rpx; background: #e2e8f0;
+  margin: 12rpx 0;
+}
+.cite-chip-static {
+  display: inline-block;
+  font-size: 20rpx; padding: 2rpx 8rpx;
+  background: #dbeafe; color: #1d4ed8;
+  border-radius: 6rpx;
+  font-family: ui-monospace, monospace;
+}

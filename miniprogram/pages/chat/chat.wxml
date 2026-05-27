@@ -70,6 +70,7 @@
       <view class="header-arrow">{{sagePickerOpen ? '▲' : '▼'}}</view>
     </view>
     <view class="header-right">
+      <button class="header-btn header-btn-jury" bindtap="onGoJury" hover-class="hover">陪审团</button>
       <button class="header-btn" bindtap="onNewSession" hover-class="hover">+ 新</button>
       <button class="header-btn" bindtap="onGoSessions" hover-class="hover">历史</button>
     </view>
@@ -122,6 +123,61 @@
         {{item.role === 'user' ? '你' : activeSage.initials}}
       </view>
       <view class="msg-bubble {{item.role === 'user' ? 'bubble-user' : 'bubble-sage'}}">
+        <!-- v62-mp.1: analyzing 徽章（Python Phase1 取数；writer 开始后折叠） -->
+        <view wx:if="{{item.role === 'sage' && item.analyzing}}" class="analyzing-card">
+          <view class="analyzing-summary" data-mi="{{index}}" bindtap="onToggleAnalyzing" hover-class="analyzing-summary-hover">
+            <text class="analyzing-emoji">🔬</text>
+            <text class="analyzing-title">{{item.analyzingDone ? '数据分析完成' : (item.analyzing || 'Python 端分析中…')}}</text>
+            <text wx:if="{{!item.analyzingDone}}" class="analyzing-spin">⟳</text>
+            <text wx:if="{{item.analyzingDone}}" class="analyzing-check">✓</text>
+            <text class="analyzing-arrow {{item.analyzingOpen ? 'open' : ''}}">⌄</text>
+          </view>
+          <view wx:if="{{item.analyzingOpen}}" class="analyzing-body">
+            <text class="analyzing-step">取数 → 5 维加权 → LLM 落笔</text>
+          </view>
+        </view>
+
+        <!-- v62-mp.1: facts 卡（已识别股票 + 10 年数据深度） -->
+        <view wx:if="{{item.role === 'sage' && item.facts && item.facts.hasTicker}}" class="facts-card">
+          <text class="facts-emoji">📌</text>
+          <text class="facts-name">{{item.facts.name}}</text>
+          <text wx:if="{{item.facts.code}}" class="facts-code">{{item.facts.code}}</text>
+          <text wx:if="{{item.facts.market}}" class="facts-market">{{item.facts.market}}</text>
+          <text wx:if="{{item.facts.v62 && item.facts.years}}" class="facts-depth">· {{item.facts.years}} 年深度档案</text>
+        </view>
+
+        <!-- v62-mp.1: verdict 卡（核心结论：signal + headline + 维度 chips） -->
+        <view wx:if="{{item.role === 'sage' && item.verdict}}" class="verdict-card verdict-{{item.verdict.tone}}">
+          <view class="verdict-summary" data-mi="{{index}}" bindtap="onToggleVerdict" hover-class="verdict-summary-hover">
+            <view class="verdict-signal verdict-signal-{{item.verdict.tone}}">{{item.verdict.signal}}</view>
+            <view class="verdict-headline">{{item.verdict.headline || '5 维加权评分'}}</view>
+            <text wx:if="{{item.verdict.confidence !== null}}" class="verdict-confidence">{{item.verdict.confidence}}%</text>
+            <text class="verdict-arrow {{item.verdictOpen ? 'open' : ''}}">⌄</text>
+          </view>
+          <view wx:if="{{item.verdictOpen}}" class="verdict-body">
+            <view wx:if="{{item.verdict.keyMetrics && item.verdict.keyMetrics.length}}" class="verdict-metrics">
+              <text wx:for="{{item.verdict.keyMetrics}}" wx:for-item="km" wx:key="*this" class="verdict-metric">{{km}}</text>
+            </view>
+            <view class="verdict-dims">
+              <view wx:for="{{item.verdict.dims}}" wx:for-item="dim" wx:key="key" class="verdict-dim verdict-dim-{{dim.pass ? 'pass' : 'fail'}}">
+                <text class="verdict-dim-label">{{dim.label}}</text>
+                <text wx:if="{{dim.weight !== null}}" class="verdict-dim-weight">{{dim.weight}}%</text>
+                <text class="verdict-dim-note">{{dim.note}}</text>
+              </view>
+            </view>
+            <view wx:if="{{item.verdict.topConcerns && item.verdict.topConcerns.length}}" class="verdict-concerns">
+              <text class="verdict-concerns-label">⚠️ 重点关注</text>
+              <text wx:for="{{item.verdict.topConcerns}}" wx:for-item="c" wx:key="*this" class="verdict-concern">{{c}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- v62-mp.1: dataErrors 横条（Phase1 取数遇到的源错误，只在 done 后才会有） -->
+        <view wx:if="{{item.role === 'sage' && item.dataErrors && item.dataErrors.length}}" class="data-errors">
+          <text class="data-errors-emoji">⚠️</text>
+          <text class="data-errors-text">部分数据源未取到：{{item.dataErrors.length}} 个</text>
+        </view>
+
         <!-- v60.1: Analyst 内心分析卡（紫色，默认展开，writer 开始后自动折叠） -->
         <view wx:if="{{item.role === 'sage' && item.analystThinking}}" class="analyst-card">
           <view class="analyst-summary" data-mi="{{index}}" bindtap="onToggleAnalyst" hover-class="analyst-summary-hover">

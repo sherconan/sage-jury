@@ -4,6 +4,10 @@
 // - 服务端有时会把 DeepSeek 的 DSML 内部 tool-call 标签泄漏到 content，必须清洗
 // - done 事件包含 fullReply + followups，是真正的"完成"信号
 // - v58+: tool 折叠 + 人话标签；v60.1+: analyst_chunk / analyst_done / phase 新事件
+// - v62-mp.1: 切到 /api/chat/v2/stream 三阶段架构。v2 不发 analyst_chunk，改用
+//   phase:analyzing（Python 端取数）+ facts（识别股票+10年数据深度）+ verdict
+//   （sage-specific 5 维加权评分 signal/headline/dims）+ strip_warning（跨角色清洗）。
+//   保留 analyst_* / citation_audit 兼容路径以便 v1 fallback / jury 复用。
 
 const app = getApp();
 
@@ -71,6 +75,78 @@ function parseCitationSegments(text) {
   }
   if (lastIdx < text.length) out.push({ type: 'text', text: text.slice(lastIdx) });
   return out.length ? out : [{ type: 'text', text }];
+}
+
+// v62-mp.1: verdict 卡装饰（与 web /jury verdict 渲染对齐）
+// 输入 server 端 verdict 事件 payload：{ sage, signal, confidence, headline, keyMetrics, dims, top_concerns }
+// 输出 wxml 可直接 wx:for 的扁平结构。
+const SIGNAL_LABEL = {
+  bullish: '看好',
+  buy: '看好',
+  hold: '观察',
+  watch: '观察',
+  bearish: '不碰',
+  sell: '不碰',
+  too_hard: '能力圈外',
+  pass: '能力圈外',
+};
+const SIGNAL_TONE = {
+  bullish: 'bull', buy: 'bull',
+  hold: 'hold', watch: 'hold',
+  bearish: 'bear', sell: 'bear',
+  too_hard: 'pass', pass: 'pass',
+};
+const DIM_LABEL = {
+  // 段永平
+  circle: '能力圈', business: '生意', team: '人',
+  price: '价格', stop_doing: 'stop doing',
+  // 管哥
+  position: '分位', landmine: '排雷', dividend: '股息',
+  stability: '稳态', island: '荒岛',
+};
+function decorateVerdict(v) {
+  if (!v) return null;
+  const signalRaw = v.signal || 'hold';
+  const dims = v.dims || {};
+  const dimList = Object.keys(dims).map((k) => {
+    const d = dims[k] || {};
+    return {
+      key: k,
+      label: DIM_LABEL[k] || k,
+      note: d.note || '',
+      pass: d.pass !== false,
+      score: typeof d.score === 'number' ? d.score : null,
+      weight: typeof d.weight === 'number' ? Math.round(d.weight * 100) : null,
+    };
+  });
+  return {
+    sage: v.sage || '',
+    v62: !!v.v62,
+    signalRaw,
+    signal: SIGNAL_LABEL[signalRaw] || signalRaw,
+    tone: SIGNAL_TONE[signalRaw] || 'hold',
+    confidence: typeof v.confidence === 'number' ? v.confidence : null,
+    headline: v.headline || '',
+    keyMetrics: Array.isArray(v.keyMetrics) ? v.keyMetrics : [],
+    dims: dimList,
+    topConcerns: Array.isArray(v.top_concerns) ? v.top_concerns : [],
+  };
+}
+
+// v62-mp.1: facts 卡装饰（识别股票 + 数据深度）
+function decorateFacts(f) {
+  if (!f) return null;
+  const ticker = f.ticker || null;
+  return {
+    hasTicker: !!ticker,
+    name: ticker?.name || '',
+    code: ticker?.code || '',
+    market: ticker?.market || '',
+    v62: !!f.v62,
+    depth: f.depth || '',
+    years: typeof f.years === 'number' ? f.years : null,
+    note: f.note || '',
+  };
 }
 
 // v57.2: quote 卡 score badge 映射
@@ -148,8 +224,10 @@ function bytesToStr(arr) {
 function makeStreamState(onProgress) {
   let buf = '', evt = '', accumulated = '', emitBuf = '';
   let quotes = [], toolCalls = [], followups = [], doneFired = false;
-  // v60.1: analyst thinking 状态
+  // v60.1: analyst thinking 状态（v1 兼容；v2 端不发 analyst_chunk）
   let analystThinking = '', analystDone = false, writerStarted = false;
+  // v62-mp.1: v2 三阶段新事件状态
+  let verdict = null, facts = null, analyzingMsg = '', stripWarning = null, dataErrors = [];
 
   // 处理一段已收到的文本（增量）
   function feed(text) {
@@ -191,25 +269,51 @@ function makeStreamState(onProgress) {
         if (tc) tc.result = d.result;
         onProgress && onProgress({ toolCalls: toolCalls.slice() });
       } else if (evt === 'analyst_chunk' && d.delta) {
-        // v60.1: Analyst 流式思考过程（reasoning_content）
+        // v60.1: Analyst 流式思考过程（reasoning_content） · v1 路径
         analystThinking += d.delta;
         onProgress && onProgress({ analystThinking });
       } else if (evt === 'analyst_done') {
-        // v60.1: Analyst 思考结束（Writer 即将开始）
+        // v60.1: Analyst 思考结束（Writer 即将开始） · v1 路径
         analystDone = true;
         onProgress && onProgress({ analystDone: true });
-      } else if (evt === 'phase' && d && d.name === 'writer') {
-        // v60: Writer 阶段开始 → analyst 卡自动折叠
-        writerStarted = true;
-        onProgress && onProgress({ writerStarted: true });
+      } else if (evt === 'phase' && d) {
+        // v62-mp.1: phase 拆两阶段
+        //   - analyzing: Python 端取数+评分（v2 新阶段，对应 v1 的 analyst loader）
+        //   - writer: LLM 写答案
+        if (d.name === 'analyzing') {
+          analyzingMsg = d.message || 'Python 端分析中…';
+          onProgress && onProgress({ analyzing: analyzingMsg, analyzingDone: false });
+        } else if (d.name === 'writer') {
+          writerStarted = true;
+          // 分析阶段结束 → 折叠 analyzing 卡
+          onProgress && onProgress({ writerStarted: true, analyzingDone: true, analystDone: true });
+        }
+      } else if (evt === 'facts') {
+        // v62-mp.1: 股票识别 + 数据深度
+        facts = decorateFacts(d);
+        onProgress && onProgress({ facts });
+      } else if (evt === 'verdict') {
+        // v62-mp.1: sage-specific 5 维加权评分
+        verdict = decorateVerdict(d);
+        onProgress && onProgress({ verdict });
+      } else if (evt === 'history') {
+        // v62-mp.1: sage 历史发言（quotes 事件随后会发同样数据，这里忽略避免重复 setData）
+      } else if (evt === 'strip_warning') {
+        // v62-mp.1: server 端清洗了跨角色违禁词，记录但不打扰用户
+        stripWarning = d;
+        console.warn('[sage v2] strip_warning', d);
       } else if (evt === 'citation_audit') {
         // v55: 审计事件，前端可忽略
       } else if (evt === 'done') {
         doneFired = true;
         followups = d.followups || [];
+        dataErrors = d.data_errors || [];
         // v55: fullReply 是 server 端最终校准过的，覆盖 streamed text 防引用伪造
         if (d.fullReply) accumulated = cleanDSML(d.fullReply);
-        onProgress && onProgress({ content: accumulated, followups, analystDone: true, writerStarted: true });
+        onProgress && onProgress({
+          content: accumulated, followups, analystDone: true, writerStarted: true,
+          analyzingDone: true, dataErrors,
+        });
       } else if (evt === 'error') {
         onProgress && onProgress({ error: d.message || 'unknown' });
       }
@@ -219,24 +323,30 @@ function makeStreamState(onProgress) {
   function finalize() {
     // 如果 buf 还有残留行未处理，喂入
     if (buf) feed('\n');
-    return { reply: accumulated, quotes, toolCalls, followups, doneFired, analystThinking, analystDone, writerStarted };
+    return {
+      reply: accumulated, quotes, toolCalls, followups, doneFired,
+      analystThinking, analystDone, writerStarted,
+      verdict, facts, analyzingMsg, stripWarning, dataErrors,
+    };
   }
 
   return { feed, finalize };
 }
 
-function callChatStream({ sage_id, message, history }, onProgress) {
+// v62-mp.1: 默认走 v2 三阶段架构；如需回退 v1 可传 { useV1: true }
+function callChatStream({ sage_id, message, history, useV1 }, onProgress) {
   return new Promise((resolve, reject) => {
     const state = makeStreamState(onProgress);
     let chunkReceived = false;
+    const endpoint = useV1 ? '/api/chat/stream' : '/api/chat/v2/stream';
 
     const requestTask = wx.request({
-      url: `${app.globalData.apiBase}/api/chat/stream`,
+      url: `${app.globalData.apiBase}${endpoint}`,
       method: 'POST',
       header: { 'Content-Type': 'application/json' },
       data: { sage_id, message, history: history || [] },
       enableChunked: true,
-      timeout: 120000,
+      timeout: 180000, // v62 三阶段更慢（Phase1 取数 + Phase3 LLM），从 120s 调到 180s
       success: (res) => {
         // 如果 chunkReceived 没触发（老版本 fallback），res.data 是完整 SSE 字符串
         if (!chunkReceived && typeof res.data === 'string' && res.data.length > 10) {
@@ -263,4 +373,151 @@ function callChatStream({ sage_id, message, history }, onProgress) {
   });
 }
 
-module.exports = { callChatStream, cleanDSML, TOOL_LABELS, TOOL_ICONS, formatToolArgs, decorateToolCall, parseCitationSegments, decorateQuote };
+// v62-mp.1: 调 /api/jury/stream 跑 multi-sage 陪审团
+// SSE 事件包装为 jury_event / jury_done，本函数把 jury_event 按 sage_id 路由给 onSageProgress(sage_id, patch)
+// onAllDone(sageStates) 在 jury_done 触发。
+//
+// 入参：
+//   sage_ids: [2-5] 个 sage slug
+//   message: 用户问
+//   history: [{role,content}]
+//   onSageProgress(sage_id, patch) - 单 sage 累积态
+//   onAllDone(sageStates) - 全部 sage 完成
+function callJurySSE({ sage_ids, message, history }, onSageProgress, onAllDone) {
+  return new Promise((resolve, reject) => {
+    // 每个 sage 一个累积 buffer（content + toolCalls + done + analystThinking）
+    const perSage = {};
+    sage_ids.forEach(id => {
+      perSage[id] = { content: '', emitBuf: '', toolCalls: [], analystThinking: '', followups: [], done: false };
+    });
+    let buf = '', evt = '';
+    let chunkReceived = false;
+    let allDoneFired = false;
+
+    function emitToSage(sage_id, patch) {
+      onSageProgress && onSageProgress(sage_id, patch);
+    }
+
+    function feedBytes(text) {
+      buf += text;
+      const lines = buf.split('\n');
+      buf = lines.pop() || '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) { evt = line.slice(7).trim(); continue; }
+        if (!line.startsWith('data: ')) continue;
+        let d; try { d = JSON.parse(line.slice(6)); } catch { continue; }
+        if (evt === 'jury_event') {
+          const sage_id = d.sage_id;
+          const inner = d.type;
+          const p = d.payload || {};
+          const s = perSage[sage_id];
+          if (!s) continue;
+          if (inner === 'chunk' && p.delta) {
+            s.emitBuf += p.delta;
+            const lastOpen = s.emitBuf.lastIndexOf('<');
+            const lastClose = s.emitBuf.lastIndexOf('>');
+            const safeEnd = lastOpen > lastClose ? lastOpen : s.emitBuf.length;
+            const safe = s.emitBuf.slice(0, safeEnd);
+            s.emitBuf = s.emitBuf.slice(safeEnd);
+            const cleaned = cleanDSML(safe);
+            if (cleaned) {
+              s.content += cleaned;
+              emitToSage(sage_id, { content: s.content });
+            }
+          } else if (inner === 'analyst_chunk' && p.delta) {
+            s.analystThinking += p.delta;
+            emitToSage(sage_id, { analystThinking: s.analystThinking });
+          } else if (inner === 'analyst_done') {
+            emitToSage(sage_id, { analystDone: true });
+          } else if (inner === 'tool_call') {
+            s.toolCalls.push({ name: p.name, args: p.args, id: p.id });
+            emitToSage(sage_id, { toolCalls: s.toolCalls.slice() });
+          } else if (inner === 'tool_result') {
+            const tc = s.toolCalls.find(t => t.id === p.id);
+            if (tc) tc.result = p.result;
+            emitToSage(sage_id, { toolCalls: s.toolCalls.slice() });
+          } else if (inner === 'phase' && p.name === 'writer') {
+            emitToSage(sage_id, { writerStarted: true });
+          } else if (inner === 'done') {
+            s.done = true;
+            s.followups = p.followups || [];
+            if (p.fullReply) s.content = cleanDSML(p.fullReply);
+            emitToSage(sage_id, {
+              content: s.content, followups: s.followups,
+              analystDone: true, writerStarted: true, done: true,
+            });
+          } else if (inner === 'error') {
+            emitToSage(sage_id, { error: p.message || 'unknown' });
+          }
+        } else if (evt === 'jury_done') {
+          allDoneFired = true;
+          onAllDone && onAllDone(d.sage_states || perSage);
+        }
+      }
+    }
+
+    const requestTask = wx.request({
+      url: `${app.globalData.apiBase}/api/jury/stream`,
+      method: 'POST',
+      header: { 'Content-Type': 'application/json' },
+      data: { sage_ids, message, history: history || [] },
+      enableChunked: true,
+      timeout: 240000, // jury 并行 N sage，宽限到 4 分钟
+      success: (res) => {
+        if (!chunkReceived && typeof res.data === 'string' && res.data.length > 10) feedBytes(res.data);
+        if (!allDoneFired) onAllDone && onAllDone(perSage);
+        resolve(perSage);
+      },
+      fail: (err) => reject(err),
+    });
+    if (requestTask && requestTask.onChunkReceived) {
+      requestTask.onChunkReceived((res) => {
+        chunkReceived = true;
+        try {
+          const arr = new Uint8Array(res.data);
+          const text = bytesToStr(arr);
+          feedBytes(text);
+        } catch (e) { console.error('jury chunk decode error', e); }
+      });
+    }
+  });
+}
+
+// v62-mp.1: 调 /api/chat/title 让 LLM 生成 ≤16 字 session 标题
+// 失败兜底返回 user 文本前 16 字。非 stream，简单 POST。
+function callChatTitle(user, reply) {
+  return new Promise((resolve) => {
+    const fallback = String(user || '').slice(0, 16) || '新对话';
+    if (!user) return resolve(fallback);
+    wx.request({
+      url: `${app.globalData.apiBase}/api/chat/title`,
+      method: 'POST',
+      header: { 'Content-Type': 'application/json' },
+      data: { user: String(user).slice(0, 200), reply: String(reply || '').slice(0, 200) },
+      timeout: 12000,
+      success: (res) => {
+        const t = res && res.data && res.data.title;
+        resolve(typeof t === 'string' && t.trim() ? t.trim() : fallback);
+      },
+      fail: () => resolve(fallback),
+    });
+  });
+}
+
+module.exports = {
+  callChatStream,
+  callChatTitle,
+  callJurySSE,
+  cleanDSML,
+  TOOL_LABELS,
+  TOOL_ICONS,
+  formatToolArgs,
+  decorateToolCall,
+  decorateVerdict,
+  decorateFacts,
+  parseCitationSegments,
+  decorateQuote,
+  SIGNAL_LABEL,
+  SIGNAL_TONE,
+  DIM_LABEL,
+};
