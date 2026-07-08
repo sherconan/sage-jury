@@ -9,7 +9,7 @@
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTitleText": "交易对线",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f8fafc",
+    "backgroundColor": "#eef2f7",
     "enablePullDownRefresh": false
   },
   "style": "v2",

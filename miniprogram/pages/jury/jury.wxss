@@ -1,5 +1,5 @@
 /* pages/jury/jury.wxss — v62-mp.1 multi-sage 多人对线 */
-page { background: #f8fafc; height: 100%; }
+page { background: #eef2f7; height: 100%; }
 .jury-container {
   display: flex; flex-direction: column;
   min-height: 100vh;
@@ -228,3 +228,111 @@ page { background: #f8fafc; height: 100%; }
   border-radius: 6rpx;
   font-family: ui-monospace, monospace;
 }
+
+/* ============ v63-mp: jury 数据驱动卡（与 chat 视觉语言对齐，紧凑版） ============ */
+/* facts 行（识别股票 + 数据深度） */
+.jury-facts {
+  display: flex; align-items: center; gap: 8rpx; flex-wrap: wrap;
+  padding: 8rpx 12rpx; margin-bottom: 12rpx;
+  background: #f1f5f9; border-radius: 10rpx;
+}
+.jury-facts-name { font-weight: 700; color: #0f172a; font-size: 24rpx; }
+.jury-facts-code {
+  font-family: ui-monospace, monospace; font-size: 20rpx; color: #64748b;
+  background: #fff; padding: 2rpx 8rpx; border-radius: 6rpx;
+}
+.jury-facts-market {
+  font-size: 18rpx; color: #fff; background: #2563eb;
+  padding: 2rpx 8rpx; border-radius: 6rpx; font-weight: 600;
+}
+.jury-facts-depth { font-size: 20rpx; color: #047857; font-weight: 500; }
+
+/* 判决横幅（语义色 signal + headline + 置信度） */
+.jury-verdict {
+  display: flex; align-items: center; gap: 12rpx;
+  padding: 14rpx 16rpx; margin-bottom: 12rpx;
+  border-radius: 14rpx; border: 1rpx solid transparent;
+}
+.jury-verdict-bull { background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-color: #86efac; }
+.jury-verdict-hold { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-color: #cbd5e1; }
+.jury-verdict-bear { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-color: #fca5a5; }
+.jury-verdict-pass { background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-color: #fde047; }
+.jury-vd-signal {
+  font-size: 20rpx; font-weight: 700; padding: 5rpx 14rpx;
+  border-radius: 9999rpx; color: #fff; flex-shrink: 0; letter-spacing: 1rpx;
+}
+.jury-vd-signal-bull { background: #10b981; }
+.jury-vd-signal-hold { background: #64748b; }
+.jury-vd-signal-bear { background: #ef4444; }
+.jury-vd-signal-pass { background: #d97706; }
+.jury-vd-headline { flex: 1; font-size: 24rpx; font-weight: 600; color: #0f172a; line-height: 1.4; }
+.jury-vd-conf {
+  font-family: ui-monospace, monospace; font-size: 20rpx; color: #475569;
+  background: #fff; padding: 4rpx 10rpx; border-radius: 6rpx; flex-shrink: 0;
+}
+
+/* viz section 头（与 chat 同款，紧凑间距） */
+.viz-sec { padding: 16rpx 2rpx 14rpx; border-bottom: 1rpx solid #eef2f7; }
+.viz-sec-last { border-bottom: none; padding-bottom: 2rpx; }
+.viz-h { display: flex; align-items: center; gap: 10rpx; margin-bottom: 16rpx; }
+.viz-bar { width: 6rpx; height: 24rpx; border-radius: 3rpx; background: #2563eb; }
+.viz-bar-gn { background: #0ea371; }
+.viz-bar-mg { background: #831843; }
+.viz-ti { font-size: 25rpx; font-weight: 800; color: #0f2540; letter-spacing: .5rpx; }
+.viz-sub { margin-left: auto; font-size: 20rpx; color: #90a0b3; }
+
+/* PE 估值标尺 */
+.vz-gauge { margin-bottom: 22rpx; }
+.vz-g-top { display: flex; align-items: baseline; gap: 10rpx; margin-bottom: 12rpx; }
+.vz-g-lab { font-size: 24rpx; font-weight: 600; color: #5a6b80; }
+.vz-g-val { font-size: 34rpx; font-weight: 800; color: #0f2540; }
+.vz-g-unit { font-size: 22rpx; color: #90a0b3; }
+.vz-g-tag { margin-left: auto; font-size: 20rpx; font-weight: 700; padding: 4rpx 12rpx; border-radius: 8rpx; }
+.vz-tag-good { background: #e6f7f0; color: #0a7d56; }
+.vz-tag-warn { background: #fdf3e3; color: #b8741c; }
+.vz-tag-bad { background: #fde9e9; color: #c93b40; }
+.vz-scale { position: relative; height: 16rpx; border-radius: 10rpx;
+  background: linear-gradient(90deg, #0ea371 0%, #7bc96f 28%, #f5d472 55%, #e0922f 78%, #e5484d 100%); }
+.vz-mk { position: absolute; top: -8rpx; width: 8rpx; height: 32rpx; border-radius: 6rpx;
+  background: #0f2540; box-shadow: 0 0 0 4rpx #fff; transform: translateX(-50%); }
+.vz-scale-x { display: flex; justify-content: space-between; margin-top: 10rpx; font-size: 18rpx; color: #90a0b3; }
+
+/* 对比条（股息 vs 国债 / EY / PB） */
+.vz-cmp { margin-bottom: 18rpx; }
+.vz-cmp-last { margin-bottom: 0; }
+.vz-cmp-row { display: flex; align-items: center; gap: 14rpx; margin-bottom: 10rpx; }
+.vz-cmp-lab { width: 140rpx; font-size: 22rpx; color: #5a6b80; flex: 0 0 auto; }
+.vz-track { flex: 1; height: 34rpx; background: #eef2f7; border-radius: 9rpx; overflow: hidden; }
+.vz-fill { height: 100%; border-radius: 9rpx; display: flex; align-items: center; justify-content: flex-end; min-width: 60rpx; }
+.vz-fill-t { font-size: 20rpx; font-weight: 700; color: #fff; padding-right: 12rpx; }
+.vz-gd { background: linear-gradient(90deg, #0ea371, #13b87f); }
+.vz-nt { background: linear-gradient(90deg, #94a3b8, #aab6c6); }
+.vz-cmp-note { font-size: 21rpx; color: #0a7d56; font-weight: 600; margin-top: 4rpx; line-height: 1.5; }
+
+/* 指标小卡（成长 & 质地） */
+.vz-tiles { display: flex; flex-wrap: wrap; gap: 14rpx; }
+.vz-tile { width: calc(50% - 7rpx); background: #f8fafc; border: 1rpx solid #e6ebf2; border-radius: 16rpx; padding: 16rpx; box-sizing: border-box; }
+.vz-tl { font-size: 20rpx; color: #90a0b3; display: block; margin-bottom: 8rpx; }
+.vz-tv { font-size: 34rpx; font-weight: 800; color: #0f2540; line-height: 1; }
+.vz-tu { font-size: 22rpx; color: #90a0b3; font-weight: 600; }
+.vz-up { color: #0ea371; }
+.vz-dn { color: #e5484d; }
+.vz-tbar { height: 10rpx; border-radius: 5rpx; background: #eef2f7; margin-top: 12rpx; overflow: hidden; }
+.vz-tbar-i { display: block; height: 100%; border-radius: 5rpx; }
+.vz-bg-gn { background: #0ea371; }
+.vz-bg-bl { background: #2563eb; }
+
+/* 五维评分行（dossier dims） */
+.vz-dim { display: flex; align-items: flex-start; gap: 16rpx; padding: 16rpx 0; border-bottom: 1rpx dashed #e6ebf2; }
+.vz-dim:last-child { border-bottom: none; padding-bottom: 0; }
+.vz-dot { width: 16rpx; height: 16rpx; border-radius: 50%; margin-top: 8rpx; flex: 0 0 auto; }
+.vz-dot-p { background: #0ea371; box-shadow: 0 0 0 6rpx #e6f7f0; }
+.vz-dot-f { background: #e5484d; box-shadow: 0 0 0 6rpx #fde9e9; }
+.vz-dc { flex: 1; }
+.vz-dim-top { display: flex; align-items: center; gap: 14rpx; margin-bottom: 8rpx; }
+.vz-dim-lab { font-size: 24rpx; font-weight: 700; color: #0f2540; flex: 0 0 auto; }
+.vz-dim-track { flex: 1; height: 10rpx; background: #eef2f7; border-radius: 5rpx; overflow: hidden; }
+.vz-dim-i { display: block; height: 100%; background: #0ea371; border-radius: 5rpx; }
+.vz-dim-i-f { background: #e5484d; }
+.vz-dim-w { font-size: 19rpx; color: #90a0b3; flex: 0 0 auto; }
+.vz-dim-note { font-size: 22rpx; color: #5a6b80; line-height: 1.55; }

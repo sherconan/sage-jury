@@ -1,7 +1,7 @@
 {
   "miniprogramRoot": "./",
-  "projectname": "sage-chat",
-  "description": "Sage Chat — 和投资大佬 1v1 聊天 (Agent + tools)",
+  "projectname": "jiaoyi-duixian",
+  "description": "交易对线 — 和投资大佬 1v1 对线你的每一笔交易 (Agent + tools)",
   "appid": "wx8b251c593a93d37e",
   "setting": {
     "urlCheck": false,

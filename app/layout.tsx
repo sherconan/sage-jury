@@ -21,12 +21,12 @@ const notoSansSC = Noto_Sans_SC({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sage-jury.vercel.app"),
-  title: "大佬陪审团 · Sage Jury — 让投资大V替你审判每一笔交易",
-  description: "段永平、冯柳、但斌、林园、张坤、巴菲特——15 位投资大佬的方法论给你的交易决策做结构化评分。一笔交易，十五张评分卡，一份判决书。",
-  keywords: ["价值投资", "段永平", "冯柳", "巴菲特", "投资陪审团", "交易决策", "股票分析"],
+  title: "交易对线 — 和投资大佬对线你的每一笔交易",
+  description: "把你想买的票丢进来，和段永平、管我财正面对线。基于上万条雪球真实发言 + Wind 万得实时财务数据，看大佬会怎么判这笔交易。",
+  keywords: ["交易对线", "价值投资", "段永平", "管我财", "交易决策", "股票分析", "雪球"],
   openGraph: {
-    title: "大佬陪审团 · Sage Jury",
-    description: "用 15 位投资大V的方法论给交易决策做结构化评分。",
+    title: "交易对线",
+    description: "和投资大佬正面对线你的每一笔交易，基于真实发言 + Wind 实时数据。",
     type: "website",
   },
 };
@@ -34,15 +34,15 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "大佬陪审团 · Sage Jury",
+  "name": "交易对线",
   "url": "https://sage-jury.vercel.app",
-  "description": "用 15 位投资大V的方法论给交易决策做结构化评分。一笔交易，十五张评分卡，一份判决书。",
+  "description": "和段永平、管我财正面对线你的每一笔交易，基于上万条雪球真实发言 + Wind 万得实时财务数据。",
   "applicationCategory": "FinanceApplication",
   "operatingSystem": "Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "CNY" },
   "creator": {
     "@type": "Organization",
-    "name": "Sage Jury Project",
+    "name": "交易对线",
   },
 };
 

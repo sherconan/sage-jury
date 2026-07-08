@@ -148,13 +148,13 @@
           </view>
         </view>
 
-        <!-- v62-mp.1: facts 卡（已识别股票 + 10 年数据深度） -->
-        <view wx:if="{{item.role === 'sage' && item.facts && item.facts.hasTicker}}" class="facts-card">
-          <text class="facts-emoji">📌</text>
-          <text class="facts-name">{{item.facts.name}}</text>
-          <text wx:if="{{item.facts.code}}" class="facts-code">{{item.facts.code}}</text>
-          <text wx:if="{{item.facts.market}}" class="facts-market">{{item.facts.market}}</text>
-          <text wx:if="{{item.facts.v62 && item.facts.years}}" class="facts-depth">· {{item.facts.years}} 年深度档案</text>
+        <!-- v63-mp: ticker 条（深色名片：股票名 + 代码 + 市场徽章 + 数据深度），替代旧浅灰 facts-card -->
+        <view wx:if="{{item.role === 'sage' && item.facts && item.facts.hasTicker}}" class="tk-strip">
+          <text class="tk-nm">{{item.facts.name}}</text>
+          <text wx:if="{{item.facts.code}}" class="tk-cd">{{item.facts.code}}</text>
+          <text wx:if="{{item.facts.market}}" class="tk-mkt">{{item.facts.market}}</text>
+          <text wx:if="{{item.facts.depth}}" class="tk-depth">{{item.facts.depth}}</text>
+          <text wx:elif="{{item.facts.v62 && item.facts.years}}" class="tk-depth">{{item.facts.years}} 年深度档案</text>
         </view>
 
         <!-- v62-mp.1: verdict 卡（核心结论：signal + headline + 维度 chips） -->
@@ -162,20 +162,78 @@
           <view class="verdict-summary" data-mi="{{index}}" bindtap="onToggleVerdict" hover-class="verdict-summary-hover">
             <view class="verdict-signal verdict-signal-{{item.verdict.tone}}">{{item.verdict.signal}}</view>
             <view class="verdict-headline">{{item.verdict.headline || '5 维加权评分'}}</view>
-            <text wx:if="{{item.verdict.confidence !== null}}" class="verdict-confidence">{{item.verdict.confidence}}%</text>
+            <!-- v63-mp: 置信度环（两半圆 rotate 进度环，纯 transform 真机稳；角度在 api.js confDegL/R 预算好；confidence 为 null 时不渲染） -->
+            <view wx:if="{{item.verdict.confidence !== null}}" class="vz-ring vz-ring-{{item.verdict.tone}}">
+              <view class="vz-ring-half vz-ring-l"><view class="vz-ring-fill" style="transform:rotate({{item.verdict.confDegL}}deg)"></view></view>
+              <view class="vz-ring-half vz-ring-r"><view class="vz-ring-fill" style="transform:rotate({{item.verdict.confDegR}}deg)"></view></view>
+              <view class="vz-ring-core"><text class="vz-ring-num">{{item.verdict.confPct}}</text></view>
+            </view>
             <text class="verdict-arrow {{item.verdictOpen ? 'open' : ''}}">⌄</text>
           </view>
           <view wx:if="{{item.verdictOpen}}" class="verdict-body">
-            <view wx:if="{{item.verdict.keyMetrics && item.verdict.keyMetrics.length}}" class="verdict-metrics">
+            <!-- 估值体检（数据驱动可视化） -->
+            <view wx:if="{{item.verdict.viz && item.verdict.viz.hasValuation}}" class="viz-sec">
+              <view class="viz-h"><text class="viz-bar"></text><text class="viz-ti">估值体检</text><text class="viz-sub">现在贵不贵</text></view>
+              <view wx:if="{{item.verdict.viz.pe}}" class="vz-gauge">
+                <view class="vz-g-top">
+                  <text class="vz-g-lab">PE-TTM</text>
+                  <text class="vz-g-val">{{item.verdict.viz.pe.val}}</text>
+                  <text class="vz-g-unit">倍</text>
+                  <text class="vz-g-tag vz-tag-{{item.verdict.viz.pe.tagTone}}">{{item.verdict.viz.pe.tag}}</text>
+                </view>
+                <view class="vz-scale"><view class="vz-mk" style="left:{{item.verdict.viz.pe.markerPct}}%"></view></view>
+                <view class="vz-scale-x"><text>便宜 8×</text><text>合理 20×</text><text>贵 50×+</text></view>
+              </view>
+              <view wx:if="{{item.verdict.viz.div}}" class="vz-cmp">
+                <view class="vz-cmp-row"><text class="vz-cmp-lab">股息率</text><view class="vz-track"><view class="vz-fill vz-gd" style="width:{{item.verdict.viz.div.pct}}%"><text class="vz-fill-t">{{item.verdict.viz.div.val}}%</text></view></view></view>
+                <view class="vz-cmp-row"><text class="vz-cmp-lab">10Y 国债</text><view class="vz-track"><view class="vz-fill vz-nt" style="width:{{item.verdict.viz.div.bondPct}}%"><text class="vz-fill-t">{{item.verdict.viz.div.bond}}%</text></view></view></view>
+                <view wx:if="{{item.verdict.viz.div.beats}}" class="vz-cmp-note">✓ 股息 {{item.verdict.viz.div.val}}% ＞ 国债 {{item.verdict.viz.div.bond}}%，下行有保护（利差 +{{item.verdict.viz.div.diff}}pct）</view>
+              </view>
+              <view wx:if="{{item.verdict.viz.ey || item.verdict.viz.pb}}" class="vz-cmp vz-cmp-last">
+                <view wx:if="{{item.verdict.viz.ey}}" class="vz-cmp-row"><text class="vz-cmp-lab">盈利收益率</text><view class="vz-track"><view class="vz-fill vz-gd" style="width:{{item.verdict.viz.ey.pct}}%"><text class="vz-fill-t">EY {{item.verdict.viz.ey.val}}%</text></view></view></view>
+                <view wx:if="{{item.verdict.viz.pb}}" class="vz-cmp-row"><text class="vz-cmp-lab">PB</text><view class="vz-track"><view class="vz-fill vz-nt" style="width:{{item.verdict.viz.pb.pct}}%"><text class="vz-fill-t">{{item.verdict.viz.pb.val}}×</text></view></view></view>
+              </view>
+            </view>
+
+            <!-- 成长 & 质地 -->
+            <view wx:if="{{item.verdict.viz && item.verdict.viz.hasGrowth}}" class="viz-sec">
+              <view class="viz-h"><text class="viz-bar viz-bar-gn"></text><text class="viz-ti">成长 & 质地</text><text class="viz-sub">生意好不好</text></view>
+              <view class="vz-tiles">
+                <view wx:if="{{item.verdict.viz.revC}}" class="vz-tile"><text class="vz-tl">营收 5年 CAGR</text><view class="vz-tv {{item.verdict.viz.revC.up ? 'vz-up' : 'vz-dn'}}">{{item.verdict.viz.revC.up ? '+' : ''}}{{item.verdict.viz.revC.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-gn" style="width:{{item.verdict.viz.revC.pct}}%"></view></view></view>
+                <view wx:if="{{item.verdict.viz.npC}}" class="vz-tile"><text class="vz-tl">净利 5年 CAGR</text><view class="vz-tv {{item.verdict.viz.npC.up ? 'vz-up' : 'vz-dn'}}">{{item.verdict.viz.npC.up ? '+' : ''}}{{item.verdict.viz.npC.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-gn" style="width:{{item.verdict.viz.npC.pct}}%"></view></view></view>
+                <view wx:if="{{item.verdict.viz.roe}}" class="vz-tile"><text class="vz-tl">ROE 5年均</text><view class="vz-tv">{{item.verdict.viz.roe.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-bl" style="width:{{item.verdict.viz.roe.pct}}%"></view></view></view>
+                <view wx:if="{{item.verdict.viz.gm}}" class="vz-tile"><text class="vz-tl">销售毛利率</text><view class="vz-tv">{{item.verdict.viz.gm.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-bl" style="width:{{item.verdict.viz.gm.pct}}%"></view></view></view>
+              </view>
+            </view>
+
+            <!-- 五维体检（dims 评分条） -->
+            <view wx:if="{{item.verdict.dims && item.verdict.dims.length}}" class="viz-sec viz-sec-last">
+              <view class="viz-h"><text class="viz-bar viz-bar-mg"></text><text class="viz-ti">{{item.verdict.sageDisplay ? (item.verdict.sageDisplay + ' · 五维体检') : '五维体检'}}</text><text class="viz-sub">{{item.verdict.dimsPassText}}</text></view>
+              <view wx:for="{{item.verdict.dims}}" wx:for-item="dim" wx:key="key" class="vz-dim">
+                <view class="vz-dot vz-dot-{{dim.pass ? 'p' : 'f'}}"></view>
+                <view class="vz-dc">
+                  <view class="vz-dim-top">
+                    <text class="vz-dim-lab">{{dim.label}}</text>
+                    <view class="vz-dim-track"><view class="vz-dim-i {{dim.pass ? '' : 'vz-dim-i-f'}}" style="width:{{dim.barPct}}%"></view></view>
+                    <text wx:if="{{dim.weight !== null}}" class="vz-dim-w">{{dim.weight}}%</text>
+                  </view>
+                  <view class="vz-dim-note">{{dim.note}}</view>
+                </view>
+              </view>
+            </view>
+
+            <!-- 无结构化数据时降级：原 keyMetrics chips -->
+            <view wx:if="{{!item.verdict.viz && item.verdict.keyMetrics && item.verdict.keyMetrics.length}}" class="verdict-metrics">
               <text wx:for="{{item.verdict.keyMetrics}}" wx:for-item="km" wx:key="*this" class="verdict-metric">{{km}}</text>
             </view>
-            <view class="verdict-dims">
+            <view wx:if="{{!item.verdict.viz && item.verdict.dims.length}}" class="verdict-dims">
               <view wx:for="{{item.verdict.dims}}" wx:for-item="dim" wx:key="key" class="verdict-dim verdict-dim-{{dim.pass ? 'pass' : 'fail'}}">
                 <text class="verdict-dim-label">{{dim.label}}</text>
                 <text wx:if="{{dim.weight !== null}}" class="verdict-dim-weight">{{dim.weight}}%</text>
                 <text class="verdict-dim-note">{{dim.note}}</text>
               </view>
             </view>
+
             <view wx:if="{{item.verdict.topConcerns && item.verdict.topConcerns.length}}" class="verdict-concerns">
               <text class="verdict-concerns-label">⚠️ 重点关注</text>
               <text wx:for="{{item.verdict.topConcerns}}" wx:for-item="c" wx:key="*this" class="verdict-concern">{{c}}</text>

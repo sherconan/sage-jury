@@ -89,17 +89,83 @@
           <view class="jury-result-avatar" style="background:{{sageStates[slug].color}}">{{sageStates[slug].initials}}</view>
           <view class="jury-result-name">{{sageStates[slug].display}}</view>
           <view wx:if="{{sageStates[slug].error}}" class="jury-result-badge jury-result-badge-err">异常</view>
-          <view wx:elif="{{sageStates[slug].done}}" class="jury-result-badge jury-result-badge-done">已对线 ✓</view>
+          <view wx:elif="{{sageStates[slug].done}}" class="jury-result-badge jury-result-badge-done">已审 ✓</view>
           <view wx:elif="{{sageStates[slug].writerStarted}}" class="jury-result-badge jury-result-badge-writing">落笔中…</view>
-          <view wx:else class="jury-result-badge jury-result-badge-running">分析中⟳</view>
+          <view wx:else class="jury-result-badge jury-result-badge-running">分析中 ⟳</view>
         </view>
 
+        <!-- 识别股票 + 数据深度（facts，若 server 路由到 jury 则显示） -->
+        <view wx:if="{{sageStates[slug].facts && sageStates[slug].facts.hasTicker}}" class="jury-facts">
+          <text class="jury-facts-name">{{sageStates[slug].facts.name}}</text>
+          <text wx:if="{{sageStates[slug].facts.code}}" class="jury-facts-code">{{sageStates[slug].facts.code}}</text>
+          <text wx:if="{{sageStates[slug].facts.market}}" class="jury-facts-market">{{sageStates[slug].facts.market}}</text>
+          <text wx:if="{{sageStates[slug].facts.v62 && sageStates[slug].facts.years}}" class="jury-facts-depth">· {{sageStates[slug].facts.years}} 年深度</text>
+        </view>
+
+        <!-- 判决横幅（语义色 signal + headline + 置信度） -->
+        <view wx:if="{{sageStates[slug].verdict}}" class="jury-verdict jury-verdict-{{sageStates[slug].verdict.tone}}">
+          <view class="jury-vd-signal jury-vd-signal-{{sageStates[slug].verdict.tone}}">{{sageStates[slug].verdict.signal}}</view>
+          <view class="jury-vd-headline">{{sageStates[slug].verdict.headline || '5 维加权评分'}}</view>
+          <text wx:if="{{sageStates[slug].verdict.confidence !== null}}" class="jury-vd-conf">{{sageStates[slug].verdict.confidence}}%</text>
+        </view>
+
+        <!-- 紧凑版可视化（若有 verdict.viz） -->
+        <view wx:if="{{sageStates[slug].verdict.viz && sageStates[slug].verdict.viz.hasValuation}}" class="viz-sec">
+          <view class="viz-h"><text class="viz-bar"></text><text class="viz-ti">估值体检</text><text class="viz-sub">现在贵不贵</text></view>
+          <view wx:if="{{sageStates[slug].verdict.viz.pe}}" class="vz-gauge">
+            <view class="vz-g-top">
+              <text class="vz-g-lab">PE-TTM</text>
+              <text class="vz-g-val">{{sageStates[slug].verdict.viz.pe.val}}</text>
+              <text class="vz-g-unit">倍</text>
+              <text class="vz-g-tag vz-tag-{{sageStates[slug].verdict.viz.pe.tagTone}}">{{sageStates[slug].verdict.viz.pe.tag}}</text>
+            </view>
+            <view class="vz-scale"><view class="vz-mk" style="left:{{sageStates[slug].verdict.viz.pe.markerPct}}%"></view></view>
+            <view class="vz-scale-x"><text>便宜 8×</text><text>合理 20×</text><text>贵 50×+</text></view>
+          </view>
+          <view wx:if="{{sageStates[slug].verdict.viz.div}}" class="vz-cmp">
+            <view class="vz-cmp-row"><text class="vz-cmp-lab">股息率</text><view class="vz-track"><view class="vz-fill vz-gd" style="width:{{sageStates[slug].verdict.viz.div.pct}}%"><text class="vz-fill-t">{{sageStates[slug].verdict.viz.div.val}}%</text></view></view></view>
+            <view class="vz-cmp-row"><text class="vz-cmp-lab">10Y 国债</text><view class="vz-track"><view class="vz-fill vz-nt" style="width:{{sageStates[slug].verdict.viz.div.bondPct}}%"><text class="vz-fill-t">{{sageStates[slug].verdict.viz.div.bond}}%</text></view></view></view>
+            <view wx:if="{{sageStates[slug].verdict.viz.div.beats}}" class="vz-cmp-note">✓ 股息 {{sageStates[slug].verdict.viz.div.val}}% ＞ 国债 {{sageStates[slug].verdict.viz.div.bond}}%（利差 +{{sageStates[slug].verdict.viz.div.diff}}pct）</view>
+          </view>
+          <view wx:if="{{sageStates[slug].verdict.viz.ey || sageStates[slug].verdict.viz.pb}}" class="vz-cmp vz-cmp-last">
+            <view wx:if="{{sageStates[slug].verdict.viz.ey}}" class="vz-cmp-row"><text class="vz-cmp-lab">盈利收益率</text><view class="vz-track"><view class="vz-fill vz-gd" style="width:{{sageStates[slug].verdict.viz.ey.pct}}%"><text class="vz-fill-t">EY {{sageStates[slug].verdict.viz.ey.val}}%</text></view></view></view>
+            <view wx:if="{{sageStates[slug].verdict.viz.pb}}" class="vz-cmp-row"><text class="vz-cmp-lab">PB</text><view class="vz-track"><view class="vz-fill vz-nt" style="width:{{sageStates[slug].verdict.viz.pb.pct}}%"><text class="vz-fill-t">{{sageStates[slug].verdict.viz.pb.val}}×</text></view></view></view>
+          </view>
+        </view>
+
+        <view wx:if="{{sageStates[slug].verdict.viz && sageStates[slug].verdict.viz.hasGrowth}}" class="viz-sec">
+          <view class="viz-h"><text class="viz-bar viz-bar-gn"></text><text class="viz-ti">成长 & 质地</text><text class="viz-sub">生意好不好</text></view>
+          <view class="vz-tiles">
+            <view wx:if="{{sageStates[slug].verdict.viz.revC}}" class="vz-tile"><text class="vz-tl">营收 5年 CAGR</text><view class="vz-tv {{sageStates[slug].verdict.viz.revC.up ? 'vz-up' : 'vz-dn'}}">{{sageStates[slug].verdict.viz.revC.up ? '+' : ''}}{{sageStates[slug].verdict.viz.revC.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-gn" style="width:{{sageStates[slug].verdict.viz.revC.pct}}%"></view></view></view>
+            <view wx:if="{{sageStates[slug].verdict.viz.npC}}" class="vz-tile"><text class="vz-tl">净利 5年 CAGR</text><view class="vz-tv {{sageStates[slug].verdict.viz.npC.up ? 'vz-up' : 'vz-dn'}}">{{sageStates[slug].verdict.viz.npC.up ? '+' : ''}}{{sageStates[slug].verdict.viz.npC.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-gn" style="width:{{sageStates[slug].verdict.viz.npC.pct}}%"></view></view></view>
+            <view wx:if="{{sageStates[slug].verdict.viz.roe}}" class="vz-tile"><text class="vz-tl">ROE 5年均</text><view class="vz-tv">{{sageStates[slug].verdict.viz.roe.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-bl" style="width:{{sageStates[slug].verdict.viz.roe.pct}}%"></view></view></view>
+            <view wx:if="{{sageStates[slug].verdict.viz.gm}}" class="vz-tile"><text class="vz-tl">销售毛利率</text><view class="vz-tv">{{sageStates[slug].verdict.viz.gm.val}}<text class="vz-tu">%</text></view><view class="vz-tbar"><view class="vz-tbar-i vz-bg-bl" style="width:{{sageStates[slug].verdict.viz.gm.pct}}%"></view></view></view>
+          </view>
+        </view>
+
+        <view wx:if="{{sageStates[slug].verdict.dims && sageStates[slug].verdict.dims.length}}" class="viz-sec viz-sec-last">
+          <view class="viz-h"><text class="viz-bar viz-bar-mg"></text><text class="viz-ti">五维体检</text><text class="viz-sub">{{sageStates[slug].verdict.dimsPassText}}</text></view>
+          <view wx:for="{{sageStates[slug].verdict.dims}}" wx:for-item="dim" wx:key="key" class="vz-dim">
+            <view class="vz-dot vz-dot-{{dim.pass ? 'p' : 'f'}}"></view>
+            <view class="vz-dc">
+              <view class="vz-dim-top">
+                <text class="vz-dim-lab">{{dim.label}}</text>
+                <view class="vz-dim-track"><view class="vz-dim-i {{dim.pass ? '' : 'vz-dim-i-f'}}" style="width:{{dim.barPct}}%"></view></view>
+                <text wx:if="{{dim.weight !== null}}" class="vz-dim-w">{{dim.weight}}%</text>
+              </view>
+              <view class="vz-dim-note">{{dim.note}}</view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 工具调用 pills -->
         <view wx:if="{{sageStates[slug].toolCalls && sageStates[slug].toolCalls.length}}" class="jury-result-tools">
           <text wx:for="{{sageStates[slug].toolCalls}}" wx:for-item="tc" wx:key="id" class="jury-tool-pill">
-            {{tc.icon}} {{tc.label}}{{tc.result ? ' ✓' : '⟳'}}
+            {{tc.icon}} {{tc.label}}{{tc.result ? ' ✓' : ' ⟳'}}
           </text>
         </view>
 
+        <!-- 答案正文 / 错误态 / 加载态 -->
         <view wx:if="{{sageStates[slug].error}}" class="jury-result-error">
           ⚠️ {{sageStates[slug].error}}
         </view>

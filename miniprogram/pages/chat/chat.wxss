@@ -815,24 +815,26 @@ page { height: 100%; }
 .analyzing-step { font-family: ui-monospace, monospace; }
 @keyframes analyzing-spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 
-/* ============ v62-mp.1: facts 卡（已识别股票 + 数据深度） ============ */
-.facts-card {
-  display: flex; align-items: center; gap: 10rpx;
-  padding: 12rpx 18rpx; margin-bottom: 14rpx;
-  background: #f1f5f9; border-radius: 12rpx;
-  font-size: 24rpx; color: #475569; flex-wrap: wrap;
+/* ============ v63-mp: ticker 条（深色名片，替代旧 facts-card） ============ */
+.tk-strip {
+  display: flex; align-items: center; gap: 14rpx;
+  padding: 16rpx 22rpx; margin-bottom: 14rpx;
+  background: linear-gradient(135deg, #0f2540 0%, #23456e 100%);
+  border-radius: 16rpx;
+  box-shadow: 0 6rpx 20rpx rgba(15,37,64,0.18);
 }
-.facts-emoji { font-size: 24rpx; }
-.facts-name { font-weight: 700; color: #0f172a; font-size: 26rpx; }
-.facts-code {
-  font-family: ui-monospace, monospace; font-size: 22rpx; color: #64748b;
-  background: #fff; padding: 2rpx 10rpx; border-radius: 6rpx;
+.tk-nm { font-size: 30rpx; font-weight: 800; color: #fff; letter-spacing: .5rpx; }
+.tk-cd {
+  font-family: ui-monospace, monospace; font-size: 22rpx; color: #b9c8db;
 }
-.facts-market {
-  font-size: 20rpx; color: #fff; background: #3b82f6;
-  padding: 2rpx 10rpx; border-radius: 6rpx; font-weight: 600;
+.tk-mkt {
+  font-size: 20rpx; font-weight: 700; color: #0f2540; background: #7fd4ff;
+  padding: 2rpx 12rpx; border-radius: 8rpx;
 }
-.facts-depth { font-size: 22rpx; color: #047857; font-weight: 500; }
+.tk-depth {
+  margin-left: auto; font-size: 20rpx; color: #9fb3cc;
+  background: rgba(255,255,255,0.08); padding: 5rpx 14rpx; border-radius: 12rpx;
+}
 
 /* ============ v62-mp.1: verdict 卡（核心评分结论 + 维度 chips） ============ */
 .verdict-card {
@@ -862,10 +864,44 @@ page { height: 100%; }
 .verdict-headline {
   flex: 1; font-size: 26rpx; font-weight: 600; color: #0f172a; line-height: 1.4;
 }
-.verdict-confidence {
-  font-family: ui-monospace, monospace; font-size: 22rpx; color: #475569;
-  background: #fff; padding: 4rpx 12rpx; border-radius: 6rpx; flex-shrink: 0;
+/* v63-mp: 置信度环 — 两半圆 rotate 进度环（纯 transform，真机稳，无 conic-gradient；替代旧 .verdict-confidence 文字 chip）
+   结构：56rpx 外环（track 灰底）→ 左右两半 clip 容器，各含一个 50% 填充扇叶（fill）顺时针填充。
+   旋转角 confDegR/confDegL 在 api.js decorateVerdict 预算好（已经 /tmp 视觉验证），wxml 仅内联绑定。
+   中心 56-2*6=44rpx 白心盖出 6rpx 环宽，显 confPct 数字；环色随 tone。 */
+.vz-ring {
+  position: relative; width: 56rpx; height: 56rpx; border-radius: 50%;
+  flex-shrink: 0; background: #e6ebf2;
 }
+.vz-ring-half {
+  position: absolute; top: 0; width: 28rpx; height: 56rpx; overflow: hidden;
+}
+.vz-ring-l { left: 0; }
+.vz-ring-r { right: 0; }
+/* 扇叶：宽 56rpx 圆盘的一半，放进 28rpx 的 clip 容器里只露半边；以容器贴心一侧为轴旋转 */
+.vz-ring-fill {
+  position: absolute; top: 0; width: 28rpx; height: 56rpx;
+  background: #94a3b8;
+}
+.vz-ring-r .vz-ring-fill {
+  left: 0; border-radius: 0 28rpx 28rpx 0;
+  transform-origin: left center;
+}
+.vz-ring-l .vz-ring-fill {
+  right: 0; border-radius: 28rpx 0 0 28rpx;
+  transform-origin: right center;
+}
+/* 环色随 tone（hold→暖橙，与 PE/横幅语义一致；preview donut 即 warn 橙） */
+.vz-ring-bull .vz-ring-fill { background: #0ea371; }
+.vz-ring-hold .vz-ring-fill { background: #e0922f; }
+.vz-ring-bear .vz-ring-fill { background: #e5484d; }
+.vz-ring-pass .vz-ring-fill { background: #94a3b8; }
+.vz-ring-core {
+  position: absolute; top: 6rpx; left: 6rpx; width: 44rpx; height: 44rpx;
+  border-radius: 50%; background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 0 0 1rpx rgba(15,37,64,0.04);
+}
+.vz-ring-num { font-size: 22rpx; font-weight: 800; color: #0f2540; }
 .verdict-arrow {
   font-size: 26rpx; color: #475569;
   transition: transform 0.2s; display: inline-block; flex-shrink: 0;
@@ -924,3 +960,69 @@ page { height: 100%; }
 }
 .data-errors-emoji { font-size: 22rpx; }
 .data-errors-text { flex: 1; }
+
+/* ============ v63-mp 数据驱动可视化 verdict ============ */
+.viz-sec { padding: 22rpx 4rpx 20rpx; border-bottom: 1rpx solid #eef2f7; }
+.viz-sec-last { border-bottom: none; padding-bottom: 4rpx; }
+.viz-h { display: flex; align-items: center; gap: 10rpx; margin-bottom: 20rpx; }
+.viz-bar { width: 6rpx; height: 24rpx; border-radius: 3rpx; background: #2563eb; }
+.viz-bar-gn { background: #0ea371; }
+.viz-bar-mg { background: #831843; }
+.viz-ti { font-size: 25rpx; font-weight: 800; color: #0f2540; letter-spacing: .5rpx; }
+.viz-sub { margin-left: auto; font-size: 20rpx; color: #90a0b3; }
+
+/* PE 刻度条 */
+.vz-gauge { margin-bottom: 28rpx; }
+.vz-g-top { display: flex; align-items: baseline; gap: 10rpx; margin-bottom: 14rpx; }
+.vz-g-lab { font-size: 24rpx; font-weight: 600; color: #5a6b80; }
+.vz-g-val { font-size: 34rpx; font-weight: 800; color: #0f2540; }
+.vz-g-unit { font-size: 22rpx; color: #90a0b3; }
+.vz-g-tag { margin-left: auto; font-size: 20rpx; font-weight: 700; padding: 4rpx 12rpx; border-radius: 8rpx; }
+.vz-tag-good { background: #e6f7f0; color: #0a7d56; }
+.vz-tag-warn { background: #fdf3e3; color: #b8741c; }
+.vz-tag-bad { background: #fde9e9; color: #c93b40; }
+.vz-scale { position: relative; height: 16rpx; border-radius: 10rpx;
+  background: linear-gradient(90deg, #0ea371 0%, #7bc96f 28%, #f5d472 55%, #e0922f 78%, #e5484d 100%); }
+.vz-mk { position: absolute; top: -8rpx; width: 8rpx; height: 32rpx; border-radius: 6rpx;
+  background: #0f2540; box-shadow: 0 0 0 4rpx #fff; transform: translateX(-50%); }
+.vz-scale-x { display: flex; justify-content: space-between; margin-top: 10rpx; font-size: 18rpx; color: #90a0b3; }
+
+/* 对比条（股息 vs 国债 / EY / PB） */
+.vz-cmp { margin-bottom: 22rpx; }
+.vz-cmp-last { margin-bottom: 0; }
+.vz-cmp-row { display: flex; align-items: center; gap: 14rpx; margin-bottom: 12rpx; }
+.vz-cmp-lab { width: 140rpx; font-size: 22rpx; color: #5a6b80; flex: 0 0 auto; }
+.vz-track { flex: 1; height: 34rpx; background: #eef2f7; border-radius: 9rpx; overflow: hidden; }
+.vz-fill { height: 100%; border-radius: 9rpx; display: flex; align-items: center; justify-content: flex-end; min-width: 60rpx; }
+.vz-fill-t { font-size: 20rpx; font-weight: 700; color: #fff; padding-right: 12rpx; }
+.vz-gd { background: linear-gradient(90deg, #0ea371, #13b87f); }
+.vz-nt { background: linear-gradient(90deg, #94a3b8, #aab6c6); }
+.vz-cmp-note { font-size: 21rpx; color: #0a7d56; font-weight: 600; margin-top: 4rpx; line-height: 1.5; }
+
+/* 指标小卡 */
+.vz-tiles { display: flex; flex-wrap: wrap; gap: 16rpx; }
+.vz-tile { width: calc(50% - 8rpx); background: #f8fafc; border: 1rpx solid #e6ebf2; border-radius: 16rpx; padding: 18rpx 18rpx; box-sizing: border-box; }
+.vz-tl { font-size: 20rpx; color: #90a0b3; display: block; margin-bottom: 10rpx; }
+.vz-tv { font-size: 36rpx; font-weight: 800; color: #0f2540; line-height: 1; }
+.vz-tu { font-size: 22rpx; color: #90a0b3; font-weight: 600; }
+.vz-up { color: #0ea371; }
+.vz-dn { color: #e5484d; }
+.vz-tbar { height: 10rpx; border-radius: 5rpx; background: #eef2f7; margin-top: 14rpx; overflow: hidden; }
+.vz-tbar-i { display: block; height: 100%; border-radius: 5rpx; }
+.vz-bg-gn { background: #0ea371; }
+.vz-bg-bl { background: #2563eb; }
+
+/* 五维评分行 */
+.vz-dim { display: flex; align-items: flex-start; gap: 16rpx; padding: 18rpx 0; border-bottom: 1rpx dashed #e6ebf2; }
+.vz-dim:last-child { border-bottom: none; padding-bottom: 0; }
+.vz-dot { width: 16rpx; height: 16rpx; border-radius: 50%; margin-top: 8rpx; flex: 0 0 auto; }
+.vz-dot-p { background: #0ea371; box-shadow: 0 0 0 6rpx #e6f7f0; }
+.vz-dot-f { background: #e5484d; box-shadow: 0 0 0 6rpx #fde9e9; }
+.vz-dc { flex: 1; }
+.vz-dim-top { display: flex; align-items: center; gap: 14rpx; margin-bottom: 10rpx; }
+.vz-dim-lab { font-size: 24rpx; font-weight: 700; color: #0f2540; flex: 0 0 auto; }
+.vz-dim-track { flex: 1; height: 10rpx; background: #eef2f7; border-radius: 5rpx; overflow: hidden; }
+.vz-dim-i { display: block; height: 100%; background: #0ea371; border-radius: 5rpx; }
+.vz-dim-i-f { background: #e5484d; }
+.vz-dim-w { font-size: 19rpx; color: #90a0b3; flex: 0 0 auto; }
+.vz-dim-note { font-size: 22rpx; color: #5a6b80; line-height: 1.55; }

@@ -3,432 +3,1194 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sage Chat 小程序 v60.5 · Preview</title>
+<title>交易对线 · 小程序 UI 真机镜像 v1.0-mp</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: #1a1a1a; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1e293b; }
-  body { padding: 40px 20px; }
-  h1 { color: #fff; text-align: center; margin-bottom: 8px; font-size: 28px; }
-  .subtitle { color: #94a3b8; text-align: center; margin-bottom: 32px; font-size: 14px; }
-  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 380px)); gap: 24px; justify-content: center; max-width: 1400px; margin: 0 auto; }
-  .phone {
-    background: #000;
-    border-radius: 38px;
-    padding: 12px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.4), 0 0 0 1px #333;
-    position: relative;
-  }
-  .phone::before {
-    content: '';
-    position: absolute;
-    top: 16px; left: 50%; transform: translateX(-50%);
-    width: 120px; height: 24px;
-    background: #000;
-    border-radius: 0 0 20px 20px;
-    z-index: 10;
-  }
-  .screen {
-    background: #f8fafc;
-    border-radius: 28px;
-    overflow: hidden;
-    height: 720px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
-  }
-  .phone-label {
-    color: #94a3b8;
-    text-align: center;
-    margin-top: 16px;
-    font-size: 13px;
-    font-weight: 500;
+  /* ============================================================
+     交易对线 jiaoyi-duixian — H5 真机镜像（v1.0-mp）
+     1:1 复刻当前小程序 chat / jury / sessions 三页最终 UI。
+     rpx → px 换算：750rpx = 375px 设计宽，比例 0.5（1rpx = 0.5px）。
+     所有色值 / 间距 / 圆角 / 阴影直接取自 chat.wxss / jury.wxss / sessions.wxss。
+     仅静态镜像，无逻辑；示例数值真实合理并标注「预览」。
+     ============================================================ */
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+  html,body{height:100%;}
+  body{
+    background:radial-gradient(1200px 700px at 50% -10%, #1b2433 0%, #0c111b 55%, #080b12 100%);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",system-ui,sans-serif;
+    color:#e7edf5;
+    padding:48px 24px 80px;
+    min-height:100%;
   }
 
-  /* ============ Header ============ */
-  .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 50px 16px 12px;
-    background: #fff;
-    border-bottom: 1px solid #e2e8f0;
+  /* ---------- 页头 ---------- */
+  .pagehead{max-width:1320px;margin:0 auto 44px;text-align:center;}
+  .ph-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:1.5px;
+    color:#7fd4ff;background:rgba(127,212,255,.1);border:1px solid rgba(127,212,255,.22);
+    padding:6px 16px;border-radius:999px;text-transform:uppercase;}
+  .ph-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.2);}
+  .ph-title{font-size:42px;font-weight:800;letter-spacing:.5px;margin:22px 0 10px;
+    background:linear-gradient(120deg,#fff 0%,#bcd4ff 60%,#7fd4ff 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  .ph-sub{font-size:16px;color:#9fb0c6;line-height:1.7;max-width:760px;margin:0 auto;}
+  .ph-sub b{color:#d7e3f4;font-weight:600;}
+  .ph-tags{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px;}
+  .ph-tag{font-size:12.5px;color:#aebfd4;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+    padding:7px 15px;border-radius:10px;}
+  .ph-tag b{color:#7fd4ff;font-weight:700;}
+
+  /* ---------- 画廊（masonry：列布局，让不等高的手机框紧凑回流，避免大块空白） ---------- */
+  .gallery{column-width:412px;column-gap:38px;max-width:1320px;margin:0 auto;}
+  .frame{display:inline-flex;flex-direction:column;align-items:center;gap:16px;width:100%;
+    margin-bottom:44px;break-inside:avoid;-webkit-column-break-inside:avoid;}
+  .frame-cap{text-align:center;max-width:392px;}
+  .fc-no{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;
+    background:#7fd4ff;color:#0c111b;font-size:13px;font-weight:800;margin-right:8px;}
+  .fc-ti{font-size:17px;font-weight:700;color:#eef4fb;letter-spacing:.3px;}
+  .fc-de{font-size:13px;color:#8696ad;margin-top:7px;line-height:1.6;}
+
+  /* 手机外框（iPhone 风，与 redesign-preview 一致的厚边 + 大圆角） */
+  .phone{width:390px;background:#f8fafc;border-radius:46px;overflow:hidden;
+    box-shadow:0 34px 90px rgba(8,11,18,.6), 0 6px 18px rgba(0,0,0,.4);
+    border:11px solid #0d1420;position:relative;}
+  /* 镜像画廊：手机框随内容自然增高（不裁切），保证离线验收能一眼看全长卡。
+     min-height 给短页(空态/列表)一个真机比例的下限，长页(完整答案卡)自然撑开。 */
+  .scr{min-height:838px;position:relative;display:flex;flex-direction:column;background:#f8fafc;}
+  /* 状态栏（模拟 iOS） */
+  .statusbar{height:42px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+    padding:0 28px;font-size:14px;font-weight:600;color:#0f172a;background:#fff;padding-top:6px;}
+  .sb-dots{display:flex;align-items:center;gap:6px;font-size:13px;letter-spacing:1px;}
+  .sb-bat{width:24px;height:12px;border:1.5px solid #0f172a;border-radius:3px;position:relative;display:inline-block;}
+  .sb-bat::after{content:"";position:absolute;right:-3px;top:3px;width:2px;height:6px;background:#0f172a;border-radius:0 1px 1px 0;}
+  .sb-bat::before{content:"";position:absolute;left:1px;top:1px;bottom:1px;width:70%;background:#0f172a;border-radius:1px;}
+
+  /* ============================================================
+     以下样式 1:1 取自 chat.wxss（rpx 数值 ÷2 = px）
+     ============================================================ */
+  /* HEADER */
+  .c-header{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#fff;
+    border-bottom:.5px solid #e2e8f0;min-height:48px;flex:0 0 auto;z-index:10;}
+  .c-header-left{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;overflow:hidden;}
+  .c-header-text{flex:1 1 auto;min-width:0;overflow:hidden;}
+  .c-header-title{font-size:15px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .c-header-sub{font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .c-header-arrow{font-size:10px;color:#94a3b8;margin-left:4px;flex-shrink:0;}
+  .c-header-right{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+  .hdr-chip{display:inline-flex;align-items:center;gap:2px;padding:4px 9px;
+    background:linear-gradient(135deg,#1e40af 0%,#3b82f6 100%);border-radius:999px;
+    box-shadow:0 1px 4px rgba(59,130,246,.3);height:26px;}
+  .hdr-chip-emoji{font-size:11px;line-height:1;}
+  .hdr-chip-label{font-size:11px;font-weight:600;color:#fff;letter-spacing:.5px;}
+  .hdr-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;
+    background:#f1f5f9;border-radius:7px;flex-shrink:0;}
+  .hdr-icon-glyph{font-size:16px;color:#475569;font-weight:500;line-height:1;}
+  .hdr-icon-history{font-size:18px;}
+
+  .sage-avatar{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:bold;font-size:10px;font-family:ui-monospace,monospace;flex-shrink:0;}
+
+  /* MESSAGES 区域 */
+  .c-messages{flex:1 0 auto;overflow:visible;padding:16px 12px;background:linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%);}
+
+  /* 空态 onboarding */
+  .empty{text-align:center;padding:40px 16px 30px;}
+  .empty-avatar-wrap{position:relative;width:72px;height:72px;margin:0 auto;}
+  .empty-avatar{width:72px;height:72px;border-radius:18px;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:19px;font-family:ui-monospace,monospace;
+    box-shadow:0 6px 18px rgba(0,0,0,.14),0 2px 6px rgba(0,0,0,.06);position:relative;z-index:1;}
+  .empty-avatar-pulse{position:absolute;inset:0;width:72px;height:72px;border-radius:18px;opacity:.32;
+    animation:empty-pulse 2.4s ease-out infinite;}
+  @keyframes empty-pulse{0%{transform:scale(1);opacity:.36;}70%{transform:scale(1.45);opacity:0;}100%{transform:scale(1.45);opacity:0;}}
+  .empty-title{font-size:20px;font-weight:700;color:#0f172a;margin-top:18px;letter-spacing:.5px;}
+  .empty-subtitle{font-size:13px;color:#475569;margin-top:7px;}
+  .empty-meta{font-size:11px;color:#94a3b8;margin-top:5px;}
+  .empty-meta-num{color:#1e293b;font-weight:600;}
+  .sage-row-label,.starters-label{margin-top:28px;font-size:11px;color:#94a3b8;text-align:center;letter-spacing:3px;}
+  .starters-label{margin-top:20px;}
+  .sage-row{display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap;}
+  .sage-row-card{position:relative;display:flex;flex-direction:column;align-items:center;padding:10px 8px;
+    border:1px solid #e2e8f0;border-radius:10px;background:#fff;min-width:70px;}
+  .sage-row-card.active{border-color:#3b82f6;background:#eff6ff;box-shadow:0 4px 12px rgba(59,130,246,.18);transform:translateY(-1px);}
+  .sage-row-avatar{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:11px;font-family:ui-monospace,monospace;box-shadow:0 2px 5px rgba(0,0,0,.08);}
+  .sage-row-name{font-size:12px;color:#475569;margin-top:6px;font-weight:500;}
+  .sage-row-card.active .sage-row-name{color:#1d4ed8;font-weight:600;}
+  .sage-row-check{position:absolute;top:4px;right:5px;font-size:9px;color:#3b82f6;font-weight:700;}
+  .starters{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:10px;padding:0 16px;}
+  .starter-chip{padding:7px 14px;background:#fff;border:.5px solid #e2e8f0;border-radius:999px;font-size:13px;
+    color:#475569;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+
+  /* 消息行 */
+  .msg-row{display:flex;gap:8px;margin-bottom:16px;}
+  .msg-user{flex-direction:row-reverse;}
+  .msg-avatar{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:bold;font-size:11px;flex-shrink:0;}
+  .avatar-user{background:#0f172a;}
+  .msg-bubble{max-width:78%;padding:12px 14px;border-radius:12px;font-size:14px;line-height:1.7;box-shadow:0 .5px 1.5px rgba(0,0,0,.05);}
+  .bubble-user{background:#0f172a;color:#fff;}
+  .bubble-sage{background:#fff;border:.5px solid #e2e8f0;color:#1e293b;}
+  .msg-user .msg-bubble{max-width:80%;}
+
+  /* analyzing 徽章（绿色渐变） */
+  .analyzing-card{margin-bottom:7px;background:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 100%);
+    border-left:2px solid #10b981;border-radius:7px;overflow:hidden;}
+  .analyzing-summary{display:flex;align-items:center;gap:5px;padding:7px 9px;}
+  .analyzing-emoji{font-size:13px;}
+  .analyzing-title{flex:1;font-size:12px;color:#065f46;font-weight:600;}
+  .analyzing-spin{font-size:11px;color:#10b981;display:inline-block;animation:spin 1.1s linear infinite;}
+  .analyzing-check{font-size:11px;color:#10b981;font-weight:700;}
+  .analyzing-arrow{font-size:11px;color:#047857;display:inline-block;}
+  .analyzing-arrow.open{transform:rotate(180deg);}
+  .analyzing-body{padding:5px 9px 7px;font-size:11px;color:#065f46;border-top:.5px dashed rgba(16,185,129,.3);}
+  .analyzing-step{font-family:ui-monospace,monospace;}
+
+  /* ticker 条（深色名片） */
+  .tk-strip{display:flex;align-items:center;gap:7px;padding:8px 11px;margin-bottom:7px;
+    background:linear-gradient(135deg,#0f2540 0%,#23456e 100%);border-radius:8px;box-shadow:0 3px 10px rgba(15,37,64,.18);}
+  .tk-nm{font-size:15px;font-weight:800;color:#fff;letter-spacing:.25px;}
+  .tk-cd{font-family:ui-monospace,monospace;font-size:11px;color:#b9c8db;}
+  .tk-mkt{font-size:10px;font-weight:700;color:#0f2540;background:#7fd4ff;padding:1px 6px;border-radius:4px;}
+  .tk-depth{margin-left:auto;font-size:10px;color:#9fb3cc;background:rgba(255,255,255,.08);padding:2.5px 7px;border-radius:6px;}
+
+  /* verdict 卡 */
+  .verdict-card{margin-bottom:7px;border-radius:8px;overflow:hidden;border:.5px solid transparent;}
+  .verdict-bull{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-color:#86efac;}
+  .verdict-hold{background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%);border-color:#cbd5e1;}
+  .verdict-bear{background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);border-color:#fca5a5;}
+  .verdict-pass{background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);border-color:#fde047;}
+  .verdict-summary{display:flex;align-items:center;gap:7px;padding:9px 10px;}
+  .verdict-signal{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;color:#fff;flex-shrink:0;letter-spacing:.5px;}
+  .verdict-signal-bull{background:#10b981;}
+  .verdict-signal-hold{background:#64748b;}
+  .verdict-signal-bear{background:#ef4444;}
+  .verdict-signal-pass{background:#d97706;}
+  .verdict-headline{flex:1;font-size:13px;font-weight:600;color:#0f172a;line-height:1.4;}
+  /* 置信度环（两半圆 rotate，与真机同算法：deg=pct*3.6，confDegR=180-min(deg,180)，confDegL=deg>180?(360-deg):180） */
+  .vz-ring{position:relative;width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#e6ebf2;}
+  .vz-ring-half{position:absolute;top:0;width:14px;height:28px;overflow:hidden;}
+  .vz-ring-l{left:0;}.vz-ring-r{right:0;}
+  .vz-ring-fill{position:absolute;top:0;width:14px;height:28px;background:#94a3b8;}
+  .vz-ring-r .vz-ring-fill{left:0;border-radius:0 14px 14px 0;transform-origin:left center;}
+  .vz-ring-l .vz-ring-fill{right:0;border-radius:14px 0 0 14px;transform-origin:right center;}
+  .vz-ring-bull .vz-ring-fill{background:#0ea371;}
+  .vz-ring-hold .vz-ring-fill{background:#e0922f;}
+  .vz-ring-bear .vz-ring-fill{background:#e5484d;}
+  .vz-ring-pass .vz-ring-fill{background:#94a3b8;}
+  .vz-ring-core{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;
+    display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 .5px rgba(15,37,64,.04);}
+  .vz-ring-num{font-size:11px;font-weight:800;color:#0f2540;}
+  .verdict-arrow{font-size:13px;color:#475569;display:inline-block;flex-shrink:0;}
+  .verdict-arrow.open{transform:rotate(180deg);}
+  .verdict-body{padding:0 10px 9px;border-top:.5px dashed rgba(0,0,0,.08);padding-top:7px;}
+
+  /* viz section */
+  .viz-sec{padding:11px 2px 10px;border-bottom:.5px solid #eef2f7;}
+  .viz-sec-last{border-bottom:none;padding-bottom:2px;}
+  .viz-h{display:flex;align-items:center;gap:5px;margin-bottom:10px;}
+  .viz-bar{width:3px;height:12px;border-radius:1.5px;background:#2563eb;}
+  .viz-bar-gn{background:#0ea371;}
+  .viz-bar-mg{background:#831843;}
+  .viz-ti{font-size:12.5px;font-weight:800;color:#0f2540;letter-spacing:.25px;}
+  .viz-sub{margin-left:auto;font-size:10px;color:#90a0b3;}
+  /* PE 标尺 */
+  .vz-gauge{margin-bottom:14px;}
+  .vz-g-top{display:flex;align-items:baseline;gap:5px;margin-bottom:7px;}
+  .vz-g-lab{font-size:12px;font-weight:600;color:#5a6b80;}
+  .vz-g-val{font-size:17px;font-weight:800;color:#0f2540;}
+  .vz-g-unit{font-size:11px;color:#90a0b3;}
+  .vz-g-tag{margin-left:auto;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;}
+  .vz-tag-good{background:#e6f7f0;color:#0a7d56;}
+  .vz-tag-warn{background:#fdf3e3;color:#b8741c;}
+  .vz-tag-bad{background:#fde9e9;color:#c93b40;}
+  .vz-scale{position:relative;height:8px;border-radius:5px;
+    background:linear-gradient(90deg,#0ea371 0%,#7bc96f 28%,#f5d472 55%,#e0922f 78%,#e5484d 100%);}
+  .vz-mk{position:absolute;top:-4px;width:4px;height:16px;border-radius:3px;background:#0f2540;
+    box-shadow:0 0 0 2px #fff;transform:translateX(-50%);}
+  .vz-scale-x{display:flex;justify-content:space-between;margin-top:5px;font-size:9px;color:#90a0b3;}
+  /* 对比条 */
+  .vz-cmp{margin-bottom:11px;}
+  .vz-cmp-last{margin-bottom:0;}
+  .vz-cmp-row{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+  .vz-cmp-lab{width:70px;font-size:11px;color:#5a6b80;flex:0 0 auto;}
+  .vz-track{flex:1;height:17px;background:#eef2f7;border-radius:4.5px;overflow:hidden;}
+  .vz-fill{height:100%;border-radius:4.5px;display:flex;align-items:center;justify-content:flex-end;min-width:30px;}
+  .vz-fill-t{font-size:10px;font-weight:700;color:#fff;padding-right:6px;}
+  .vz-gd{background:linear-gradient(90deg,#0ea371,#13b87f);}
+  .vz-nt{background:linear-gradient(90deg,#94a3b8,#aab6c6);}
+  .vz-cmp-note{font-size:10.5px;color:#0a7d56;font-weight:600;margin-top:2px;line-height:1.5;}
+  /* 指标小卡 */
+  .vz-tiles{display:flex;flex-wrap:wrap;gap:8px;}
+  .vz-tile{width:calc(50% - 4px);background:#f8fafc;border:.5px solid #e6ebf2;border-radius:8px;padding:9px;}
+  .vz-tl{font-size:10px;color:#90a0b3;display:block;margin-bottom:5px;}
+  .vz-tv{font-size:18px;font-weight:800;color:#0f2540;line-height:1;}
+  .vz-tu{font-size:11px;color:#90a0b3;font-weight:600;}
+  .vz-up{color:#0ea371;}.vz-dn{color:#e5484d;}
+  .vz-tbar{height:5px;border-radius:2.5px;background:#eef2f7;margin-top:7px;overflow:hidden;}
+  .vz-tbar-i{display:block;height:100%;border-radius:2.5px;}
+  .vz-bg-gn{background:#0ea371;}.vz-bg-bl{background:#2563eb;}
+  /* 五维评分行 */
+  .vz-dim{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:.5px dashed #e6ebf2;}
+  .vz-dim:last-child{border-bottom:none;padding-bottom:0;}
+  .vz-dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex:0 0 auto;}
+  .vz-dot-p{background:#0ea371;box-shadow:0 0 0 3px #e6f7f0;}
+  .vz-dot-f{background:#e5484d;box-shadow:0 0 0 3px #fde9e9;}
+  .vz-dc{flex:1;}
+  .vz-dim-top{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+  .vz-dim-lab{font-size:12px;font-weight:700;color:#0f2540;flex:0 0 auto;}
+  .vz-dim-track{flex:1;height:5px;background:#eef2f7;border-radius:2.5px;overflow:hidden;}
+  .vz-dim-i{display:block;height:100%;background:#0ea371;border-radius:2.5px;}
+  .vz-dim-i-f{background:#e5484d;}
+  .vz-dim-w{font-size:9.5px;color:#90a0b3;flex:0 0 auto;}
+  .vz-dim-note{font-size:11px;color:#5a6b80;line-height:1.55;}
+  /* 重点关注 */
+  .verdict-concerns{margin-top:6px;padding:6px 7px;background:rgba(239,68,68,.06);border-radius:5px;}
+  .verdict-concerns-label{display:block;font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:2px;}
+  .verdict-concern{display:block;font-size:11px;color:#7f1d1d;margin-top:2px;}
+
+  /* dataErrors 横条 */
+  .data-errors{display:flex;align-items:center;gap:4px;padding:4px 7px;background:#fef3c7;border-left:1.5px solid #f59e0b;
+    border-radius:4px;margin-bottom:7px;font-size:11px;color:#78350f;}
+  .data-errors-emoji{font-size:11px;}
+
+  /* analyst 内心分析卡（紫色） */
+  .analyst-card{margin-bottom:8px;}
+  .analyst-summary{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;
+    background:#f5f3ff;color:#6d28d9;font-size:11px;}
+  .analyst-emoji{font-size:11px;}.analyst-title{font-weight:500;}
+  .analyst-check{font-size:9px;color:#059669;font-weight:bold;}
+  .analyst-arrow{font-size:11px;color:#a78bfa;margin-left:2px;display:inline-block;}
+  .analyst-arrow.open{transform:rotate(180deg);}
+  .analyst-body{margin-top:6px;padding:9px 11px;background:linear-gradient(135deg,#faf5ff 0%,#ede9fe 100%);
+    border-left:2px solid #a78bfa;border-radius:6px;font-size:12px;color:#5b21b6;line-height:1.65;white-space:pre-wrap;}
+
+  /* tool calls 折叠 pill */
+  .tools-card{margin-bottom:8px;}
+  .tools-summary{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;
+    background:#f1f5f9;color:#475569;font-size:11px;}
+  .tools-emoji{font-size:11px;}.tools-title{font-weight:500;}
+  .tools-check{font-size:9px;color:#059669;font-weight:bold;}
+  .tools-arrow{font-size:11px;color:#94a3b8;margin-left:2px;display:inline-block;}
+  .tools-arrow.open{transform:rotate(180deg);}
+  .tools-list{margin-top:6px;display:flex;flex-direction:column;gap:4px;}
+  .tool-pill{padding:5px 7px;border-radius:6px;background:#f8fafc;border:.5px solid #e2e8f0;font-size:11px;}
+  .tool-pill-head{display:flex;align-items:center;gap:4px;color:#334155;flex-wrap:wrap;}
+  .tool-pill-icon{font-size:11px;}
+  .tool-pill-label{color:#1e293b;font-weight:500;}
+  .tool-pill-args{color:#64748b;font-size:10px;}
+  .tool-pill-check{margin-left:auto;font-size:9px;color:#059669;font-weight:bold;}
+  .tool-pill-result{margin-top:4px;margin-left:15px;padding:5px 7px;background:#f1f5f9;border-radius:4px;
+    font-size:10px;color:#475569;line-height:1.6;white-space:pre-wrap;}
+
+  /* loading text */
+  .loading-text{color:#94a3b8;font-size:13px;}
+
+  /* markdown 正文 */
+  .msg-content{word-wrap:break-word;word-break:break-word;}
+  .md-bold{font-weight:700;}
+  .md-section{display:flex;align-items:center;gap:6px;margin:11px 0 5px;padding-bottom:3px;
+    border-bottom:.5px dashed rgba(59,130,246,.18);}
+  .md-section:first-child{margin-top:2px;}
+  .md-section-bar{width:3px;height:15px;background:linear-gradient(180deg,#3b82f6 0%,#1e40af 100%);border-radius:2px;flex-shrink:0;}
+  .md-section-title{font-size:15px;font-weight:700;color:#1e40af;letter-spacing:.5px;}
+  .md-p{font-size:14px;line-height:1.85;margin:5px 0;color:inherit;letter-spacing:.2px;}
+  .md-p+.md-p{margin-top:7px;}
+  .md-ul,.md-ol{margin:4px 0 4px 4px;display:flex;flex-direction:column;gap:3px;}
+  .md-li{display:flex;gap:6px;align-items:flex-start;line-height:1.7;}
+  .md-bullet{color:#3b82f6;font-weight:700;line-height:1.7;flex-shrink:0;}
+  .md-num{color:#3b82f6;font-weight:600;min-width:18px;line-height:1.7;flex-shrink:0;font-family:ui-monospace,monospace;}
+  .md-li-body{flex:1;min-width:0;}
+  .cite-chip{display:inline-block;background:#dbeafe;color:#1d4ed8;padding:0 6px;border-radius:999px;font-size:11px;
+    font-family:ui-monospace,monospace;margin:0 2px;line-height:1.4;font-weight:500;}
+
+  /* followups */
+  .followups{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .followup-chip{background:#eff6ff;border:.5px solid #bfdbfe;color:#1d4ed8;padding:4px 9px;border-radius:999px;font-size:11px;}
+
+  /* quotes */
+  .quotes{margin-top:12px;padding-top:8px;border-top:.5px solid #e2e8f0;}
+  .quotes-label{font-size:10px;color:#94a3b8;letter-spacing:.5px;margin-bottom:6px;}
+  .quote-item{background:#f0f9ff;border:.5px solid #bae6fd;border-radius:6px;padding:7px 9px;margin-bottom:5px;font-size:11px;}
+  .quote-head{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;}
+  .quote-num{font-weight:700;color:#0c4a6e;background:#bae6fd;border-radius:999px;padding:0 6px;height:16px;line-height:16px;
+    font-size:10px;font-family:ui-monospace,monospace;}
+  .quote-meta{color:#0369a1;font-size:10px;font-family:ui-monospace,monospace;}
+  .quote-text{color:#1e293b;line-height:1.6;}
+  .badge{font-size:9px;padding:1px 6px;border-radius:999px;line-height:1.5;font-weight:500;}
+  .badge-rel-strong{background:#d1fae5;color:#065f46;}
+  .badge-rel-mid{background:#e0f2fe;color:#075985;}
+  .badge-rel-weak{background:#f1f5f9;color:#475569;}
+  .badge-rec-hot{background:#fef3c7;color:#92400e;}
+  .badge-rec-mid{background:#ede9fe;color:#5b21b6;}
+  .badge-rec-old{background:#f1f5f9;color:#64748b;}
+
+  /* 输入区 */
+  .input-bar{display:flex;align-items:center;gap:6px;padding:8px 12px 16px;background:#fff;border-top:.5px solid #e2e8f0;flex:0 0 auto;}
+  .input-wrap{flex:1;position:relative;display:flex;align-items:center;background:#f8fafc;border:.5px solid #e2e8f0;
+    border-radius:16px;padding:4px 11px 4px 14px;min-height:38px;}
+  .input-ph{flex:1;font-size:14px;color:#94a3b8;}
+  .input-counter{font-size:10px;color:#cbd5e1;font-family:ui-monospace,monospace;margin-left:5px;flex-shrink:0;}
+  .send-btn{border-radius:999px;padding:0 18px;height:38px;line-height:38px;color:#fff;font-size:13px;font-weight:600;
+    box-shadow:0 3px 10px rgba(59,130,246,.25);}
+  .send-btn-disabled{opacity:.35;box-shadow:none;}
+
+  /* scroll-to-bottom 浮按钮 */
+  .scroll-bottom-btn{position:absolute;right:16px;bottom:78px;width:40px;height:40px;border-radius:999px;background:#fff;
+    border:.5px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#475569;
+    font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,.12),0 1px 3px rgba(0,0,0,.06);z-index:8;}
+
+  /* ============================================================
+     JURY 页样式（jury.wxss ÷2）
+     ============================================================ */
+  .jury-scr{background:#eef2f7;}
+  .jury-header{display:flex;align-items:center;padding:12px 12px 8px;background:#0f172a;color:#fff;flex:0 0 auto;}
+  .jury-back{font-size:22px;line-height:1;padding:4px 10px 6px 0;color:#fff;}
+  .jury-title{font-size:15px;font-weight:600;letter-spacing:.5px;}
+  .jury-intro{padding:8px 12px 4px;flex:0 0 auto;}
+  .jury-intro-text{font-size:12px;color:#475569;}
+  .jury-sage-row{display:flex;gap:8px;flex-wrap:wrap;padding:6px 12px 2px;flex:0 0 auto;}
+  .jury-sage-card{flex:1 1 140px;min-width:140px;display:flex;align-items:center;gap:7px;padding:8px 9px;background:#fff;
+    border-radius:8px;border:1px solid #e2e8f0;}
+  .jury-sage-on{border-color:#3b82f6;box-shadow:0 2px 7px rgba(59,130,246,.18);}
+  .jury-sage-avatar{width:32px;height:32px;border-radius:8px;color:#fff;font-weight:700;font-size:11px;
+    font-family:ui-monospace,monospace;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .jury-sage-meta{flex:1;min-width:0;}
+  .jury-sage-name{font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .jury-sage-philo{font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .jury-sage-check{width:18px;height:18px;border-radius:999px;background:#f1f5f9;color:transparent;font-size:11px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .jury-sage-check.on{background:#3b82f6;color:#fff;}
+  .jury-input-bar{display:flex;align-items:flex-end;gap:6px;padding:8px 12px 6px;background:#fff;border-top:.5px solid #e2e8f0;
+    margin-top:6px;flex:0 0 auto;}
+  .jury-input{flex:1;min-height:32px;padding:7px 9px;background:#f1f5f9;border-radius:8px;font-size:13px;color:#0f172a;line-height:1.5;}
+  .jury-input-ph{color:#94a3b8;}
+  .jury-send{background:#3b82f6;color:#fff;border-radius:999px;padding:0 16px;height:36px;line-height:36px;font-size:13px;
+    font-weight:600;box-shadow:0 3px 9px rgba(59,130,246,.25);}
+  .jury-results{flex:1 0 auto;padding:8px 12px 16px;overflow:visible;}
+  .jury-result-card{background:#fff;border-radius:9px;padding:9px 10px;margin-bottom:8px;box-shadow:0 1px 5px rgba(15,23,42,.05);}
+  .jury-result-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .jury-result-avatar{width:24px;height:24px;border-radius:6px;color:#fff;font-weight:700;font-size:10px;
+    font-family:ui-monospace,monospace;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .jury-result-name{flex:1;font-size:14px;font-weight:700;color:#0f172a;}
+  .jury-result-badge{font-size:10px;padding:2px 7px;border-radius:999px;font-weight:600;flex-shrink:0;}
+  .jury-result-badge-running{background:#fef3c7;color:#92400e;}
+  .jury-result-badge-writing{background:#dbeafe;color:#1d4ed8;}
+  .jury-result-badge-done{background:#d1fae5;color:#065f46;}
+  .jury-facts{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px 6px;margin-bottom:6px;background:#f1f5f9;border-radius:5px;}
+  .jury-facts-name{font-weight:700;color:#0f172a;font-size:12px;}
+  .jury-facts-code{font-family:ui-monospace,monospace;font-size:10px;color:#64748b;background:#fff;padding:1px 4px;border-radius:3px;}
+  .jury-facts-market{font-size:9px;color:#fff;background:#2563eb;padding:1px 4px;border-radius:3px;font-weight:600;}
+  .jury-facts-depth{font-size:10px;color:#047857;font-weight:500;}
+  .jury-verdict{display:flex;align-items:center;gap:6px;padding:7px 8px;margin-bottom:6px;border-radius:7px;border:.5px solid transparent;}
+  .jury-verdict-bull{background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border-color:#86efac;}
+  .jury-verdict-hold{background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 100%);border-color:#cbd5e1;}
+  .jury-verdict-bear{background:linear-gradient(135deg,#fef2f2 0%,#fee2e2 100%);border-color:#fca5a5;}
+  .jury-verdict-pass{background:linear-gradient(135deg,#fefce8 0%,#fef9c3 100%);border-color:#fde047;}
+  .jury-vd-signal{font-size:10px;font-weight:700;padding:2.5px 7px;border-radius:999px;color:#fff;flex-shrink:0;letter-spacing:.5px;}
+  .jury-vd-signal-bull{background:#10b981;}
+  .jury-vd-signal-hold{background:#64748b;}
+  .jury-vd-signal-bear{background:#ef4444;}
+  .jury-vd-signal-pass{background:#d97706;}
+  .jury-vd-headline{flex:1;font-size:12px;font-weight:600;color:#0f172a;line-height:1.4;}
+  .jury-vd-conf{font-family:ui-monospace,monospace;font-size:10px;color:#475569;background:#fff;padding:2px 5px;border-radius:3px;flex-shrink:0;}
+  .jury-result-tools{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px;}
+  .jury-tool-pill{font-size:10px;padding:2px 6px;background:#f1f5f9;color:#334155;border-radius:4px;}
+  .jury-result-body{font-size:13px;line-height:1.65;color:#1e293b;padding-top:2px;}
+  .jury-result-body .md-p{font-size:13px;line-height:1.85;color:#1e293b;margin:4px 0;}
+  .jury-result-loading{font-size:12px;color:#94a3b8;font-style:italic;}
+  .cite-chip-static{display:inline-block;font-size:10px;padding:1px 4px;background:#dbeafe;color:#1d4ed8;border-radius:3px;
+    font-family:ui-monospace,monospace;}
+  /* jury viz 紧凑覆盖 */
+  .jury-result-card .viz-sec{padding:8px 1px 7px;}
+  .jury-result-card .viz-h{margin-bottom:8px;}
+
+  @keyframes spin{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+
+  /* ============================================================
+     SESSIONS 页样式（sessions.wxss ÷2）
+     ============================================================ */
+  .sess-scr{background:#eef2f7;}
+  .sess-topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#fff;
+    border-bottom:.5px solid #e6ebf2;flex:0 0 auto;}
+  .sess-topbar-title{font-size:16px;font-weight:600;color:#0f2540;}
+  .sess-topbar-count{margin-left:6px;font-size:11px;color:#90a0b3;font-weight:500;background:#eef2f7;padding:1px 8px;border-radius:999px;}
+  .sess-header-btn{font-size:11px;padding:4px 9px;background:#fde9e9;color:#c93b40;border:.5px solid #f7cdcd;border-radius:999px;line-height:1.6;}
+  .sess-search-bar{display:flex;align-items:center;gap:6px;padding:8px 12px;margin:8px 12px 0;background:#fff;
+    border:.5px solid #e6ebf2;border-radius:999px;flex:0 0 auto;}
+  .sess-search-icon{font-size:11px;color:#90a0b3;}
+  .sess-search-input{flex:1;font-size:13px;color:#90a0b3;}
+  .sess-list{flex:1 0 auto;padding:8px 12px 12px;overflow:visible;}
+  .sess-item{display:flex;align-items:flex-start;gap:9px;background:#fff;border:.5px solid #e6ebf2;border-radius:8px;
+    padding:11px;margin-bottom:7px;position:relative;box-shadow:0 2px 8px rgba(15,37,64,.04);}
+  .sess-item-streaming{border-color:#b6d0fb;background:linear-gradient(135deg,#fff 0%,#eaf1ff 100%);box-shadow:0 0 0 1px rgba(37,99,235,.12);}
+  .sess-avatar{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;
+    font-weight:700;font-size:11px;font-family:ui-monospace,monospace;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+  .sess-body{flex:1;min-width:0;overflow:hidden;}
+  .sess-title-row{display:flex;align-items:center;gap:5px;}
+  .sess-title{font-size:14px;font-weight:600;color:#0f2540;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;}
+  .sess-verdict{font-size:9px;font-weight:700;line-height:1;padding:2px 6px;border-radius:999px;flex-shrink:0;letter-spacing:.25px;}
+  .sess-verdict-bull{background:#e6f7f0;color:#0a7d56;}
+  .sess-verdict-hold{background:#eef2f7;color:#5a6b80;}
+  .sess-verdict-bear{background:#fde9e9;color:#c93b40;}
+  .sess-verdict-pass{background:#fdf3e3;color:#b8741c;}
+  .sess-streaming-dot{width:7px;height:7px;border-radius:999px;background:#2563eb;animation:pulse 1.6s ease-out infinite;flex-shrink:0;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(37,99,235,.5);}70%{box-shadow:0 0 0 6px rgba(37,99,235,0);}100%{box-shadow:0 0 0 0 rgba(37,99,235,0);}}
+  .sess-preview{font-size:12px;color:#5a6b80;line-height:1.5;margin-top:4px;overflow:hidden;text-overflow:ellipsis;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+  .sess-meta{display:flex;gap:4px;flex-wrap:wrap;font-size:11px;color:#90a0b3;margin-top:5px;}
+  .sess-sep{color:#c3ccd8;}
+  .sess-sage{color:#5a6b80;font-weight:500;}
+  .sess-streaming-label{color:#2563eb;font-weight:500;}
+  .del-btn{font-size:16px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:#c3ccd8;border-radius:999px;}
+
+  /* ---------- 底部 legend ---------- */
+  .legend{max-width:1040px;margin:64px auto 0;background:linear-gradient(135deg,rgba(20,28,42,.92),rgba(13,18,28,.92));
+    border:1px solid rgba(127,212,255,.16);border-radius:22px;padding:34px 38px;box-shadow:0 24px 70px rgba(0,0,0,.45);}
+  .lg-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+  .lg-badge{font-size:12px;font-weight:800;letter-spacing:1px;color:#0c111b;background:#7fd4ff;padding:5px 13px;border-radius:8px;}
+  .lg-title{font-size:21px;font-weight:800;color:#eef4fb;letter-spacing:.3px;}
+  .lg-when{margin-left:auto;font-size:12px;color:#7c8da4;font-family:ui-monospace,monospace;}
+  .lg-lead{font-size:14px;color:#9fb0c6;line-height:1.7;margin-bottom:26px;}
+  .lg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px 34px;}
+  .lg-col h4{font-size:13px;font-weight:700;color:#7fd4ff;letter-spacing:1px;text-transform:uppercase;margin-bottom:13px;
+    display:flex;align-items:center;gap:7px;}
+  .lg-col h4 .ic{font-size:15px;}
+  .lg-item{display:flex;gap:10px;font-size:13.5px;color:#c2d0e2;line-height:1.65;margin-bottom:11px;}
+  .lg-item .k{color:#10b981;flex:0 0 auto;font-weight:700;margin-top:1px;}
+  .lg-item b{color:#e7edf5;font-weight:600;}
+  .lg-item code{font-family:ui-monospace,monospace;font-size:12px;background:rgba(127,212,255,.1);color:#aee3ff;
+    padding:1px 6px;border-radius:4px;}
+  .lg-steps{counter-reset:step;list-style:none;}
+  .lg-steps li{position:relative;padding-left:34px;margin-bottom:13px;font-size:13.5px;color:#c2d0e2;line-height:1.6;}
+  .lg-steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:-1px;width:22px;height:22px;
+    border-radius:7px;background:rgba(127,212,255,.14);border:1px solid rgba(127,212,255,.3);color:#aee3ff;
+    font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .lg-foot{margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,.08);font-size:12.5px;color:#7c8da4;
+    line-height:1.7;text-align:center;}
+  .lg-foot b{color:#aebfd4;}
+  .lg-foot code{font-family:ui-monospace,monospace;font-size:11.5px;background:rgba(127,212,255,.1);color:#aee3ff;padding:1px 6px;border-radius:4px;}
+  .preview-flag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#fbbf24;
+    background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);padding:3px 10px;border-radius:6px;letter-spacing:.5px;}
+
+  @media (max-width:520px){
+    .lg-grid{grid-template-columns:1fr;}
+    .ph-title{font-size:32px;}
   }
-  .header-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-  .avatar-square { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px; font-family: ui-monospace, monospace; box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0; }
-  .header-text { flex: 1; min-width: 0; overflow: hidden; }
-  .header-title { font-size: 14px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .header-sub { font-size: 11px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .header-right { display: flex; gap: 4px; flex-shrink: 0; }
-  .header-btn { font-size: 11px; padding: 4px 10px; background: #f1f5f9; color: #475569; border: 0; border-radius: 999px; }
-
-  /* ============ Empty state ============ */
-  .empty { text-align: center; padding: 32px 16px 24px; flex: 1; overflow-y: auto; }
-  .empty-avatar { width: 72px; height: 72px; border-radius: 18px; margin: 0 auto; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 19px; font-family: ui-monospace, monospace; box-shadow: 0 6px 18px rgba(0,0,0,0.14); position: relative; }
-  .empty-avatar::after { content: ''; position: absolute; inset: 0; border-radius: 18px; opacity: 0.32; background: inherit; animation: pulse 2.4s ease-out infinite; z-index: -1; }
-  @keyframes pulse { 0% { transform: scale(1); opacity: 0.36; } 70% { transform: scale(1.45); opacity: 0; } 100% { transform: scale(1.45); opacity: 0; } }
-  .empty-title { font-size: 20px; font-weight: 700; color: #0f172a; margin-top: 18px; }
-  .empty-title-name { font-weight: 700; }
-  .empty-subtitle { font-size: 13px; color: #475569; margin-top: 7px; }
-  .empty-meta { font-size: 11px; color: #94a3b8; margin-top: 5px; }
-  .empty-meta-num { color: #1e293b; font-weight: 600; }
-  .label-divider { margin-top: 28px; font-size: 11px; color: #94a3b8; letter-spacing: 3px; }
-  .sage-row { display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-  .sage-row-card { position: relative; display: flex; flex-direction: column; align-items: center; padding: 10px 8px; border: 2px solid #e2e8f0; border-radius: 10px; background: #fff; min-width: 70px; }
-  .sage-row-card.active { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 4px 12px rgba(59,130,246,0.18); transform: translateY(-1px); }
-  .sage-row-avatar { width: 32px; height: 32px; border-radius: 7px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 11px; font-family: ui-monospace, monospace; }
-  .sage-row-name { font-size: 12px; color: #475569; margin-top: 6px; font-weight: 500; }
-  .sage-row-card.active .sage-row-name { color: #1d4ed8; font-weight: 600; }
-  .sage-row-check { position: absolute; top: 4px; right: 5px; font-size: 9px; color: #3b82f6; font-weight: 700; }
-  .starters { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 10px; padding: 0 16px; }
-  .starter-chip { padding: 7px 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 999px; font-size: 13px; color: #475569; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-
-  /* ============ Message Bubble ============ */
-  .messages { flex: 1; padding: 16px 12px; overflow-y: auto; }
-  .msg-row { display: flex; gap: 8px; margin-bottom: 16px; }
-  .msg-user { flex-direction: row-reverse; }
-  .msg-avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 11px; flex-shrink: 0; }
-  .avatar-user { background: #0f172a; }
-  .msg-bubble { max-width: 78%; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.7; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-  .bubble-user { background: #0f172a; color: #fff; }
-  .bubble-sage { background: #fff; border: 1px solid #e2e8f0; color: #1e293b; }
-
-  /* ============ Analyst card ============ */
-  .analyst-summary { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: #f5f3ff; color: #6d28d9; font-size: 11px; line-height: 1.4; margin-bottom: 6px; }
-  .analyst-spin { color: #8b5cf6; animation: spin 1.2s linear infinite; display: inline-block; }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  .analyst-body { padding: 9px 11px; background: linear-gradient(135deg, #faf5ff 0%, #ede9fe 100%); border-left: 2px solid #a78bfa; border-radius: 0 6px 6px 0; font-size: 12px; color: #5b21b6; line-height: 1.65; margin-bottom: 8px; }
-
-  /* ============ Tool pill ============ */
-  .tools-summary { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 11px; line-height: 1.4; margin-bottom: 8px; }
-  .tools-check { font-size: 9px; color: #059669; font-weight: 700; }
-  .tools-list { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
-  .tool-pill { padding: 5px 7px; border-radius: 6px; background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; }
-  .tool-pill-head { display: flex; align-items: center; gap: 4px; color: #334155; flex-wrap: wrap; }
-  .tool-pill-label { color: #1e293b; font-weight: 500; }
-  .tool-pill-args { color: #64748b; font-size: 10px; }
-  .tool-pill-check { margin-left: auto; color: #059669; font-weight: 700; }
-
-  /* ============ Markdown render ============ */
-  .md-h2 { font-size: 16px; font-weight: 700; margin: 6px 0 4px; }
-  .md-p { margin: 3px 0; }
-  .md-ul { margin: 4px 0 4px 4px; display: flex; flex-direction: column; gap: 3px; }
-  .md-li { display: flex; gap: 6px; align-items: flex-start; line-height: 1.7; }
-  .md-bullet { color: #3b82f6; font-weight: 700; flex-shrink: 0; }
-  .md-bold { font-weight: 700; }
-  .md-italic { font-style: italic; }
-  .md-inline-code { font-family: ui-monospace, monospace; background: rgba(15,23,42,0.06); padding: 0 4px; border-radius: 3px; font-size: 12px; color: #be185d; }
-  .md-quote { border-left: 3px solid #cbd5e1; padding: 4px 9px; color: #64748b; font-style: italic; background: rgba(148,163,184,0.08); border-radius: 0 4px 4px 0; margin: 6px 0; }
-  .md-hr { height: 1px; background: #e2e8f0; margin: 9px 0; }
-  .md-code-block { font-family: ui-monospace, monospace; background: #0f172a; color: #e2e8f0; padding: 8px 9px; border-radius: 6px; font-size: 12px; margin: 5px 0; white-space: pre-wrap; }
-
-  /* ============ Cite chip ============ */
-  .cite-chip { display: inline-block; background: #dbeafe; color: #1d4ed8; padding: 0 6px; border-radius: 999px; font-size: 11px; font-family: ui-monospace, monospace; margin: 0 2px; font-weight: 500; cursor: pointer; }
-  .cite-chip:hover { background: #93c5fd; }
-
-  /* ============ Quote card ============ */
-  .quotes { margin-top: 12px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
-  .quotes-label { font-size: 10px; color: #94a3b8; margin-bottom: 6px; }
-  .quote-item { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 7px 9px; margin-bottom: 5px; font-size: 11px; }
-  .quote-flash { background: #fef3c7; border-color: #fbbf24; box-shadow: 0 0 0 2px rgba(251,191,36,0.25); }
-  .quote-head { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin-bottom: 3px; }
-  .quote-num { font-weight: 700; color: #0c4a6e; background: #bae6fd; border-radius: 999px; padding: 0 6px; height: 16px; line-height: 16px; font-size: 10px; font-family: ui-monospace, monospace; }
-  .quote-meta { color: #0369a1; font-size: 10px; font-family: ui-monospace, monospace; }
-  .quote-text { color: #1e293b; line-height: 1.6; margin-top: 2px; }
-  .badge { font-size: 9px; padding: 1px 6px; border-radius: 999px; font-weight: 500; }
-  .badge-rel-strong { background: #d1fae5; color: #065f46; }
-  .badge-rel-mid { background: #e0f2fe; color: #075985; }
-  .badge-rec-hot { background: #fef3c7; color: #92400e; }
-  .badge-rec-mid { background: #ede9fe; color: #5b21b6; }
-
-  /* ============ Followups ============ */
-  .followups { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-  .followup-chip { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; padding: 4px 9px; border-radius: 999px; font-size: 11px; }
-
-  /* ============ Input ============ */
-  .input-bar { display: flex; align-items: center; gap: 6px; padding: 8px 12px 16px; background: #fff; border-top: 1px solid #e2e8f0; }
-  .input-wrap { flex: 1; position: relative; display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 4px 11px 4px 14px; }
-  .input-wrap.focused { background: #fff; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-  .input { flex: 1; padding: 7px 0; font-size: 14px; color: #0f172a; background: transparent; border: 0; outline: 0; }
-  .input-counter { font-size: 10px; color: #cbd5e1; font-family: ui-monospace, monospace; margin-left: 5px; }
-  .send-btn { padding: 0 18px; height: 38px; line-height: 38px; color: white; font-size: 13px; font-weight: 600; border: 0; border-radius: 999px; box-shadow: 0 3px 10px rgba(59,130,246,0.25); cursor: pointer; }
-
-  /* ============ Sessions list ============ */
-  .sess-item { display: flex; align-items: flex-start; gap: 9px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 11px; margin-bottom: 7px; }
-  .sess-item.streaming { border-color: #93c5fd; background: linear-gradient(135deg, #fff 0%, #eff6ff 100%); box-shadow: 0 0 0 1px rgba(59,130,246,0.12); }
-  .sess-avatar { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 11px; font-family: ui-monospace, monospace; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.08); }
-  .sess-body { flex: 1; min-width: 0; }
-  .sess-title-row { display: flex; align-items: center; gap: 5px; }
-  .sess-title { font-size: 14px; font-weight: 600; color: #0f172a; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sess-streaming-dot { width: 7px; height: 7px; border-radius: 999px; background: #3b82f6; box-shadow: 0 0 0 0 rgba(59,130,246,0.5); animation: dot-pulse 1.6s ease-out infinite; flex-shrink: 0; }
-  @keyframes dot-pulse { 0% { box-shadow: 0 0 0 0 rgba(59,130,246,0.5); } 70% { box-shadow: 0 0 0 6px rgba(59,130,246,0); } 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); } }
-  .sess-preview { font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .sess-meta { display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px; color: #94a3b8; margin-top: 5px; }
-  .sess-streaming-label { color: #2563eb; font-weight: 500; }
-
-  /* legend */
-  .legend { color: #94a3b8; max-width: 720px; margin: 32px auto 0; line-height: 1.7; font-size: 13px; background: #2a2a2a; padding: 18px 24px; border-radius: 12px; }
-  .legend h2 { color: #e2e8f0; font-size: 15px; margin-bottom: 10px; }
-  .legend code { color: #93c5fd; }
 </style>
 </head>
 <body>
 
-<h1>Sage Chat 小程序 v60.5 · Visual Preview</h1>
-<p class="subtitle">3 个屏幕状态对照：Empty State / 对话中 / 历史列表</p>
+  <header class="pagehead">
+    <div class="ph-eyebrow"><span class="dot"></span>JIAOYI-DUIXIAN · 真机镜像</div>
+    <h1 class="ph-title">交易对线 · 小程序 UI 全量预览</h1>
+    <p class="ph-sub">和投资大佬 <b>1v1 对线</b>你的每一笔交易。下方 6 个手机框是当前小程序 <b>chat / 多人对线 / 历史</b>三页的 1:1 真机镜像 —— 从空态到完整数据驱动判决卡，离线打开即可逐帧验收。</p>
+    <div class="ph-tags">
+      <span class="ph-tag">引擎 <b>v62</b> 三阶段：取数 → 5 维加权 → LLM 语音</span>
+      <span class="ph-tag">在挂大佬：<b>段永平 DYP</b> · <b>管我财 GWC</b></span>
+      <span class="ph-tag">数据卡：<b>判决横幅 · PE 标尺 · 股息对比 · 成长体检 · 五维体检</b></span>
+      <span class="preview-flag">⬡ 预览态 · 示例数值真实合理，非实时行情</span>
+    </div>
+  </header>
 
-<div class="gallery">
+  <div class="gallery">
 
-  <!-- ============ Phone 1: Empty State ============ -->
-  <div>
-    <div class="phone">
-      <div class="screen">
-        <div class="header">
-          <div class="header-left">
-            <div class="avatar-square" style="background:#3b82f6">DYP</div>
-            <div class="header-text">
-              <div class="header-title">和 段永平 对话</div>
-              <div class="header-sub">本分 · 不懂不投 · 看十年后</div>
+    <!-- ============================================================
+         ① 空态 onboarding
+         ============================================================ -->
+    <div class="frame">
+      <div class="phone"><div class="scr">
+        <div class="statusbar"><span>9:41</span><span class="sb-dots">5G <span class="sb-bat"></span></span></div>
+        <div class="c-header">
+          <div class="c-header-left">
+            <div class="sage-avatar" style="background:#3b82f6">DYP</div>
+            <div class="c-header-text">
+              <div class="c-header-title">和 段永平 对话</div>
+              <div class="c-header-sub">本分 · 不懂不投 · 看十年后</div>
             </div>
+            <div class="c-header-arrow">▼</div>
           </div>
-          <div class="header-right">
-            <button class="header-btn">+ 新</button>
-            <button class="header-btn">历史</button>
+          <div class="c-header-right">
+            <div class="hdr-chip"><span class="hdr-chip-emoji">⚖️</span><span class="hdr-chip-label">多人对线</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph">＋</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph hdr-icon-history">≡</span></div>
           </div>
         </div>
-        <div class="empty">
-          <div class="empty-avatar" style="background:#3b82f6">DYP</div>
-          <div class="empty-title">和 <span class="empty-title-name">段永平</span> 对话</div>
-          <div class="empty-subtitle">本分 · 不懂不投 · 看十年后</div>
-          <div class="empty-meta">基于 <span class="empty-meta-num">10497</span> 条雪球真实发言 · 8 工具 · v60 深度池</div>
-
-          <div class="label-divider">— 切换大佬 —</div>
-          <div class="sage-row">
-            <div class="sage-row-card active">
-              <div class="sage-row-avatar" style="background:#3b82f6">DYP</div>
-              <div class="sage-row-name">段永平</div>
-              <div class="sage-row-check">✓</div>
+        <div class="c-messages">
+          <div class="empty">
+            <div class="empty-avatar-wrap">
+              <div class="empty-avatar" style="background:#3b82f6">DYP</div>
+              <div class="empty-avatar-pulse" style="background:#3b82f6"></div>
             </div>
-            <div class="sage-row-card">
-              <div class="sage-row-avatar" style="background:#10b981">GWC</div>
-              <div class="sage-row-name">管我财</div>
+            <div class="empty-title">和 <span class="empty-title-name">段永平</span> 对话</div>
+            <div class="empty-subtitle">本分 · 不懂不投 · 看十年后</div>
+            <div class="empty-meta">基于 <span class="empty-meta-num">10497</span> 条雪球真实发言 · 8 工具 · v60 深度池</div>
+            <div class="sage-row-label">— 切换大佬 —</div>
+            <div class="sage-row">
+              <div class="sage-row-card active">
+                <div class="sage-row-avatar" style="background:#3b82f6">DYP</div>
+                <div class="sage-row-name">段永平</div>
+                <div class="sage-row-check">✓</div>
+              </div>
+              <div class="sage-row-card">
+                <div class="sage-row-avatar" style="background:#10b981">GWC</div>
+                <div class="sage-row-name">管我财</div>
+              </div>
             </div>
-          </div>
-
-          <div class="label-divider">— 试试这些问题 —</div>
-          <div class="starters">
-            <span class="starter-chip">段大你为什么换神华去泡泡玛特？</span>
-            <span class="starter-chip">苹果还能拿吗？</span>
-            <span class="starter-chip">拼多多怎么看？</span>
+            <div class="starters-label">— 试试这些问题 —</div>
+            <div class="starters">
+              <div class="starter-chip">段大你为什么换神华去泡泡玛特？</div>
+              <div class="starter-chip">苹果还能拿吗？</div>
+              <div class="starter-chip">拼多多怎么看？</div>
+            </div>
           </div>
         </div>
         <div class="input-bar">
-          <div class="input-wrap">
-            <div class="input" style="color:#94a3b8;">问 段永平...</div>
-          </div>
-          <button class="send-btn" style="background:#3b82f6; opacity:0.35;">发送</button>
+          <div class="input-wrap"><span class="input-ph">问 段永平...</span></div>
+          <div class="send-btn send-btn-disabled" style="background:#3b82f6">发送</div>
         </div>
+      </div></div>
+      <div class="frame-cap">
+        <div><span class="fc-no">1</span><span class="fc-ti">空态 onboarding</span></div>
+        <div class="fc-de">脉冲头像 + 语料计数 + 横排切大佬 + starter 气泡。发送按钮在空输入时置灰。</div>
       </div>
     </div>
-    <div class="phone-label">Empty State · 引导首问</div>
-  </div>
 
-  <!-- ============ Phone 2: 对话中 (含 analyst + tools + cite + quote) ============ -->
-  <div>
-    <div class="phone">
-      <div class="screen">
-        <div class="header">
-          <div class="header-left">
-            <div class="avatar-square" style="background:#10b981">GWC</div>
-            <div class="header-text">
-              <div class="header-title">招行 PE 历史什么分位</div>
-              <div class="header-sub">低估逆向平均赢 · 排雷胜选股</div>
+    <!-- ============================================================
+         ② analyzing 徽章（Phase1 取数中）
+         ============================================================ -->
+    <div class="frame">
+      <div class="phone"><div class="scr">
+        <div class="statusbar"><span>9:41</span><span class="sb-dots">5G <span class="sb-bat"></span></span></div>
+        <div class="c-header">
+          <div class="c-header-left">
+            <div class="sage-avatar" style="background:#10b981">GWC</div>
+            <div class="c-header-text">
+              <div class="c-header-title">招行 PE 历史什么分位？</div>
+              <div class="c-header-sub">低估逆向平均赢 · 排雷胜选股</div>
             </div>
+            <div class="c-header-arrow">▼</div>
           </div>
-          <div class="header-right">
-            <button class="header-btn">+ 新</button>
-            <button class="header-btn">历史</button>
+          <div class="c-header-right">
+            <div class="hdr-chip"><span class="hdr-chip-emoji">⚖️</span><span class="hdr-chip-label">多人对线</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph">＋</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph hdr-icon-history">≡</span></div>
           </div>
         </div>
-        <div class="messages">
-          <!-- user msg -->
+        <div class="c-messages">
           <div class="msg-row msg-user">
             <div class="msg-avatar avatar-user">你</div>
-            <div class="msg-bubble bubble-user">招行 PE 历史什么分位？现在能买吗？</div>
+            <div class="msg-bubble bubble-user">招行 PE 历史什么分位？现在这个价值得上吗</div>
           </div>
-
-          <!-- sage msg -->
-          <div class="msg-row">
+          <div class="msg-row msg-sage">
             <div class="msg-avatar" style="background:#10b981">GWC</div>
             <div class="msg-bubble bubble-sage">
-
-              <!-- Analyst 内心分析 (collapsed view) -->
-              <div class="analyst-summary">
-                💭 内心分析 <span class="tools-check">✓</span>
+              <div class="analyzing-card">
+                <div class="analyzing-summary">
+                  <span class="analyzing-emoji">🔬</span>
+                  <span class="analyzing-title">Python 端分析中…</span>
+                  <span class="analyzing-spin">⟳</span>
+                  <span class="analyzing-arrow open">⌄</span>
+                </div>
+                <div class="analyzing-body">
+                  <span class="analyzing-step">取数 → 5 维加权 → LLM 落笔</span>
+                </div>
               </div>
-
-              <!-- Tool calls (collapsed pill) -->
-              <div class="tools-summary">
-                🛠️ 用了 3 个工具 <span class="tools-check">✓</span>
+              <div class="tools-card">
+                <div class="tools-summary">
+                  <span class="tools-emoji">🛠️</span>
+                  <span class="tools-title">用了 3 个工具</span>
+                  <span class="analyzing-spin" style="color:#f59e0b">⟳</span>
+                  <span class="tools-arrow open">⌄</span>
+                </div>
+                <div class="tools-list">
+                  <div class="tool-pill"><div class="tool-pill-head"><span class="tool-pill-icon">📊</span><span class="tool-pill-label">实时行情</span><span class="tool-pill-args">· 招商银行</span><span class="tool-pill-check">✓</span></div></div>
+                  <div class="tool-pill"><div class="tool-pill-head"><span class="tool-pill-icon">📈</span><span class="tool-pill-label">PE 分位</span><span class="tool-pill-args">· 600036</span><span class="tool-pill-check">✓</span></div></div>
+                  <div class="tool-pill"><div class="tool-pill-head"><span class="tool-pill-icon">🔍</span><span class="tool-pill-label">查历史发言</span><span class="tool-pill-args">· "招行 估值"</span><span class="analyzing-spin" style="color:#f59e0b;margin-left:auto">⟳</span></div></div>
+                </div>
               </div>
+              <div class="loading-text">管我财 正在思考...</div>
+            </div>
+          </div>
+        </div>
+        <div class="input-bar">
+          <div class="input-wrap"><span class="input-ph">问 管我财...</span></div>
+          <div class="send-btn send-btn-disabled" style="background:#10b981">发送中</div>
+        </div>
+      </div></div>
+      <div class="frame-cap">
+        <div><span class="fc-no">2</span><span class="fc-ti">analyzing 徽章 + 工具进行中</span></div>
+        <div class="fc-de">Phase1 取数：绿色 analyzing 卡转圈 + 工具 pill 逐个打勾，未完成的工具仍在 ⟳。</div>
+      </div>
+    </div>
 
-              <!-- main content (markdown rendered) -->
-              <div class="md-h2">先看 PE 数据</div>
-              <div class="md-p">招行 <span class="md-bold">PE-TTM 现在 6.8 倍</span>，处于 <span class="cite-chip">#1</span> 过去 10 年的 <span class="md-bold">12% 分位</span>。明显被低估。</div>
-              <div class="md-ul">
-                <div class="md-li"><span class="md-bullet">•</span><span><span class="md-bold">优势</span>：ROE 长期 15%+，零售护城河深 <span class="cite-chip">#2</span></span></div>
-                <div class="md-li"><span class="md-bullet">•</span><span>资本充足率 13.78%，远高于监管</span></div>
-                <div class="md-li"><span class="md-bullet">•</span><span>股息率 5.5%，<span class="md-italic">荒岛策略</span>核心标的 <span class="cite-chip">#3</span></span></div>
+    <!-- ============================================================
+         ③ 完整答案卡：facts + 判决横幅(置信度环) + PE标尺 + 股息对比 + 成长体检 + 五维
+         ============================================================ -->
+    <div class="frame">
+      <div class="phone"><div class="scr">
+        <div class="statusbar"><span>9:41</span><span class="sb-dots">5G <span class="sb-bat"></span></span></div>
+        <div class="c-header">
+          <div class="c-header-left">
+            <div class="sage-avatar" style="background:#10b981">GWC</div>
+            <div class="c-header-text">
+              <div class="c-header-title">招行 PE 历史什么分位？</div>
+              <div class="c-header-sub">低估逆向平均赢 · 排雷胜选股</div>
+            </div>
+            <div class="c-header-arrow">▼</div>
+          </div>
+          <div class="c-header-right">
+            <div class="hdr-chip"><span class="hdr-chip-emoji">⚖️</span><span class="hdr-chip-label">多人对线</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph">＋</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph hdr-icon-history">≡</span></div>
+          </div>
+        </div>
+        <div class="c-messages">
+          <div class="msg-row msg-user">
+            <div class="msg-avatar avatar-user">你</div>
+            <div class="msg-bubble bubble-user">招行现在 PE 在历史什么分位？值得上吗</div>
+          </div>
+          <div class="msg-row msg-sage">
+            <div class="msg-avatar" style="background:#10b981">GWC</div>
+            <div class="msg-bubble bubble-sage" style="max-width:90%">
+              <div class="analyzing-card">
+                <div class="analyzing-summary">
+                  <span class="analyzing-emoji">🔬</span>
+                  <span class="analyzing-title">数据分析完成</span>
+                  <span class="analyzing-check">✓</span>
+                  <span class="analyzing-arrow">⌄</span>
+                </div>
               </div>
-              <div class="md-p">⚠️ <span class="md-bold">风险</span>：地产坏账、息差收窄。但 <span class="md-inline-code">PE 12%</span> 分位已经 price in 多数风险。</div>
-
-              <!-- followups -->
+              <div class="tk-strip">
+                <span class="tk-nm">招商银行</span>
+                <span class="tk-cd">600036</span>
+                <span class="tk-mkt">A股</span>
+                <span class="tk-depth">10 年深度档案</span>
+              </div>
+              <div class="verdict-card verdict-hold">
+                <div class="verdict-summary">
+                  <div class="verdict-signal verdict-signal-hold">观察</div>
+                  <div class="verdict-headline">估值低位、股息够厚，但成长已降速</div>
+                  <!-- 62%：deg=223.2 → R=180-180=0, L=360-223=137 -->
+                  <div class="vz-ring vz-ring-hold">
+                    <div class="vz-ring-half vz-ring-l"><div class="vz-ring-fill" style="transform:rotate(137deg)"></div></div>
+                    <div class="vz-ring-half vz-ring-r"><div class="vz-ring-fill" style="transform:rotate(0deg)"></div></div>
+                    <div class="vz-ring-core"><span class="vz-ring-num">62</span></div>
+                  </div>
+                  <span class="verdict-arrow open">⌄</span>
+                </div>
+                <div class="verdict-body">
+                  <div class="viz-sec">
+                    <div class="viz-h"><span class="viz-bar"></span><span class="viz-ti">估值体检</span><span class="viz-sub">现在贵不贵</span></div>
+                    <div class="vz-gauge">
+                      <div class="vz-g-top">
+                        <span class="vz-g-lab">PE-TTM</span>
+                        <span class="vz-g-val">6.8</span>
+                        <span class="vz-g-unit">倍</span>
+                        <span class="vz-g-tag vz-tag-good">便宜</span>
+                      </div>
+                      <div class="vz-scale"><div class="vz-mk" style="left:8%"></div></div>
+                      <div class="vz-scale-x"><span>便宜 8×</span><span>合理 20×</span><span>贵 50×+</span></div>
+                    </div>
+                    <div class="vz-cmp">
+                      <div class="vz-cmp-row"><span class="vz-cmp-lab">股息率</span><div class="vz-track"><div class="vz-fill vz-gd" style="width:100%"><span class="vz-fill-t">6.1%</span></div></div></div>
+                      <div class="vz-cmp-row"><span class="vz-cmp-lab">10Y 国债</span><div class="vz-track"><div class="vz-fill vz-nt" style="width:50%"><span class="vz-fill-t">2.5%</span></div></div></div>
+                      <div class="vz-cmp-note">✓ 股息 6.1% ＞ 国债 2.5%，下行有保护（利差 +3.6pct）</div>
+                    </div>
+                    <div class="vz-cmp vz-cmp-last">
+                      <div class="vz-cmp-row"><span class="vz-cmp-lab">盈利收益率</span><div class="vz-track"><div class="vz-fill vz-gd" style="width:100%"><span class="vz-fill-t">EY 14.7%</span></div></div></div>
+                      <div class="vz-cmp-row"><span class="vz-cmp-lab">PB</span><div class="vz-track"><div class="vz-fill vz-nt" style="width:9%"><span class="vz-fill-t">0.9×</span></div></div></div>
+                    </div>
+                  </div>
+                  <div class="viz-sec">
+                    <div class="viz-h"><span class="viz-bar viz-bar-gn"></span><span class="viz-ti">成长 &amp; 质地</span><span class="viz-sub">生意好不好</span></div>
+                    <div class="vz-tiles">
+                      <div class="vz-tile"><span class="vz-tl">营收 5年 CAGR</span><div class="vz-tv vz-up">+5.4<span class="vz-tu">%</span></div><div class="vz-tbar"><div class="vz-tbar-i vz-bg-gn" style="width:27%"></div></div></div>
+                      <div class="vz-tile"><span class="vz-tl">净利 5年 CAGR</span><div class="vz-tv vz-up">+7.2<span class="vz-tu">%</span></div><div class="vz-tbar"><div class="vz-tbar-i vz-bg-gn" style="width:36%"></div></div></div>
+                      <div class="vz-tile"><span class="vz-tl">ROE 5年均</span><div class="vz-tv">15.8<span class="vz-tu">%</span></div><div class="vz-tbar"><div class="vz-tbar-i vz-bg-bl" style="width:40%"></div></div></div>
+                      <div class="vz-tile"><span class="vz-tl">销售毛利率</span><div class="vz-tv">52.1<span class="vz-tu">%</span></div><div class="vz-tbar"><div class="vz-tbar-i vz-bg-bl" style="width:52%"></div></div></div>
+                    </div>
+                  </div>
+                  <div class="viz-sec viz-sec-last">
+                    <div class="viz-h"><span class="viz-bar viz-bar-mg"></span><span class="viz-ti">管我财 · 五维体检</span><span class="viz-sub">4 / 5 通过</span></div>
+                    <div class="vz-dim">
+                      <div class="vz-dot vz-dot-p"></div>
+                      <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">分位</span><div class="vz-dim-track"><div class="vz-dim-i" style="width:88%"></div></div><span class="vz-dim-w">30%</span></div><div class="vz-dim-note">PE/PB 处近 10 年 8% 分位，绝对低估区</div></div>
+                    </div>
+                    <div class="vz-dim">
+                      <div class="vz-dot vz-dot-p"></div>
+                      <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">排雷</span><div class="vz-dim-track"><div class="vz-dim-i" style="width:82%"></div></div><span class="vz-dim-w">25%</span></div><div class="vz-dim-note">不良率 0.95%、拨备覆盖 410%，资产质量稳</div></div>
+                    </div>
+                    <div class="vz-dim">
+                      <div class="vz-dot vz-dot-p"></div>
+                      <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">股息</span><div class="vz-dim-track"><div class="vz-dim-i" style="width:90%"></div></div><span class="vz-dim-w">20%</span></div><div class="vz-dim-note">股息率 6.1% 远超国债，分红率稳定提升</div></div>
+                    </div>
+                    <div class="vz-dim">
+                      <div class="vz-dot vz-dot-f"></div>
+                      <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">稳态</span><div class="vz-dim-track"><div class="vz-dim-i vz-dim-i-f" style="width:26%"></div></div><span class="vz-dim-w">15%</span></div><div class="vz-dim-note">净息差持续收窄，营收增速降到个位数</div></div>
+                    </div>
+                    <div class="vz-dim">
+                      <div class="vz-dot vz-dot-p"></div>
+                      <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">荒岛</span><div class="vz-dim-track"><div class="vz-dim-i" style="width:76%"></div></div><span class="vz-dim-w">10%</span></div><div class="vz-dim-note">零售护城河厚，断网十年也敢拿</div></div>
+                    </div>
+                  </div>
+                  <div class="verdict-concerns">
+                    <span class="verdict-concerns-label">⚠️ 重点关注</span>
+                    <span class="verdict-concern">净息差下行拐点是否到来，决定盈利能否企稳</span>
+                    <span class="verdict-concern">地产相关敞口与按揭早偿对资产端的拖累</span>
+                  </div>
+                </div>
+              </div>
+              <div class="msg-content">
+                <div class="md-section"><span class="md-section-bar"></span><span class="md-section-title">先看分位</span></div>
+                <div class="md-p">招行现在 PE-TTM <span class="md-bold">6.8 倍</span>、PB <span class="md-bold">0.9 倍</span>，都压在近十年最低那一档 <span class="cite-chip">#1</span>。这种价格不是因为公司变烂，是市场对整个银行业的悲观，<span class="md-bold">低估逆向</span>该出手的位置。</div>
+                <div class="md-section"><span class="md-section-bar"></span><span class="md-section-title">再排雷</span></div>
+                <div class="md-p">不良率 0.95%、拨备覆盖 410%，账上家底厚得离谱 <span class="cite-chip">#2</span>。我先排雷再选股 —— 招行这块没雷。</div>
+              </div>
               <div class="followups">
-                <span class="followup-chip">✨ 港股招行更便宜吗？</span>
-                <span class="followup-chip">✨ 对比工行如何？</span>
+                <div class="followup-chip">✨ 净息差还能稳住吗？</div>
+                <div class="followup-chip">✨ 对比工行谁更值</div>
               </div>
-
-              <!-- quotes with badges -->
               <div class="quotes">
-                <div class="quotes-label">引用 3 条历史原帖 · 点正文 #N 跳转</div>
-                <div class="quote-item quote-flash">
+                <div class="quotes-label">引用 2 条历史原帖 · 点正文 #N 跳转</div>
+                <div class="quote-item">
                   <div class="quote-head">
                     <div class="quote-num">#1</div>
-                    <div class="quote-meta">2026-03-22 · 👍 412</div>
-                    <span class="badge badge-rel-strong">强相关</span>
-                    <span class="badge badge-rec-hot">近期 🔥</span>
+                    <div class="quote-meta">2024-03-18 · 👍 1872</div>
+                    <div class="badge badge-rel-strong">强相关</div>
+                    <div class="badge badge-rec-hot">近期 🔥</div>
                   </div>
-                  <div class="quote-text">招行 PE 跌到 6 倍区间，过去十年只有 2014/2018 出现过…</div>
+                  <div class="quote-text">银行股看分位比看绝对 PE 有用。招行这个估值，已经把坏消息 price in 得差不多了。</div>
                 </div>
                 <div class="quote-item">
                   <div class="quote-head">
                     <div class="quote-num">#2</div>
-                    <div class="quote-meta">2025-08-15 · 👍 287</div>
-                    <span class="badge badge-rel-strong">强相关</span>
-                    <span class="badge badge-rec-mid">近期</span>
+                    <div class="quote-meta">2023-08-02 · 👍 945</div>
+                    <div class="badge badge-rel-mid">相关</div>
+                    <div class="badge badge-rec-mid">去年</div>
                   </div>
-                  <div class="quote-text">零售银行的护城河比地产链长得多，看看美国富国就知道…</div>
+                  <div class="quote-text">拨备覆盖率高就是安全垫。选银行先看资产质量，招行是同业里最让我放心的一个。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="input-bar">
+          <div class="input-wrap"><span class="input-ph">问 管我财...</span></div>
+          <div class="send-btn" style="background:#10b981">发送</div>
+        </div>
+      </div></div>
+      <div class="frame-cap">
+        <div><span class="fc-no">3</span><span class="fc-ti">完整数据驱动答案卡</span></div>
+        <div class="fc-de">深色 ticker 条 + 判决横幅（观察徽章 + 62% 置信度环）+ PE 标尺游标 + 股息 vs 国债对比 + 成长四宫格 + 五维体检 + 重点关注。</div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ④ 工具折叠 + markdown 正文 + followups + quotes（段永平·看好态）
+         ============================================================ -->
+    <div class="frame">
+      <div class="phone"><div class="scr">
+        <div class="statusbar"><span>9:41</span><span class="sb-dots">5G <span class="sb-bat"></span></span></div>
+        <div class="c-header">
+          <div class="c-header-left">
+            <div class="sage-avatar" style="background:#3b82f6">DYP</div>
+            <div class="c-header-text">
+              <div class="c-header-title">苹果还能拿吗？</div>
+              <div class="c-header-sub">本分 · 不懂不投 · 看十年后</div>
+            </div>
+            <div class="c-header-arrow">▼</div>
+          </div>
+          <div class="c-header-right">
+            <div class="hdr-chip"><span class="hdr-chip-emoji">⚖️</span><span class="hdr-chip-label">多人对线</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph">＋</span></div>
+            <div class="hdr-icon-btn"><span class="hdr-icon-glyph hdr-icon-history">≡</span></div>
+          </div>
+        </div>
+        <div class="c-messages">
+          <div class="msg-row msg-user">
+            <div class="msg-avatar avatar-user">你</div>
+            <div class="msg-bubble bubble-user">段大，苹果现在这个价还能拿吗？</div>
+          </div>
+          <div class="msg-row msg-sage">
+            <div class="msg-avatar" style="background:#3b82f6">DYP</div>
+            <div class="msg-bubble bubble-sage" style="max-width:90%">
+              <div class="analyst-card">
+                <div class="analyst-summary">
+                  <span class="analyst-emoji">💭</span>
+                  <span class="analyst-title">内心分析</span>
+                  <span class="analyst-check">✓</span>
+                  <span class="analyst-arrow">⌄</span>
+                </div>
+              </div>
+              <div class="tools-card">
+                <div class="tools-summary">
+                  <span class="tools-emoji">🛠️</span>
+                  <span class="tools-title">用了 4 个工具</span>
+                  <span class="tools-check">✓</span>
+                  <span class="tools-arrow open">⌄</span>
+                </div>
+                <div class="tools-list">
+                  <div class="tool-pill">
+                    <div class="tool-pill-head"><span class="tool-pill-icon">📊</span><span class="tool-pill-label">实时行情</span><span class="tool-pill-args">· AAPL</span><span class="tool-pill-check">✓</span></div>
+                    <div class="tool-pill-result">AAPL 现价 198.4，市值 3.05 万亿美元，PE-TTM 30.2</div>
+                  </div>
+                  <div class="tool-pill">
+                    <div class="tool-pill-head"><span class="tool-pill-icon">💰</span><span class="tool-pill-label">财务数据</span><span class="tool-pill-args">· AAPL</span><span class="tool-pill-check">✓</span></div>
+                    <div class="tool-pill-result">近 5 年营收 CAGR 6.8%，净利 CAGR 9.1%，毛利率 45.6%，自由现金流稳定</div>
+                  </div>
+                  <div class="tool-pill">
+                    <div class="tool-pill-head"><span class="tool-pill-icon">🔍</span><span class="tool-pill-label">查历史发言</span><span class="tool-pill-args">· "苹果 段永平"</span><span class="tool-pill-check">✓</span></div>
+                  </div>
+                  <div class="tool-pill">
+                    <div class="tool-pill-head"><span class="tool-pill-icon">🌐</span><span class="tool-pill-label">联网搜索</span><span class="tool-pill-args">· "苹果 AI 进展"</span><span class="tool-pill-check">✓</span></div>
+                  </div>
+                </div>
+              </div>
+              <div class="tk-strip">
+                <span class="tk-nm">苹果</span>
+                <span class="tk-cd">AAPL</span>
+                <span class="tk-mkt">美股</span>
+                <span class="tk-depth">10 年深度档案</span>
+              </div>
+              <div class="verdict-card verdict-bull">
+                <div class="verdict-summary">
+                  <div class="verdict-signal verdict-signal-bull">看好</div>
+                  <div class="verdict-headline">生意懂、现金流强，估值不便宜但可长拿</div>
+                  <!-- 78%：deg=280.8 → R=0, L=360-281=79 -->
+                  <div class="vz-ring vz-ring-bull">
+                    <div class="vz-ring-half vz-ring-l"><div class="vz-ring-fill" style="transform:rotate(79deg)"></div></div>
+                    <div class="vz-ring-half vz-ring-r"><div class="vz-ring-fill" style="transform:rotate(0deg)"></div></div>
+                    <div class="vz-ring-core"><span class="vz-ring-num">78</span></div>
+                  </div>
+                  <span class="verdict-arrow">⌄</span>
+                </div>
+              </div>
+              <div class="msg-content">
+                <div class="md-section"><span class="md-section-bar"></span><span class="md-section-title">能不能拿</span></div>
+                <div class="md-p">苹果这个生意我是<span class="md-bold">懂</span>的，现金流强、用户黏性高，这种公司我愿意一直拿着 <span class="cite-chip">#1</span>。本分做产品的公司，时间是它的朋友。</div>
+                <div class="md-p">但你得分清两件事：</div>
+                <div class="md-ul">
+                  <div class="md-li"><span class="md-bullet">•</span><div class="md-li-body"><span class="md-bold">好公司</span>≠ 任何价格都能买。现在 PE 30 倍，不便宜。</div></div>
+                  <div class="md-li"><span class="md-bullet">•</span><div class="md-li-body">真要拿，就用<span class="md-bold">看十年后</span>的眼光，别盯着季度波动。</div></div>
+                </div>
+                <div class="md-section"><span class="md-section-bar"></span><span class="md-section-title">我的做法</span></div>
+                <div class="md-ol">
+                  <div class="md-li"><span class="md-num">1.</span><div class="md-li-body">已经持有的不动，它是我的长期仓 <span class="cite-chip">#2</span>。</div></div>
+                  <div class="md-li"><span class="md-num">2.</span><div class="md-li-body">想加仓等回调，别在情绪高点追。</div></div>
+                </div>
+              </div>
+              <div class="followups">
+                <div class="followup-chip">✨ 30 倍 PE 算贵吗？</div>
+                <div class="followup-chip">✨ 段大什么价位会加仓？</div>
+                <div class="followup-chip">✨ 苹果和茅台你更看好谁</div>
+              </div>
+              <div class="quotes">
+                <div class="quotes-label">引用 2 条历史原帖 · 点正文 #N 跳转</div>
+                <div class="quote-item">
+                  <div class="quote-head">
+                    <div class="quote-num">#1</div>
+                    <div class="quote-meta">2022-05-11 · 👍 5631</div>
+                    <div class="badge badge-rel-strong">强相关</div>
+                    <div class="badge badge-rec-mid">1-2 年前</div>
+                  </div>
+                  <div class="quote-text">苹果是我能看懂的生意之一。买它就是买它未来十年还在赚钱的能力，不是赌下个季度。</div>
                 </div>
                 <div class="quote-item">
                   <div class="quote-head">
-                    <div class="quote-num">#3</div>
-                    <div class="quote-meta">2024-12-01 · 👍 156</div>
-                    <span class="badge badge-rel-mid">相关</span>
-                    <span class="badge badge-rec-mid">近期</span>
+                    <div class="quote-num">#2</div>
+                    <div class="quote-meta">2021-01-26 · 👍 3204</div>
+                    <div class="badge badge-rel-mid">相关</div>
+                    <div class="badge badge-rec-old">更早</div>
                   </div>
-                  <div class="quote-text">荒岛策略持仓里招行始终是底仓，5%+ 股息穿越牛熊…</div>
+                  <div class="quote-text">好公司也要好价格。贵的时候我不会卖好公司，但也不会在高位猛加。</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
+        <div class="scroll-bottom-btn">↓</div>
         <div class="input-bar">
-          <div class="input-wrap focused">
-            <div class="input">那港股 03968 同样便宜吗</div>
-            <span class="input-counter">10/500</span>
-          </div>
-          <button class="send-btn" style="background:#10b981;">发送</button>
+          <div class="input-wrap"><span class="input-ph">问 段永平...</span></div>
+          <div class="send-btn" style="background:#3b82f6">发送</div>
         </div>
+      </div></div>
+      <div class="frame-cap">
+        <div><span class="fc-no">4</span><span class="fc-ti">工具折叠 + markdown 正文</span></div>
+        <div class="fc-de">内心分析 pill + 工具折叠（带结果预览）+ 看好判决（78% 环，折叠不展开 viz）+ 分层小节正文 + 有序/无序列表 + #N 引用跳转 + followups。右下角回底浮按钮。</div>
       </div>
     </div>
-    <div class="phone-label">对话中 · 折叠 analyst + tools，正文含 cite chip + 双 badge</div>
-  </div>
 
-  <!-- ============ Phone 3: Sessions ============ -->
-  <div>
-    <div class="phone">
-      <div class="screen">
-        <div class="header" style="padding-top:50px;">
-          <div style="font-size:16px;font-weight:600;color:#0f172a;">历史对话 <span style="margin-left:6px;font-size:11px;color:#94a3b8;background:#f1f5f9;padding:1px 8px;border-radius:999px;">7</span></div>
-          <button class="header-btn" style="background:#fef2f2;color:#dc2626;">清空</button>
+    <!-- ============================================================
+         ⑤ 多人对线 jury（双 sage 卡）
+         ============================================================ -->
+    <div class="frame">
+      <div class="phone"><div class="scr jury-scr">
+        <div class="statusbar"><span>9:41</span><span class="sb-dots">5G <span class="sb-bat"></span></span></div>
+        <div class="jury-header">
+          <div class="jury-back">‹</div>
+          <div class="jury-title">多人对线 · 大佬并行评分</div>
         </div>
-        <div style="padding:10px 14px 0;">
-          <div style="display:flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:999px;">
-            <span style="font-size:11px;color:#94a3b8;">🔍</span>
-            <input class="input" style="font-size:13px;color:#1e293b;" placeholder="搜索标题 / 内容 / sage..." />
+        <div class="jury-intro"><span class="jury-intro-text">选 2-5 位大佬，一起对线你这笔交易决策。</span></div>
+        <div class="jury-sage-row">
+          <div class="jury-sage-card jury-sage-on">
+            <div class="jury-sage-avatar" style="background:#3b82f6">DYP</div>
+            <div class="jury-sage-meta">
+              <div class="jury-sage-name">段永平</div>
+              <div class="jury-sage-philo">本分 · 不懂不投 · 看十年后</div>
+            </div>
+            <div class="jury-sage-check on">✓</div>
+          </div>
+          <div class="jury-sage-card jury-sage-on">
+            <div class="jury-sage-avatar" style="background:#10b981">GWC</div>
+            <div class="jury-sage-meta">
+              <div class="jury-sage-name">管我财</div>
+              <div class="jury-sage-philo">低估逆向平均赢 · 排雷胜选股</div>
+            </div>
+            <div class="jury-sage-check on">✓</div>
           </div>
         </div>
-        <div style="flex:1; padding:10px 14px 14px; overflow-y:auto;">
-          <div class="sess-item streaming">
+        <div class="jury-input-bar">
+          <div class="jury-input" style="display:flex;align-items:center;color:#0f172a">茅台还能买吗？</div>
+          <div class="jury-send">对线中</div>
+        </div>
+        <div class="jury-results">
+          <!-- 段永平卡（已审 · 看好） -->
+          <div class="jury-result-card">
+            <div class="jury-result-head">
+              <div class="jury-result-avatar" style="background:#3b82f6">DYP</div>
+              <div class="jury-result-name">段永平</div>
+              <div class="jury-result-badge jury-result-badge-done">已审 ✓</div>
+            </div>
+            <div class="jury-facts">
+              <span class="jury-facts-name">贵州茅台</span>
+              <span class="jury-facts-code">600519</span>
+              <span class="jury-facts-market">A股</span>
+              <span class="jury-facts-depth">· 10 年深度</span>
+            </div>
+            <div class="jury-verdict jury-verdict-bull">
+              <div class="jury-vd-signal jury-vd-signal-bull">看好</div>
+              <div class="jury-vd-headline">看得懂的好生意，回调就是机会</div>
+              <span class="jury-vd-conf">75%</span>
+            </div>
+            <div class="viz-sec">
+              <div class="viz-h"><span class="viz-bar"></span><span class="viz-ti">估值体检</span><span class="viz-sub">现在贵不贵</span></div>
+              <div class="vz-gauge">
+                <div class="vz-g-top"><span class="vz-g-lab">PE-TTM</span><span class="vz-g-val">22.4</span><span class="vz-g-unit">倍</span><span class="vz-g-tag vz-tag-warn">中性偏贵</span></div>
+                <div class="vz-scale"><div class="vz-mk" style="left:35%"></div></div>
+                <div class="vz-scale-x"><span>便宜 8×</span><span>合理 20×</span><span>贵 50×+</span></div>
+              </div>
+              <div class="vz-cmp vz-cmp-last">
+                <div class="vz-cmp-row"><span class="vz-cmp-lab">股息率</span><div class="vz-track"><div class="vz-fill vz-gd" style="width:67%"><span class="vz-fill-t">3.4%</span></div></div></div>
+                <div class="vz-cmp-row"><span class="vz-cmp-lab">10Y 国债</span><div class="vz-track"><div class="vz-fill vz-nt" style="width:50%"><span class="vz-fill-t">2.5%</span></div></div></div>
+              </div>
+            </div>
+            <div class="jury-result-tools">
+              <span class="jury-tool-pill">📊 实时行情 ✓</span>
+              <span class="jury-tool-pill">💰 财务数据 ✓</span>
+              <span class="jury-tool-pill">🔍 查历史发言 ✓</span>
+            </div>
+            <div class="jury-result-body">
+              <div class="md-p">茅台这生意我看得懂 —— 品牌、定价权、现金流都在。现在 22 倍 PE 不算便宜，但也没到疯的程度 <span class="cite-chip-static">#1</span>。</div>
+              <div class="md-p">我的做法很简单：拿着的不动，想买的等回调。好公司不怕拿十年。</div>
+            </div>
+          </div>
+          <!-- 管我财卡（落笔中 · 观察） -->
+          <div class="jury-result-card">
+            <div class="jury-result-head">
+              <div class="jury-result-avatar" style="background:#10b981">GWC</div>
+              <div class="jury-result-name">管我财</div>
+              <div class="jury-result-badge jury-result-badge-writing">落笔中…</div>
+            </div>
+            <div class="jury-facts">
+              <span class="jury-facts-name">贵州茅台</span>
+              <span class="jury-facts-code">600519</span>
+              <span class="jury-facts-market">A股</span>
+              <span class="jury-facts-depth">· 10 年深度</span>
+            </div>
+            <div class="jury-verdict jury-verdict-hold">
+              <div class="jury-vd-signal jury-vd-signal-hold">观察</div>
+              <div class="jury-vd-headline">质地无雷，但估值分位不够低</div>
+              <span class="jury-vd-conf">58%</span>
+            </div>
+            <div class="viz-sec viz-sec-last">
+              <div class="viz-h"><span class="viz-bar viz-bar-mg"></span><span class="viz-ti">五维体检</span><span class="viz-sub">3 / 5 通过</span></div>
+              <div class="vz-dim">
+                <div class="vz-dot vz-dot-f"></div>
+                <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">分位</span><div class="vz-dim-track"><div class="vz-dim-i vz-dim-i-f" style="width:42%"></div></div><span class="vz-dim-w">30%</span></div><div class="vz-dim-note">PE 处近 10 年 45% 分位，谈不上低估</div></div>
+              </div>
+              <div class="vz-dim">
+                <div class="vz-dot vz-dot-p"></div>
+                <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">排雷</span><div class="vz-dim-track"><div class="vz-dim-i" style="width:95%"></div></div><span class="vz-dim-w">25%</span></div><div class="vz-dim-note">零负债、现金充裕，财务干净无雷</div></div>
+              </div>
+              <div class="vz-dim">
+                <div class="vz-dot vz-dot-p"></div>
+                <div class="vz-dc"><div class="vz-dim-top"><span class="vz-dim-lab">股息</span><div class="vz-dim-track"><div class="vz-dim-i" style="width:68%"></div></div><span class="vz-dim-w">20%</span></div><div class="vz-dim-note">股息率 3.4%，略高于国债</div></div>
+              </div>
+            </div>
+            <div class="jury-result-body">
+              <div class="md-p">茅台排雷这关满分 —— 零负债、账上现金多到花不完。但我买东西先看分位，现在 45% 分位不够便宜…</div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+      <div class="frame-cap">
+        <div><span class="fc-no">5</span><span class="fc-ti">多人对线 · 双 sage 并行</span></div>
+        <div class="fc-de">深色顶栏 + 双大佬选中卡。结果区两张并行卡：段永平「已审✓·看好」配 PE 标尺，管我财「落笔中」配五维体检 —— 同问题、不同判决，状态徽章各异。</div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         ⑥ sessions 列表
+         ============================================================ -->
+    <div class="frame">
+      <div class="phone"><div class="scr sess-scr">
+        <div class="statusbar"><span>9:41</span><span class="sb-dots">5G <span class="sb-bat"></span></span></div>
+        <div class="sess-topbar">
+          <div class="sess-topbar-title">历史对话 <span class="sess-topbar-count">6</span></div>
+          <div class="sess-header-btn">清空</div>
+        </div>
+        <div class="sess-search-bar">
+          <span class="sess-search-icon">🔍</span>
+          <span class="sess-search-input">搜索标题 / 内容 / sage...</span>
+        </div>
+        <div class="sess-list">
+          <!-- 1. 生成中（streaming） -->
+          <div class="sess-item sess-item-streaming">
             <div class="sess-avatar" style="background:#10b981">GWC</div>
             <div class="sess-body">
               <div class="sess-title-row">
-                <div class="sess-title">招行 PE 历史什么分位</div>
+                <div class="sess-title">招行 PE 历史什么分位？</div>
                 <div class="sess-streaming-dot"></div>
               </div>
-              <div class="sess-preview">招行 PE-TTM 现在 6.8 倍，处于过去 10 年的 12% 分位。明显被…</div>
+              <div class="sess-preview">招行现在 PE-TTM 6.8 倍、PB 0.9 倍，都压在近十年最低那一档。这种价格不是因为公司变烂…</div>
               <div class="sess-meta">
-                <span style="color:#475569;font-weight:500;">管我财</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>1 轮</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>刚刚</span>
+                <span class="sess-sage">管我财</span><span class="sess-sep">·</span><span>2 轮</span><span class="sess-sep">·</span><span>刚刚</span>
                 <span class="sess-streaming-label">· 生成中…</span>
               </div>
             </div>
+            <div class="del-btn">×</div>
           </div>
+          <!-- 2. 看好 -->
           <div class="sess-item">
             <div class="sess-avatar" style="background:#3b82f6">DYP</div>
             <div class="sess-body">
               <div class="sess-title-row">
-                <div class="sess-title">为什么换神华去泡泡玛特</div>
+                <div class="sess-title">苹果还能拿吗？</div>
+                <div class="sess-verdict sess-verdict-bull">看好</div>
               </div>
-              <div class="sess-preview">这是个估值套利的故事。神华 PE 8 倍但现金流稳，泡泡玛特 PE 30 但增…</div>
+              <div class="sess-preview">苹果这个生意我是懂的，现金流强、用户黏性高，这种公司我愿意一直拿着。但好公司≠任何价格都能买…</div>
               <div class="sess-meta">
-                <span style="color:#475569;font-weight:500;">段永平</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>3 轮</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>15 分钟前</span>
+                <span class="sess-sage">段永平</span><span class="sess-sep">·</span><span>3 轮</span><span class="sess-sep">·</span><span>今天 14:20</span>
               </div>
             </div>
+            <div class="del-btn">×</div>
           </div>
+          <!-- 3. 观察 -->
           <div class="sess-item">
             <div class="sess-avatar" style="background:#3b82f6">DYP</div>
             <div class="sess-body">
               <div class="sess-title-row">
-                <div class="sess-title">苹果还能拿吗</div>
+                <div class="sess-title">茅台还能买吗？</div>
+                <div class="sess-verdict sess-verdict-hold">观察</div>
               </div>
-              <div class="sess-preview">先想清楚商业模式。苹果不是硬件公司，是 1B+ 全球用户的服务平台…</div>
+              <div class="sess-preview">茅台这生意我看得懂——品牌、定价权、现金流都在。现在 22 倍 PE 不算便宜，但也没到疯的程度…</div>
               <div class="sess-meta">
-                <span style="color:#475569;font-weight:500;">段永平</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>5 轮</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>2 小时前</span>
+                <span class="sess-sage">段永平</span><span class="sess-sep">·</span><span>1 轮</span><span class="sess-sep">·</span><span>昨天 21:08</span>
               </div>
             </div>
+            <div class="del-btn">×</div>
           </div>
+          <!-- 4. 不碰 -->
           <div class="sess-item">
             <div class="sess-avatar" style="background:#10b981">GWC</div>
             <div class="sess-body">
               <div class="sess-title-row">
-                <div class="sess-title">26 年荒岛策略选什么</div>
+                <div class="sess-title">这只妖股能追吗？</div>
+                <div class="sess-verdict sess-verdict-bear">不碰</div>
               </div>
-              <div class="sess-preview">三条原则：低估、分散、避雷。我现在持仓是招行 25% + 中海油 20% + …</div>
+              <div class="sess-preview">连续涨停、没业绩支撑、股东在减持——这种我直接排雷出局。我赚的是排雷的钱，不是赌的钱。</div>
               <div class="sess-meta">
-                <span style="color:#475569;font-weight:500;">管我财</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>2 轮</span>
-                <span style="color:#cbd5e1;">·</span>
-                <span>昨天</span>
+                <span class="sess-sage">管我财</span><span class="sess-sep">·</span><span>1 轮</span><span class="sess-sep">·</span><span>6-3 19:42</span>
               </div>
             </div>
+            <div class="del-btn">×</div>
+          </div>
+          <!-- 5. 能力圈外 -->
+          <div class="sess-item">
+            <div class="sess-avatar" style="background:#3b82f6">DYP</div>
+            <div class="sess-body">
+              <div class="sess-title-row">
+                <div class="sess-title">某 AI 芯片初创值得投吗？</div>
+                <div class="sess-verdict sess-verdict-pass">能力圈外</div>
+              </div>
+              <div class="sess-preview">这个我看不懂，不在我的能力圈里。不懂不投——看不懂的生意，再热也不碰，这是我的 stop doing list。</div>
+              <div class="sess-meta">
+                <span class="sess-sage">段永平</span><span class="sess-sep">·</span><span>2 轮</span><span class="sess-sep">·</span><span>6-1 10:15</span>
+              </div>
+            </div>
+            <div class="del-btn">×</div>
+          </div>
+          <!-- 6. 普通（无 verdict） -->
+          <div class="sess-item">
+            <div class="sess-avatar" style="background:#10b981">GWC</div>
+            <div class="sess-body">
+              <div class="sess-title-row">
+                <div class="sess-title">26 年荒岛策略选什么？</div>
+              </div>
+              <div class="sess-preview">荒岛策略就是假设买完就断网十年——只选那种我闭着眼也敢拿的公司：高股息、稳态、护城河厚。</div>
+              <div class="sess-meta">
+                <span class="sess-sage">管我财</span><span class="sess-sep">·</span><span>4 轮</span><span class="sess-sep">·</span><span>5-28 08:33</span>
+              </div>
+            </div>
+            <div class="del-btn">×</div>
           </div>
         </div>
+      </div></div>
+      <div class="frame-cap">
+        <div><span class="fc-no">6</span><span class="fc-ti">历史对话列表</span></div>
+        <div class="fc-de">搜索框 + 会话卡。每卡带判决徽章（看好/观察/不碰/能力圈外四态色），首条「生成中」配脉冲点 + 蓝边高亮，普通会话无徽章。</div>
       </div>
     </div>
-    <div class="phone-label">Sessions · 搜索框 / streaming 脉冲 / 长按操作</div>
+
   </div>
 
-</div>
+  <!-- ============================================================
+       底部 legend
+       ============================================================ -->
+  <section class="legend">
+    <div class="lg-head">
+      <span class="lg-badge">v1.0-mp</span>
+      <span class="lg-title">这份预览覆盖了什么 · 怎么去真机核对</span>
+      <span class="lg-when">mirror · chat / jury / sessions · 2026-06-05</span>
+    </div>
+    <p class="lg-lead">本页是当前小程序三页 UI 的离线 H5 镜像，逐像素对齐 <code>chat.wxss</code> / <code>jury.wxss</code> / <code>sessions.wxss</code> 的最终代码（含 v62 三阶段 + v63 数据驱动可视化）。下方左列是已覆盖的 UI 能力，右列是去真机一一核对的步骤。</p>
 
-<div class="legend">
-  <h2>视觉走查图例（13 commit / v60.4-mp.0 → v60.5-mp.5）</h2>
-  <p>这是用 HTML/CSS 模拟的小程序界面，便于离线视觉验收。所有元素对应 <code>miniprogram/pages/chat/*</code> 和 <code>pages/sessions/*</code> 的 wxml/wxss。</p>
-  <p><strong>覆盖能力</strong>：empty state (avatar pulse) · 折叠 analyst card · 折叠 tool pill · markdown 渲染 (h2/p/ul/bold/italic/code/cite) · 引用 chip <span class="cite-chip">#1</span> · quote 双 badge · followups · focused input · streaming 脉冲</p>
-  <p><strong>真机验证</strong>：打开 <code>/Applications/wechatwebdevtools.app</code> → 导入 <code>~/sage-jury/miniprogram/</code> → 勾选「不校验合法域名」→ 编译。</p>
-  <p style="color:#64748b;margin-top:12px;font-size:12px;">v60.5-mp.5 · 13 commits · 41 lint pass · 2583 LoC</p>
-</div>
+    <div class="lg-grid">
+      <div class="lg-col">
+        <h4><span class="ic">✦</span>已覆盖的 UI 能力</h4>
+        <div class="lg-item"><span class="k">①</span><div><b>空态 onboarding</b> — 脉冲头像、语料计数、横排切大佬、starter 气泡。</div></div>
+        <div class="lg-item"><span class="k">②</span><div><b>analyzing 徽章</b> — Phase1 取数绿色卡转圈，工具 pill 逐个打勾。</div></div>
+        <div class="lg-item"><span class="k">③</span><div><b>完整答案卡</b> — 深色 ticker 条 + 判决横幅（置信度环）+ <b>PE 估值标尺</b> + <b>股息 vs 国债对比</b> + <b>成长体检四宫格</b> + <b>五维体检</b> + 重点关注。</div></div>
+        <div class="lg-item"><span class="k">④</span><div><b>工具折叠 + markdown 正文</b> — 内心分析、工具结果预览、分层小节、有序/无序列表、<code>#N</code> 引用 chip、followups、quotes（相关性 + 时效徽章）。</div></div>
+        <div class="lg-item"><span class="k">⑤</span><div><b>多人对线 jury</b> — 双 sage 并行卡，状态徽章（分析中/落笔中/已审✓）、各自的判决横幅 + 紧凑 viz。</div></div>
+        <div class="lg-item"><span class="k">⑥</span><div><b>历史列表</b> — 搜索框 + 会话卡 + 四态判决徽章 + 生成中脉冲高亮。</div></div>
+      </div>
+      <div class="lg-col">
+        <h4><span class="ic">✓</span>真机验证步骤</h4>
+        <ol class="lg-steps">
+          <li>微信开发者工具打开 <code>sage-jury/miniprogram</code>，编译到模拟器或真机预览。</li>
+          <li>空态对照框①：脉冲动画、<b>10497 / 33877</b> 语料数、两位大佬色卡（蓝 <code>#3b82f6</code> / 绿 <code>#10b981</code>）。</li>
+          <li>问「招行 PE 分位」走一轮：看 analyzing 卡 → ticker 条 → <b>判决横幅置信度环</b>是否顺时针填到对应百分比。</li>
+          <li>展开判决卡：核对 <b>PE 游标位置</b>、<b>股息 ＞ 国债</b>对比条与利差文案、成长四宫格涨跌色、五维通过/未过圆点。</li>
+          <li>点正文 <code>#N</code> 引用 chip → 应高亮滚动到对应 quote；长按 quote 复制原帖链接。</li>
+          <li>头部「多人对线」进 jury：勾 2 位大佬提问，核对两卡并行流式与各自判决。</li>
+          <li>回 sessions 列表：核对判决徽章四态配色与生成中脉冲点。</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="lg-foot">
+      <b>明快专业 · 非阴间。</b>　数值为预览示例（真实合理量级，非实时行情）；真机数据由后端 SSE 经 <code>utils/api.js</code> 的 <code>decorateVerdict / buildViz / decorateFacts</code> 实时装饰生成。<br>该镜像随小程序 UI 迭代手动更新，当前对齐 <b>chat v63 / jury v63 / sessions v63</b>。
+    </div>
+  </section>
 
 </body>
 </html>

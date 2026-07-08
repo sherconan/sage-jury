@@ -104,31 +104,98 @@ const DIM_LABEL = {
   position: '分位', landmine: '排雷', dividend: '股息',
   stability: '稳态', island: '荒岛',
 };
+// v63-mp: verdict.sage 是 slug（server 端发 'duan-yongping'/'guan-wo-cai'），映射成中文名给五维标题用
+const SAGE_DISPLAY = {
+  'duan-yongping': '段永平',
+  'guan-wo-cai': '管我财',
+};
+// v63-mp: 把 keyMetrics 文案串（"PE 20.0｜EY 5.0%"、"股息率 3.92%"…）解析成数值，
+// 算好可视化所需的进度条宽度 / PE 游标位置 / 标签色。绑真实数据，不写死。
+const BOND_YIELD = 2.5; // 10Y 国债收益率基准（管哥股息维度对标）
+function clampPct(n) { return Math.max(4, Math.min(100, n)); }
+function firstNum(str, re) { const m = str.match(re); return m ? parseFloat(m[1]) : null; }
+function buildViz(keyMetrics) {
+  const s = (keyMetrics || []).join(' ');
+  if (!s) return null;
+  const pe = firstNum(s, /PE[-\s]*(?:TTM)?\s*([0-9]+(?:\.[0-9]+)?)/i);
+  const ey = firstNum(s, /EY\s*([0-9]+(?:\.[0-9]+)?)\s*%/i);
+  const pb = firstNum(s, /PB\s*([0-9]+(?:\.[0-9]+)?)/i);
+  const div = firstNum(s, /股息率?\s*([0-9]+(?:\.[0-9]+)?)\s*%/);
+  const roe = firstNum(s, /ROE\s*5?\s*年?\s*均?\s*([0-9]+(?:\.[0-9]+)?)\s*%/i);
+  const revC = firstNum(s, /营收\s*5?\s*年?\s*CAGR\s*([\-0-9]+(?:\.[0-9]+)?)\s*%/i);
+  const npC = firstNum(s, /净利\s*5?\s*年?\s*CAGR\s*([\-0-9]+(?:\.[0-9]+)?)\s*%/i);
+  const gm = firstNum(s, /毛利率?\s*([0-9]+(?:\.[0-9]+)?)\s*%/);
+  const peTag = (p) => {
+    if (p < 12) return { t: '便宜', tone: 'good' };
+    if (p < 18) return { t: '合理', tone: 'good' };
+    if (p < 28) return { t: '中性偏贵', tone: 'warn' };
+    if (p < 45) return { t: '偏贵', tone: 'warn' };
+    return { t: '贵', tone: 'bad' };
+  };
+  // 游标位置与标尺三锚点对齐：标签钉在 8×→0% / 20×→50% / 50×→100%，
+  // 故用分段线性映射，让游标落在自己标签上（clampPct 的 4% 下限保证 PE≤8 时游标尖不被裁出轨道）。
+  const peMarkerPct = (p) => {
+    if (p <= 8) return 0;
+    if (p <= 20) return (p - 8) / 12 * 50;       // 8–20 → 0–50%
+    if (p <= 50) return 50 + (p - 20) / 30 * 50; // 20–50 → 50–100%
+    return 100;
+  };
+  const viz = {
+    pe: pe != null ? { val: pe, markerPct: clampPct(peMarkerPct(pe)), tag: peTag(pe).t, tagTone: peTag(pe).tone } : null,
+    ey: ey != null ? { val: ey, pct: clampPct(ey / 7 * 100) } : null,
+    pb: pb != null ? { val: pb, pct: clampPct(pb / 10 * 100) } : null,
+    div: div != null ? { val: div, pct: clampPct(div / 5 * 100), bondPct: BOND_YIELD / 5 * 100, bond: BOND_YIELD, beats: div >= BOND_YIELD, diff: Math.round((div - BOND_YIELD) * 100) / 100 } : null,
+    roe: roe != null ? { val: roe, pct: clampPct(roe / 40 * 100) } : null,
+    revC: revC != null ? { val: revC, pct: clampPct(Math.abs(revC) / 20 * 100), up: revC >= 0 } : null,
+    npC: npC != null ? { val: npC, pct: clampPct(Math.abs(npC) / 20 * 100), up: npC >= 0 } : null,
+    gm: gm != null ? { val: gm, pct: clampPct(gm) } : null,
+  };
+  viz.hasValuation = !!(viz.pe || viz.div || viz.ey || viz.pb);
+  viz.hasGrowth = !!(viz.revC || viz.npC || viz.roe || viz.gm);
+  return (viz.hasValuation || viz.hasGrowth) ? viz : null;
+}
 function decorateVerdict(v) {
   if (!v) return null;
   const signalRaw = v.signal || 'hold';
   const dims = v.dims || {};
   const dimList = Object.keys(dims).map((k) => {
     const d = dims[k] || {};
+    const score = typeof d.score === 'number' ? d.score : null;
+    const pass = d.pass !== false;
     return {
       key: k,
       label: DIM_LABEL[k] || k,
       note: d.note || '',
-      pass: d.pass !== false,
-      score: typeof d.score === 'number' ? d.score : null,
+      pass,
+      score,
       weight: typeof d.weight === 'number' ? Math.round(d.weight * 100) : null,
+      // 评分条宽度：有 score 用 score(0-100)，否则按通过/不通过给个体感宽度
+      barPct: score != null && score > 0 ? clampPct(score) : (pass ? 78 : 26),
     };
   });
+  const keyMetrics = Array.isArray(v.keyMetrics) ? v.keyMetrics : [];
+  const passCount = dimList.filter((d) => d.pass).length;
   return {
     sage: v.sage || '',
+    sageDisplay: SAGE_DISPLAY[v.sage] || '', // v63-mp: slug→中文名（五维标题用），未知 slug 留空降级
     v62: !!v.v62,
     signalRaw,
     signal: SIGNAL_LABEL[signalRaw] || signalRaw,
     tone: SIGNAL_TONE[signalRaw] || 'hold',
     confidence: typeof v.confidence === 'number' ? v.confidence : null,
+    confPct: typeof v.confidence === 'number' ? Math.max(0, Math.min(100, v.confidence)) : null,
+    // v63-mp: 置信度环 — 两半圆 rotate 进度环（纯 transform，真机稳，不用 conic-gradient）。
+    // 0-100 → 顺时针填充：右半叶覆盖 0-180°，左半叶覆盖 180-360°。经 /tmp 视觉验证的角度映射：
+    //   confDegR = 180 - min(deg,180)；confDegL = deg>180 ? (360-deg) : 180（deg=pct*3.6）
+    ...(typeof v.confidence === 'number' ? (function () {
+      const deg = Math.round(Math.max(0, Math.min(100, v.confidence)) * 3.6);
+      return { confDegR: 180 - Math.min(deg, 180), confDegL: deg > 180 ? (360 - deg) : 180 };
+    })() : { confDegR: null, confDegL: null }),
     headline: v.headline || '',
-    keyMetrics: Array.isArray(v.keyMetrics) ? v.keyMetrics : [],
+    keyMetrics,
+    viz: buildViz(keyMetrics),
     dims: dimList,
+    dimsPassText: dimList.length ? (passCount + ' / ' + dimList.length + ' 通过') : '',
     topConcerns: Array.isArray(v.top_concerns) ? v.top_concerns : [],
   };
 }

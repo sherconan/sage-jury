@@ -29,6 +29,16 @@ import { searchSagePosts, formatHistoricalPosts, type RelevantQuote } from "@/li
 import { buildDossier, type ResearchDossier } from "@/lib/sage/v62/research";
 import { analyzeDuan, formatAnalysis } from "@/lib/sage/v62/analysis";
 import { analyzeGuan, formatAnalysisGuan } from "@/lib/sage/v62/analysis-guan";
+// v63: 通用分析 + registry persona —— 让 10 位大佬都能产出同规格判决，不必每人手写模块
+import { analyzeGeneric, buildSagePersona } from "@/lib/sage/v62/analysis-generic";
+import { SAGE_BY_ID_ALL, type Sage } from "@/data/sages";
+
+// v63 上线 roster：10 位大佬。段永平/管哥走各自手写 pipeline，其余 8 位走 generic。
+const LIVE_SAGES = [
+  "duan-yongping", "guan-wo-cai", "feng-liu", "dan-bin", "lao-tang",
+  "lin-yuan", "zhang-kun", "qiu-guolu", "buffett", "li-lu",
+] as const;
+const BESPOKE = new Set(["duan-yongping", "guan-wo-cai"]);
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -225,22 +235,18 @@ function scoreGuan(facts: StockFactsTyped | null, userMsg: string): SageVerdict 
 //   - inline 只保留运行时强化（数据纪律 + 输出硬约束 + verdict top_concerns）
 //   - SKILL.md 加载失败时 fallback 到极简骨架（不让服务挂）
 function buildVoicePrompt(
-  sage_id: 'duan-yongping' | 'guan-wo-cai',
+  sage_id: string,
+  sageName: string,
   userMsg: string,
   facts: StockFactsTyped | null,
   verdict: SageVerdict | null,
   historicalPosts: RelevantQuote[],
-  skillMd: string,
+  personaBody: string,
   v62AnalysisText?: string | null
 ): { system: string; user: string } {
   const isDuan = sage_id === "duan-yongping";
-  const sageName = isDuan ? "段永平" : "管我财";
-
-  // SKILL.md 加载失败时的极简 fallback
-  const fallbackPersona = isDuan
-    ? `你是段永平。1961 年江西生，2002 年起重仓苹果，雪球 ID @大道无形我有型。\n核心：right business / right people / right price，stop doing list。`
-    : `你是管我财。香港价值投资者。雪球 ID @管我财。\n核心：低估逆向平均赢，排雷胜选股，5% 股息打底 + 5% 增长。`;
-  const personaBody = (skillMd && skillMd.length > 100) ? skillMd : fallbackPersona;
+  const isBespoke = BESPOKE.has(sage_id);
+  const voiceName = isDuan ? "段永平" : sage_id === "guan-wo-cai" ? "管哥" : sageName;
 
   const verdictBlock = verdict ? `
 
@@ -266,41 +272,43 @@ ${verdict.top_concerns.length ? `- 🚨 top_concerns（必须在回答里点出�
 
 ## 输出形态 —— 这是一次「投资分析」，不是一句点评（v61 核心）
 
-用${isDuan ? '段永平' : '管哥'}的投资逻辑，对用户问的事做一次**完整分析**。形态固定：
+用${voiceName}的投资逻辑，对用户问的事做一次**完整分析**。形态固定：
 
-【输出结构】整篇用「〔小标题〕」分层（〔〕全角方括号；**禁止** # 标题、禁止"第一/第二/Step"、禁止表格、禁止 emoji 列表）。**第一层必须是〔结论〕，整篇第一个字就是〔**。每层 2-4 句话，是${isDuan ? '段永平' : '管哥'}本人在讲，自然过渡：
+【输出结构】整篇用「〔小标题〕」分层（〔〕全角方括号；**禁止** # 标题、禁止"第一/第二/Step"、禁止表格、禁止 emoji 列表）。**第一层必须是〔结论〕，整篇第一个字就是〔**。每层 2-4 句话，是${voiceName}本人在讲，自然过渡：
 - 〔结论〕**开门见山**——买 / 不碰 / 观望 / 看不懂，一句话说死，再补一句话核心理由。让用户第一眼就看到判断，**绝不许把结论藏到最后**
 - 〔先看这是什么〕这门生意怎么赚钱？用户为什么觉得它"猛"/值得问？点破表象
-- 〔生意本质〕${isDuan ? '商业模式简单吗？有没有定价权？赚的钱要不要不停投回去买设备？护城河靠什么撑？10 年后还在吗？' : '行业地位、护城河、现金流稳不稳、有没有"鬼故事"/雷点'}
+- 〔生意本质〕${isDuan ? '商业模式简单吗？有没有定价权？赚的钱要不要不停投回去买设备？护城河靠什么撑？10 年后还在吗？' : '行业地位、护城河、定价权、现金流稳不稳、有没有"鬼故事"/雷点、10 年后格局清不清楚'}
 - 〔现在的价〕用今天的真实数据算账：PE→EY 多少 vs 国债 ~4%、股息率够不够、PB 破净没 —— **必须有数字**
-- 〔能力圈与周期〕这在${isDuan ? '段永平' : '管哥'}能力圈内吗？周期处在什么位置？最大的坑/最该担心的是什么
+- 〔能力圈与周期〕这在${voiceName}能力圈内吗？周期处在什么位置？最大的坑/最该担心的是什么
 - 〔仓位与边界〕给仓位建议 + 一句"什么情况下我会改变看法" —— 不要重复〔结论〕里已说过的话
 
 【长度】600-1000 字。是分析就要展开，不要怕长 —— 但每句都要有信息量，**禁注水、禁把一个意思翻来覆去说**。
 
-【语气】${isDuan ? '段永平' : '管哥'}本人在写：夹叙夹议、有类比、有算账、有"我自己当年…"的历史决策对照。不是研报腔，不是 AI 腔。
+【语气】${voiceName}本人在写：夹叙夹议、有类比、有算账、有"我自己当年…"的历史决策对照，符合你 SKILL/人设里的语气样本。不是研报腔，不是 AI 腔。
 
 ## 能力圈外怎么答（核心 —— 给你框架，不给台词，自己组织语言）
-- 🚫 大忌：把${isDuan ? '段永平' : '管哥'}写成"什么都不懂"的人。${isDuan ? '段永平做电子产品出身（步步高/OPPO/vivo），对芯片、供应链、消费、互联网都不陌生' : '管哥看遍港股 A 股各行业财报，生意模式他都懂'}
+- 🚫 大忌：把${voiceName}写成"什么都不懂"的人。${isDuan ? '段永平做电子产品出身（步步高/OPPO/vivo），对芯片、供应链、消费、互联网都不陌生' : isBespoke ? '管哥看遍港股 A 股各行业财报，生意模式他都懂' : `${sageName}深耕投资多年，主流行业的生意模式都不陌生`}
 - 分清两种"不碰"：
   · 真陌生（创新药的具体药理、加密货币）→ 老实说"这个我真看不懂，不下注"
-  · **看得懂、但生意不行**（周期股/重资产/无定价权/讲故事股）→ 这是多数情况。${isDuan ? '段永平' : '管哥'}是"看懂了才不碰"——绝不能写成"没研究清楚"
+  · **看得懂、但生意不行**（周期股/重资产/无定价权/讲故事股）→ 这是多数情况。${voiceName}是"看懂了才不碰"——绝不能写成"没研究清楚"
 - 对【看得懂但不碰】的，用评判好生意的框架**具体否决**：有没有定价权（价格自己说了算还是供需说了算）？赚的钱要不要不断投回去买设备扩产能？商业模式简单吗、十年后格局清楚吗？
-- 针对用户问的【这家具体公司】说**具体的**：它做什么、最近为什么被追捧（用你自己的知识——例：海力士是 HBM 存储芯片龙头，这一轮猛是 AI 算力拉动），再用框架判断
+- 针对用户问的【这家具体公司】说**具体的**：它做什么、最近为什么被追捧（用你自己的知识），再用框架判断
 - 用户带情绪（"这么猛""回调了能抄底"）→ 正面接住：点破"猛"的真实原因 +「周期股最猛的时候往往就是顶」
-- 🚫 死规矩：① 不准抄本 prompt 里任何示范句 ② 不准出现"三个篮子""太难篮子"这种词 ③ 不准把看得懂的生意说成"没研究清楚" ④ 不准用"涨看不到顶跌看不到底"这种谁都会说的废话——要说**具体商业结构**（如"存储三巨头拼杀谁都没定价权、赚的钱要砸进新产线"）
-
+- 🚫 死规矩：① 不准抄本 prompt 里任何示范句 ② 不准把看得懂的生意说成"没研究清楚" ③ 不准用"涨看不到顶跌看不到底"这种谁都会说的废话——要说**具体商业结构**
+${isBespoke ? `
 ## 跨角色禁用（写出立刻失败）
 ${isDuan ? `- 禁说: 茶餐厅 / 在香港 / 放长线钓大鱼 / 5% 股息打底 / 看分位不看 K 线 / 排雷胜选股 / 招行长持 / 江南布衣 / 首都机场 / 物管` : `- 禁说: 圆石滩 / 加州后院 / 打高尔夫 / I'll be back / 本分 / stop doing list / 看十年 / 千万别用 Margin / 苹果拿了 20 年 / 网易 100 倍 / 拒绝百度 / 神华换泡泡玛特`}
-${isDuan ? '' : '- 必须简体普通话：粤字 / 繁体字一个不要（嘅咗喺啲冇咁唔睇識靚呢佢 → 全部改为简体普通话）'}
+${isDuan ? '' : '- 必须简体普通话：粤字 / 繁体字一个不要（嘅咗喺啲冇咁唔睇識靚呢佢 → 全部改为简体普通话）'}` : `
+## 角色一致性
+- 始终用${sageName}的哲学和语气，不要混入其他大佬的标志性术语或口头禅`}
 ${verdictBlock}`;
 
   const factsBlock = v62AnalysisText ? `
 # 📊 投资分析底稿（v62 — 基于 10 年真实财务数据，研究层 + 分析层已算好）
 ${v62AnalysisText}
 
-⚠️ 上面是真实数据算出来的分析底稿。你的工作是在此之上用段永平的视角做**最终判断和表达**——
-消化它、用段永平的话讲出来，不是逐条复述。底稿里的数字必须用进去算账，绝不准编新数字。
+⚠️ 上面是真实数据算出来的分析底稿。你的工作是在此之上用${voiceName}的视角做**最终判断和表达**——
+消化它、用${voiceName}的话讲出来，不是逐条复述。底稿里的数字必须用进去算账，绝不准编新数字。
 底稿说"数据缺口"的，如实告诉用户，不要编。
 ` : facts ? `
 # Analysis JSON (真实数据，禁瞎编)
@@ -338,7 +346,7 @@ ${formatHistoricalPosts(historicalPosts, 200)}
 ${factsBlock}
 ${historyBlock}
 
-用${isDuan ? "段永平" : "管哥"}的投资逻辑做一次完整分析：先一句结论，再用〔〕分层论证，600-1000 字。`;
+用${voiceName}的投资逻辑做一次完整分析：先一句结论，再用〔〕分层论证，600-1000 字。`;
 
   return { system, user };
 }
@@ -348,9 +356,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { sage_id, message } = body;
 
-  if (sage_id !== 'duan-yongping' && sage_id !== 'guan-wo-cai') {
-    return new Response("v60.8 当前仅支持 duan-yongping / guan-wo-cai", { status: 400 });
+  if (!(LIVE_SAGES as readonly string[]).includes(sage_id)) {
+    return new Response(`不支持的大佬: ${sage_id}`, { status: 400 });
   }
+  const sage = SAGE_BY_ID_ALL[sage_id] as Sage | undefined;
+  const sageName = sage?.name || sage_id;
   const userMsg = String(message || "").trim();
   if (!userMsg) return new Response("Empty message", { status: 400 });
 
@@ -367,7 +377,8 @@ export async function POST(req: NextRequest) {
         // P1.2 (2026-05-22)：US 接入 datacenter RPT_USF10_FN_*。
         // P2   (2026-05-22)：HK 接入 datacenter RPT_HKF10_FN_*（schema 同 US，字典不同）。
         // P3-B (2026-05-25)：管哥 v62 化 5 维度（分位/排雷/股息/稳态/荒岛），useV62 扩 guan-wo-cai。
-        const useV62 = !!stock && ['A', 'US', 'HK'].includes(stock.market) && (sage_id === 'duan-yongping' || sage_id === 'guan-wo-cai');
+        // v63: 全部 10 位大佬都走 v62（有 stock 时）——段/管用各自手写分析，其余用 generic
+        const useV62 = !!stock && ['A', 'US', 'HK'].includes(stock.market);
         if (useV62) {
           const msgMap: Record<string, string> = {
             US: '研究美股 10 年财务...',
@@ -396,34 +407,27 @@ export async function POST(req: NextRequest) {
         if (useV62 && dataResult) {
           const dossier = dataResult as ResearchDossier;
           send("facts", { ticker: stock, v62: true, depth: dossier.depth, years: dossier.yearly.length });
-          if (sage_id === 'duan-yongping') {
-            const analysis = analyzeDuan(dossier);
-            v62Text = formatAnalysis(analysis);
-            send("verdict", {
-              sage: 'duan-yongping', v62: true,
-              signal: analysis.preliminarySignal, confidence: 0,
-              headline: analysis.headline, keyMetrics: analysis.keyMetrics,
-              dims: Object.fromEntries(analysis.findings.map(f =>
-                [f.dimension, { note: f.points.join('；'), pass: f.signal !== 'weak', score: 0, weight: 0 }])),
-            });
-          } else {
-            // guan-wo-cai: 5 维度（分位/排雷/股息/稳态/荒岛）
-            const analysis = analyzeGuan(dossier);
-            v62Text = formatAnalysisGuan(analysis);
-            send("verdict", {
-              sage: 'guan-wo-cai', v62: true,
-              signal: analysis.preliminarySignal, confidence: 0,
-              headline: analysis.headline, keyMetrics: analysis.keyMetrics,
-              dims: Object.fromEntries(analysis.findings.map(f =>
-                [f.dimension, { note: f.points.join('；'), pass: f.signal !== 'weak', score: 0, weight: 0 }])),
-            });
-          }
+          // v63: 段/管走手写分析，其余 8 位走 generic（registry dimensions 驱动）
+          const analysis = sage_id === 'duan-yongping' ? analyzeDuan(dossier)
+            : sage_id === 'guan-wo-cai' ? analyzeGuan(dossier)
+            : analyzeGeneric(dossier, sage!);
+          v62Text = sage_id === 'guan-wo-cai' ? formatAnalysisGuan(analysis as any) : formatAnalysis(analysis as any);
+          send("verdict", {
+            sage: sage_id, v62: true,
+            signal: analysis.preliminarySignal, confidence: 0,
+            headline: analysis.headline, keyMetrics: analysis.keyMetrics,
+            dims: Object.fromEntries(analysis.findings.map(f =>
+              [f.dimension, { note: f.points.join('；'), pass: f.signal !== 'weak', signal: f.signal, score: 0, weight: 0 }])),
+          });
         } else {
           facts = (dataResult as StockFactsTyped | null) || null;
           if (facts) send("facts", { ticker: stock, facts });
           else send("facts", { ticker: null, note: "无识别股票" });
-          verdict = sage_id === 'duan-yongping' ? scoreDuan(facts, userMsg) : scoreGuan(facts, userMsg);
-          send("verdict", verdict);
+          // 非 v62（无 stock）：段/管有粗判打分，其余大佬靠人设+历史发言作答，不强行打分
+          verdict = sage_id === 'duan-yongping' ? scoreDuan(facts, userMsg)
+            : sage_id === 'guan-wo-cai' ? scoreGuan(facts, userMsg)
+            : null;
+          if (verdict) send("verdict", verdict);
         }
 
         if (history.length) {
@@ -456,11 +460,12 @@ export async function POST(req: NextRequest) {
           send("tool_call", { name: "get_valuation_metrics", args: { stock: stock?.name }, id: t3 });
           send("tool_result", { name: "get_valuation_metrics", id: t3,
             result: `${stock?.name} · PE ${dossier.peTTM?.toFixed?.(1) || '?'} | PB ${dossier.pbMRQ?.toFixed?.(2) || '?'} | EY ${dossier.earningsYield?.toFixed?.(1) || '?'}% | 营收5年CAGR ${dossier.revenueCAGR5?.toFixed?.(1) || '?'}% | 净利5年CAGR ${dossier.netProfitCAGR5?.toFixed?.(1) || '?'}% | ROE5年均 ${dossier.roeAvg5?.toFixed?.(1) || '?'}%` });
-          // 工具 4: 段永平 4 维分析
+          // 工具 4: 大佬框架分析
           const t4 = `v62-analyze-${ts}`;
-          send("tool_call", { name: "analyze_with_duan_framework", args: { stock: stock?.name, dimensions: 4 }, id: t4 });
-          send("tool_result", { name: "analyze_with_duan_framework", id: t4,
-            result: `${stock?.name} · 段永平 4 维（生意本质/管理与资本配置/现在的价/能力圈与周期）已分析 · 历史发言 ${history.length} 条已检索` });
+          const dimNames = (sage?.dimensions || []).map(d => d.label).join('/') || '多维框架';
+          send("tool_call", { name: "analyze_with_sage_framework", args: { sage: sageName, stock: stock?.name }, id: t4 });
+          send("tool_result", { name: "analyze_with_sage_framework", id: t4,
+            result: `${stock?.name} · ${sageName}框架（${dimNames}）已分析 · 历史发言 ${history.length} 条已检索` });
         } else if (facts) {
           const toolId = `v608-fetch-${Date.now()}`;
           send("tool_call", { name: "get_realtime_quote", args: { stock: stock?.name }, id: toolId });
@@ -470,10 +475,13 @@ export async function POST(req: NextRequest) {
           });
         }
         // v60.8.4: emit phase writer 让 UI 关闭"内心分析中"loader
-        send("phase", { name: "writer", message: `${sage_id === 'duan-yongping' ? '段永平' : '管哥'}写答案...` });
-        // v60.9: 加载 SKILL.md 作为 system prompt 主体
+        send("phase", { name: "writer", message: `${sageName}写答案...` });
+        // v60.9/v63: SKILL.md 优先（段/管有手写），没有就用 registry 生成的 persona
         const skillMd = await loadSageSkill(sage_id, req);
-        const { system, user } = buildVoicePrompt(sage_id, userMsg, facts, verdict, history, skillMd, v62Text);
+        const personaBody = (skillMd && skillMd.length > 100)
+          ? skillMd
+          : (sage ? buildSagePersona(sage) : `你是${sageName}，一位价值投资者。`);
+        const { system, user } = buildVoicePrompt(sage_id, sageName, userMsg, facts, verdict, history, personaBody, v62Text);
 
         const llmRes = await fetch(`${LLM_BASE}/chat/completions`, {
           method: "POST",
@@ -523,6 +531,8 @@ export async function POST(req: NextRequest) {
         };
 
         const stripCrossSage = (text: string): string => {
+          // v63: 跨角色违禁词只对段/管 bespoke 生效；generic 大佬不套段永平的禁词
+          if (!BESPOKE.has(sage_id)) return text;
           const patterns = sage_id === 'guan-wo-cai' ? FORBIDDEN_FOR_GUAN : FORBIDDEN_FOR_DUAN;
           let cleaned = text;
           for (const p of patterns) cleaned = cleaned.replace(p, '');

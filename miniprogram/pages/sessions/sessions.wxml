@@ -33,6 +33,7 @@
       <view class="sess-body">
         <view class="sess-title-row">
           <view class="sess-title">{{item.title}}</view>
+          <view wx:if="{{item.verdictSignal}}" class="sess-verdict sess-verdict-{{item.verdictTone}}">{{item.verdictSignal}}</view>
           <view wx:if="{{item.streaming}}" class="sess-streaming-dot"></view>
         </view>
         <view wx:if="{{item.preview}}" class="sess-preview">{{item.preview}}</view>

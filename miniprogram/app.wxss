@@ -1,7 +1,7 @@
 /* 全局样式 */
 page {
-  background: #f8fafc;
-  color: #0f172a;
+  background: #eef2f7;
+  color: #0f2540;
   font-family: -apple-system, "PingFang SC", "Helvetica Neue", sans-serif;
   font-size: 28rpx;
   line-height: 1.6;
@@ -52,3 +52,15 @@ page {
 .border-blue { border-color: #3b82f6; }
 .shadow { box-shadow: 0 1rpx 3rpx rgba(0,0,0,.08); }
 .shadow-md { box-shadow: 0 4rpx 12rpx rgba(0,0,0,.1); }
+
+/* ============ v63-mp 改版设计 token（对齐 redesign-preview :root + chat.wxss viz）============ */
+/* 金融语义色板 —— 与 chat.wxss 的 viz 硬编码色同源，统一全局词汇 */
+.bg-app { background: #eef2f7; }       /* 页面底 --bg */
+.bg-card { background: #ffffff; }       /* 卡面 --card */
+.text-ink { color: #0f2540; }           /* 主墨 --ink */
+.text-ink2 { color: #5a6b80; }          /* 次墨 --ink2 */
+.text-ink3 { color: #90a0b3; }          /* 弱墨 --ink3 */
+.text-good { color: #0ea371; }          /* 好/绿 --good */
+.text-warn { color: #e0922f; }          /* 警/橙 --warn */
+.text-bad { color: #e5484d; }           /* 坏/红 --bad */
+.border-line { border-color: #e6ebf2; } /* 分隔线 --line */

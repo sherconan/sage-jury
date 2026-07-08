@@ -10,6 +10,7 @@
 // v62 第一版只做 A 股深度档案；港股/美股返回薄档案，待后续接入。
 
 import type { Ticker } from "../stock_tools";
+import { fetchWindFacts } from "../stock_tools"; // Wind 万得：权威 PE/PB/股息/市值（补 US 估值缺口 + A股股息）
 
 const TIMEOUT = 9000;
 const UA = "Mozilla/5.0";
@@ -334,20 +335,22 @@ export async function buildDossier(ticker: Ticker): Promise<ResearchDossier> {
   // datacenter RPT_HKF10_FN_* 与美股 USF10 同 schema，STD_ITEM_CODE 字典不同。
   if (ticker.market === "HK") {
     const secucodeHK = `${ticker.code.padStart(5, "0")}.HK`; // 00700.HK / 09992.HK
-    const [q, fin] = await Promise.all([
+    const [q, fin, wind] = await Promise.all([
       fetchQuoteHK(ticker.code),                            // gtimg-hk: price/mktcap/PE/PB/股息
       fetchHKFinancials(secucodeHK),
+      fetchWindFacts(ticker),                               // Wind 权威估值/股息
     ]);
     base.price = q.price;
-    base.marketCapBillion = q.mktcap;
-    base.peTTM = q.peTTM;                                   // P3-A (2026-05-25): 港股 PE 接入
-    base.pbMRQ = q.pbMRQ;
-    base.dividendYieldPct = q.divYield;
-    if (q.peTTM && q.peTTM > 0) base.earningsYield = 100 / q.peTTM;
+    base.marketCapBillion = q.mktcap ?? wind.market_cap_billion;
+    base.peTTM = wind.pe_ttm ?? q.peTTM;                    // P3-A (2026-05-25): 港股 PE 接入；Wind 权威优先
+    base.pbMRQ = wind.pb_mrq ?? q.pbMRQ;
+    base.dividendYieldPct = wind.dividend_yield_pct ?? q.divYield;
+    if (base.peTTM && base.peTTM > 0) base.earningsYield = 100 / base.peTTM;
     base.yearly = fin.yearly;
-    base.source = ["gtimg-hk", "datacenter/hkf10-income", "datacenter/hkf10-balance"];
+    base.source = ["gtimg-hk", "datacenter/hkf10-income", "datacenter/hkf10-balance", ...(wind.source || [])];
     if (q.err) base.errors.push(q.err);
     if (fin.err) base.errors.push(fin.err);
+    if (wind.errors) base.errors.push(...wind.errors);
 
     if (fin.yearly.length >= 2) {
       base.depth = "full";
@@ -360,24 +363,29 @@ export async function buildDossier(ticker: Ticker): Promise<ResearchDossier> {
       const roes = fin.yearly.slice(0, 5).map((y) => y.roe).filter((r): r is number => r != null);
       base.roeAvg5 = roes.length ? roes.reduce((a, b) => a + b, 0) / roes.length : undefined;
     }
-    // PE/PB 港股走 gtimg-hk（stock_tools.ts 已有 fetchGtimgHK），buildDossier 暂不取 PE（thin 时也没取），
-    // 待 valuation 层统一接入再补；analysis.ts:87 看 d.peTTM == null 直接判 unknown 不会崩。
+    // PE/PB/股息：Wind 权威优先，gtimg-hk 兜底（2026-06-01 接入 Wind）。
     return base;
   }
 
   // 美股：实时价 + 10 年财务并行（P1.2 / 2026-05-22 上线）
   if (ticker.market === "US") {
     const secucodeUS = `${ticker.code}.O`; // 默认 NASDAQ；NYSE 的 .N 后缀待 NYSE 标的扩展时支持
-    const [q, fin] = await Promise.all([
+    const [q, fin, wind] = await Promise.all([
       fetchQuoteUS(ticker.secid),
       fetchUSFinancials(secucodeUS),
+      fetchWindFacts(ticker),                               // Wind 权威 PE/PB/股息/市值（美股 datacenter 估值接口不稳定，原先全空）
     ]);
     base.price = q.price;
-    base.marketCapBillion = q.mktcap;
+    base.marketCapBillion = q.mktcap ?? wind.market_cap_billion;
+    base.peTTM = wind.pe_ttm;                               // 美股估值此前全 undefined，Wind 补齐
+    base.pbMRQ = wind.pb_mrq;
+    base.dividendYieldPct = wind.dividend_yield_pct;
+    if (base.peTTM && base.peTTM > 0) base.earningsYield = 100 / base.peTTM;
     base.yearly = fin.yearly;
-    base.source = ["push2", "datacenter/usf10-income", "datacenter/usf10-balance"];
+    base.source = ["push2", "datacenter/usf10-income", "datacenter/usf10-balance", ...(wind.source || [])];
     if (q.err) base.errors.push(q.err);
     if (fin.err) base.errors.push(fin.err);
+    if (wind.errors) base.errors.push(...wind.errors);
 
     if (fin.yearly.length >= 2) {
       base.depth = "full";
@@ -390,28 +398,30 @@ export async function buildDossier(ticker: Ticker): Promise<ResearchDossier> {
       const roes = fin.yearly.slice(0, 5).map((y) => y.roe).filter((r): r is number => r != null);
       base.roeAvg5 = roes.length ? roes.reduce((a, b) => a + b, 0) / roes.length : undefined;
     }
-    // 美股 PE/PB/PS datacenter 接口未稳定（push2 f114 也返回 0），暂留 undefined；
-    // analysis.ts:87 看 d.earningsYield ?? 100/pe，pe 也是 undefined 时 analyzePrice 输出 unknown 而不会崩。
+    // 美股 PE/PB datacenter 接口不稳定（push2 f114 返回 0），改由 Wind 权威补齐（2026-06-01 接入）。
     return base;
   }
 
   // A 股：三源并行
   const secucode = `${ticker.code}.${ticker.code.startsWith("6") ? "SH" : "SZ"}`;
-  const [q, val, fin] = await Promise.all([
+  const [q, val, fin, wind] = await Promise.all([
     fetchQuote(ticker.secid),
     fetchValuation(ticker.code),
     fetchFinancials(secucode),
+    fetchWindFacts(ticker),                                 // Wind 权威股息率（datacenter 不给）+ PE/PB 兜底
   ]);
 
   base.price = q.price;
-  base.marketCapBillion = q.mktcap;
-  base.peTTM = val.peTTM;
-  base.pbMRQ = val.pbMRQ;
+  base.marketCapBillion = q.mktcap ?? wind.market_cap_billion;
+  base.peTTM = val.peTTM ?? wind.pe_ttm;
+  base.pbMRQ = val.pbMRQ ?? wind.pb_mrq;
   base.psTTM = val.psTTM;
   base.pcfTTM = val.pcfTTM;
+  base.dividendYieldPct = wind.dividend_yield_pct;          // A股 dividend 此前从未取，Wind 补齐（管哥股息维度依赖）
   base.yearly = fin.yearly;
-  base.source = ["push2", "datacenter/valuation", "datacenter/f10-finance"];
+  base.source = ["push2", "datacenter/valuation", "datacenter/f10-finance", ...(wind.source || [])];
   for (const e of [q.err, val.err, fin.err]) if (e) base.errors.push(e);
+  if (wind.errors) base.errors.push(...wind.errors);
 
   // 派生事实
   if (fin.yearly.length >= 2) {

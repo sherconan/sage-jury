@@ -21,7 +21,7 @@ export default function GlobalError({
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-red-400 bg-red-50">
           <AlertTriangle className="h-8 w-8 text-red-600" />
         </div>
-        <h1 className="mt-4 font-serif text-2xl font-bold text-navy-700">陪审团暂停休庭</h1>
+        <h1 className="mt-4 font-serif text-2xl font-bold text-navy-700">对线中断了</h1>
         <p className="mt-2 text-ink-700">
           页面出了点意外。可能是输入解析错误，或临时网络问题。
         </p>

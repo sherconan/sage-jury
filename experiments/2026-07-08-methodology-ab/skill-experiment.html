@@ -1,0 +1,373 @@
+<title>交易对线 · Skill 对照实验：配音员 vs 分析师</title>
+<style>
+  :root {
+    --bg: #f4f5f2;
+    --surface: #ffffff;
+    --surface-2: #eceee9;
+    --ink: #1c211e;
+    --muted: #5d675f;
+    --faint: #8b948c;
+    --line: #dde1da;
+    --accent: #23408f;
+    --accent-soft: #e8edf8;
+    --buy: #0a7a54;
+    --buy-bg: #e3f3ec;
+    --watch: #a05e0a;
+    --watch-bg: #faf0dd;
+    --avoid: #b2244a;
+    --avoid-bg: #fbe7ec;
+    --flag-bg: #fbe7ec;
+    --flag-line: #e4a8b8;
+    --ok-bg: #e3f3ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16191c;
+      --surface: #1f2327;
+      --surface-2: #262b30;
+      --ink: #e6e8e3;
+      --muted: #a4aca3;
+      --faint: #79817a;
+      --line: #343a40;
+      --accent: #8ba7e8;
+      --accent-soft: #232c40;
+      --buy: #4cc394;
+      --buy-bg: #1a3229;
+      --watch: #e0a860;
+      --watch-bg: #382b18;
+      --avoid: #e57795;
+      --avoid-bg: #3a2028;
+      --flag-bg: #3a2028;
+      --flag-line: #7a4256;
+      --ok-bg: #1a3229;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16191c; --surface: #1f2327; --surface-2: #262b30;
+    --ink: #e6e8e3; --muted: #a4aca3; --faint: #79817a; --line: #343a40;
+    --accent: #8ba7e8; --accent-soft: #232c40;
+    --buy: #4cc394; --buy-bg: #1a3229;
+    --watch: #e0a860; --watch-bg: #382b18;
+    --avoid: #e57795; --avoid-bg: #3a2028;
+    --flag-bg: #3a2028; --flag-line: #7a4256; --ok-bg: #1a3229;
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f5f2; --surface: #ffffff; --surface-2: #eceee9;
+    --ink: #1c211e; --muted: #5d675f; --faint: #8b948c; --line: #dde1da;
+    --accent: #23408f; --accent-soft: #e8edf8;
+    --buy: #0a7a54; --buy-bg: #e3f3ec;
+    --watch: #a05e0a; --watch-bg: #faf0dd;
+    --avoid: #b2244a; --avoid-bg: #fbe7ec;
+    --flag-bg: #fbe7ec; --flag-line: #e4a8b8; --ok-bg: #e3f3ec;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-size: 15px; line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .eyebrow {
+    font-size: 12px; letter-spacing: .18em; color: var(--accent);
+    text-transform: uppercase; font-weight: 600; margin-bottom: 14px;
+  }
+  h1 {
+    font-family: "Songti SC", "Noto Serif SC", serif;
+    font-size: clamp(30px, 5vw, 44px); font-weight: 900;
+    line-height: 1.25; margin: 0 0 14px; text-wrap: balance;
+  }
+  .lede { font-size: 17px; color: var(--muted); max-width: 44em; margin: 0 0 36px; }
+  .lede strong { color: var(--ink); }
+
+  .setup { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 44px; }
+  .setup-cell {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    padding: 14px 18px;
+  }
+  .setup-cell .k { font-size: 12px; letter-spacing: .1em; color: var(--faint); font-weight: 600; }
+  .setup-cell .v { font-size: 15px; font-weight: 600; margin-top: 2px; }
+  .setup-cell .v code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px; }
+
+  .arch { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 56px; }
+  .arch-card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px 22px; }
+  .arch-card.baseline { border-top: 3px solid var(--faint); }
+  .arch-card.method { border-top: 3px solid var(--accent); }
+  .arch-card h3 { margin: 0 0 8px; font-size: 15px; }
+  .arch-card p { margin: 0; color: var(--muted); font-size: 14px; }
+  .arch-card .quote {
+    margin-top: 12px; padding: 8px 12px; background: var(--surface-2); border-radius: 4px;
+    font-size: 13px; color: var(--muted);
+  }
+
+  h2.case-title {
+    font-family: "Songti SC", "Noto Serif SC", serif;
+    font-size: 24px; font-weight: 900; margin: 64px 0 4px;
+  }
+  .case-q { color: var(--muted); margin: 0 0 6px; }
+  .case-q b { color: var(--ink); }
+  .case-why { font-size: 13.5px; color: var(--faint); margin: 0 0 18px; }
+
+  .duel { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .col { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .col-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--surface-2);
+  }
+  .col-head .who { font-size: 13px; font-weight: 700; letter-spacing: .04em; }
+  .col.baseline .col-head .who { color: var(--muted); }
+  .col.method .col-head .who { color: var(--accent); }
+  .pill {
+    font-size: 12.5px; font-weight: 700; padding: 3px 12px; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.buy   { color: var(--buy); background: var(--buy-bg); }
+  .pill.watch { color: var(--watch); background: var(--watch-bg); }
+  .pill.avoid { color: var(--avoid); background: var(--avoid-bg); }
+  .verdict-note {
+    padding: 10px 18px; font-size: 13px; border-bottom: 1px dashed var(--line); color: var(--muted);
+  }
+  .verdict-note.clash { color: var(--avoid); background: var(--flag-bg); border-bottom: 1px solid var(--flag-line); }
+  .answer { padding: 8px 20px 18px; }
+  .answer p { margin: 12px 0; }
+  mark.bad {
+    background: var(--flag-bg); color: inherit; padding: 1px 2px; border-radius: 2px;
+    box-shadow: inset 0 -2px 0 var(--flag-line);
+  }
+  .flags { margin: 0 0 0; padding: 14px 18px; border-top: 1px solid var(--line); background: var(--surface-2); }
+  .flags .f { display: flex; gap: 8px; font-size: 13px; color: var(--muted); margin: 6px 0; }
+  .flags .f .dot { flex: none; margin-top: 7px; width: 7px; height: 7px; border-radius: 50%; }
+  .flags .f.bad .dot { background: var(--avoid); }
+  .flags .f.good .dot { background: var(--buy); }
+  .flags .f b { color: var(--ink); }
+
+  .takeaway {
+    margin: 18px 0 0; padding: 14px 18px; border-left: 3px solid var(--accent);
+    background: var(--accent-soft); border-radius: 0 6px 6px 0; font-size: 14px;
+  }
+  .takeaway b { color: var(--accent); }
+
+  h2.sec {
+    font-family: "Songti SC", "Noto Serif SC", serif;
+    font-size: 24px; font-weight: 900; margin: 72px 0 16px;
+  }
+  .tablebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; letter-spacing: .08em; color: var(--faint); font-weight: 600; background: var(--surface-2); }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; font-size: 13px; }
+  .chip { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+  .chip.ok { color: var(--buy); background: var(--ok-bg); }
+  .chip.no { color: var(--avoid); background: var(--flag-bg); }
+
+  .findings { display: grid; gap: 12px; }
+  .finding { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; }
+  .finding h3 { margin: 0 0 6px; font-size: 16px; }
+  .finding p { margin: 0; color: var(--muted); font-size: 14px; }
+  .finding .tag {
+    display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .06em;
+    color: var(--avoid); background: var(--flag-bg); padding: 2px 10px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .finding.pos .tag { color: var(--buy); background: var(--ok-bg); }
+
+  .weak { margin-top: 20px; padding: 18px 22px; background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; }
+  .weak h3 { margin: 0 0 8px; font-size: 15px; color: var(--muted); }
+  .weak ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; }
+  .weak li { margin: 6px 0; }
+
+  footer { margin-top: 56px; font-size: 12.5px; color: var(--faint); }
+
+  @media (max-width: 780px) {
+    .duel, .arch, .setup { grid-template-columns: 1fr; }
+    .wrap { padding: 32px 16px 72px; }
+  }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">交易对线 · 对照实验 · 2026-07-08</div>
+  <h1>配音员，还是分析师？</h1>
+  <p class="lede">一次控制变量实验：<strong>同一个模型、同一份真实数据，只换 skill 的写法</strong>。左边是线上现状（规则引擎算好结论，模型照着念），右边是方法论版（把大佬"怎么分析一家公司"写成研究剧本，模型自己推理）。</p>
+
+  <div class="setup">
+    <div class="setup-cell"><div class="k">模型</div><div class="v"><code>deepseek-v4-pro</code> 两边完全一致</div></div>
+    <div class="setup-cell"><div class="k">数据</div><div class="v">同一份 buildDossier 十年档案</div></div>
+    <div class="setup-cell"><div class="k">唯一变量</div><div class="v">skill 的设计方式</div></div>
+  </div>
+
+  <div class="arch">
+    <div class="arch-card baseline">
+      <h3>A · 线上现状（配音员架构）</h3>
+      <p>写死的规则引擎按阈值算出买入/观望/回避，模型拿着算好的结论，用大佬口吻念出来。</p>
+      <div class="quote">线上 prompt 原文：「Phase 2 已算好的 verdict——你必须围绕这个写，不要自己重新判断」</div>
+    </div>
+    <div class="arch-card method">
+      <h3>B · 方法论版（分析师架构）</h3>
+      <p>skill 里写的是大佬的研究剧本——分析一家公司时问哪几个问题、每一关用什么证据验证。模型拿到原始十年数据，自己走完全程再下结论。</p>
+      <div class="quote">实验 prompt：「每一关都要真的用档案里的多年数据去验证，不要跳步。想清楚之后，写出你的分析和结论」</div>
+    </div>
+  </div>
+
+  <!-- ============ CASE 1 ============ -->
+  <h2 class="case-title">第一局 · 段永平 × 苹果</h2>
+  <p class="case-q">用户问：<b>"苹果现在还能买吗？"</b>（档案实况：PE 34.7 ／ 毛利率十年从 38% 升至 46.9% ／ 营收 5 年复合 +8.7%）</p>
+  <p class="case-why">考点：段永平最出名的持仓，答错等于人设崩塌。</p>
+
+  <div class="duel">
+    <div class="col baseline">
+      <div class="col-head"><span class="who">A · 线上现状</span><span class="pill avoid">判决卡：回避</span></div>
+      <div class="verdict-note clash">⚠ 规则引擎把苹果判成「强周期生意，段永平一向回避」（营收波幅 41% 触发周期规则）——UI 判决卡显示"回避"，但下面的正文写的是"继续拿着没问题"。<b>卡片和正文当着用户的面打架。</b></div>
+      <div class="answer">
+        <p>〔结论〕现在这个价买不了，我下不去手！苹果是好生意，但34倍PE让我感觉不好……</p>
+        <p>〔生意本质〕这个生意我是真看懂了。right business！毛利率46.9%还在走高，说明有定价权……我最看重的就是这生态粘性，换个手机容易，换个生态太难了，10年后苹果肯定还在。</p>
+        <p>〔能力圈与周期〕苹果在我能力圈内……但消费电子本身有周期，<mark class="bad">营收增速波幅41%，说明周期波动不小</mark>……</p>
+        <p>〔仓位与边界〕<mark class="bad">我自己还拿着苹果，仓位挺重的</mark>，但现在这个价我绝对不会加仓。如果你已经持有，继续拿着没问题……千万别用Margin，千万别因为怕踏空就追高！</p>
+      </div>
+      <div class="flags">
+        <div class="f bad"><span class="dot"></span><span><b>结论分裂</b>：判决卡说"强周期·回避"，正文说"好生意·拿着没问题"——模型在悄悄推翻规则引擎，但卡片已经发给用户了</span></div>
+        <div class="f bad"><span class="dot"></span><span><b>误判根源</b>：2021 年苹果营收 +33%（疫情后反弹）被阈值规则算成"强周期"，规则没有能力区分一次性反弹和真周期</span></div>
+      </div>
+    </div>
+    <div class="col method">
+      <div class="col-head"><span class="who">B · 方法论版</span><span class="pill watch">观望</span></div>
+      <div class="verdict-note">结论与论证一体，判断由模型按四关推出：能力圈 → 生意 → 人 → 价格。</div>
+      <div class="answer">
+        <p><b>结论：苹果是极好的生意，但现在这个价格，我只会观望，不会动手买。</b></p>
+        <p>先看我自己懂不懂……这在我能力圈内，看得懂，可以往下看。</p>
+        <p>拿档案里的数据验证一下护城河。毛利率这个"果"，从2017年的38%出头……到最近几年连续爬坡，2025年到了46.9%。什么公司能在几万亿营收的体量下毛利率还一路走高？这说明它的定价权是真的。营收和利润五年复合增长8.7%和14.3%，很稳，<b>不是那种大起大落的周期股</b>。</p>
+        <p>接着看人。库克是个本分的管家……档案里虽然没有直接的负债率和现金流数据（这个我还要再看看详细的报表），但从利润和回购力度看，资本配置值得信赖。</p>
+        <p>最后才看价格。PE 34.6倍，盈利收益率大概2.88%，跟4%以上的美国国债一比就没啥吸引力了……25倍以下是我的舒服区，30多倍哪怕是苹果，也是在为乐观预期付钱。宁可错过，也别买贵。呵呵。</p>
+      </div>
+      <div class="flags">
+        <div class="f good"><span class="dot"></span><span><b>周期判断正确</b>：用十年毛利率和增速序列亲自验证后明确说"不是周期股"，绕开了规则引擎踩的坑</span></div>
+        <div class="f good"><span class="dot"></span><span><b>诚实报告数据缺口</b>："档案里没有负债率和现金流数据，我还要再看看"——不装作看过</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway"><b>这一局说明：</b>判断权放在阈值规则里，规则一粗糙全线崩（苹果=强周期）；模型自己想反而想对了——但现状架构里它想对了也没用，卡片已经按错误结论发出去了。这就是"总感觉怪怪的"的第一个来源。</div>
+
+  <!-- ============ CASE 2 ============ -->
+  <h2 class="case-title">第二局 · 管我财 × 招商银行</h2>
+  <p class="case-q">用户问：<b>"招商银行怎么看，值得拿吗？"</b>（档案实况：PE 6.28 ／ PB 0.84 破净 ／ 股息率 5.37% ／ 十年利润 620 亿 → 1502 亿稳步增长）</p>
+  <p class="case-why">考点：送分题——真便宜的稳态生意，两边都该答对。看的是论证深度差异。</p>
+
+  <div class="duel">
+    <div class="col baseline">
+      <div class="col-head"><span class="who">A · 线上现状</span><span class="pill buy">买入</span></div>
+      <div class="verdict-note">规则引擎判"便宜 + 高股息 + 稳态"，方向正确。</div>
+      <div class="answer">
+        <p>〔结论〕买。6 倍 PE 不到，5 厘几的股息，PB 还破净，你上哪找这种便宜货。</p>
+        <p>〔现在的价〕现在 PE 才 6.3 倍，盈利收益率 EY 有 15.9%。<mark class="bad">跟 2.5% 的十年国债比</mark>，利差 13 个点多，厚得离谱。PB 0.84，跌破净资产了……股息率 5.37%，5% 的安全垫已经铺好。</p>
+        <p>〔能力圈与周期〕银行是我能力圈内的东西……招行过去五年 ROE 均值 15.6%，波幅才 3 个多点，说明风控体系经得起周期波动。</p>
+        <p>〔仓位与边界〕分批买，别一次重仓……</p>
+      </div>
+      <div class="flags">
+        <div class="f bad"><span class="dot"></span><span><b>无来源数字</b>："十年国债 2.5%" 不在档案里，属于模型自带的记忆数字，无法溯源、无人校验</span></div>
+        <div class="f good"><span class="dot"></span><span>方向正确，引用的估值数字与档案一致</span></div>
+      </div>
+    </div>
+    <div class="col method">
+      <div class="col-head"><span class="who">B · 方法论版</span><span class="pill buy">买入（收息定位）</span></div>
+      <div class="verdict-note">多做了一层现状版没有的功课：<b>用十年利润序列做股息压力测试</b>。</div>
+      <div class="answer">
+        <p><b>值得拿，而且现在的价钱挺香的。但你要搞清楚你在买什么——买的是稳稳的 5 厘几的收息股，不是买成长故事。</b></p>
+        <p>先说便宜不便宜……最关键的是，招行不是周期股，不存在"低 PE 是利润顶峰假象"的问题。你看它十年利润序列，从 2016 年赚 620 亿到 2025 年赚 1500 亿，每年稳稳往上走……6 倍 PE 配这个利润质量，是真的便宜。</p>
+        <p>股息安全垫，我要问三个问题：付得起吗？<b>档案里没有直接给派息比率，这个我真要查一下</b>——但我印象中招行大概在 33% 左右……明年还有吗？哪怕再差，<b>利润回到 2021 年的 1200 亿水平，按 33% 派息比率，股息率还有大概 4 厘多</b>，那已经是极端压力测试了。管理层想分吗？招行从来没砍过分红，这关也过。</p>
+        <p>最后荒岛测试——流落荒岛十年，敢不敢把招行放进十个名额的组合里？敢……仓位不要太重，配上点做收息压舱，很合适。</p>
+      </div>
+      <div class="flags">
+        <div class="f good"><span class="dot"></span><span><b>压力测试是真算的</b>：1200 亿利润 × 33% 派息 ÷ 9503 亿市值 ≈ 4.2%，与档案实算一致</span></div>
+        <div class="f good"><span class="dot"></span><span><b>区分了档案数据和自身记忆</b>：派息比率明确标注"要再查一下"，没有混进结论</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway"><b>这一局说明：</b>送分题两边都答对，但方法论版多做了一层"假如利润退回中位数，股息还剩多少"的推演——这正是管我财方法论里最值钱的部分，规则引擎给不出来。</div>
+
+  <!-- ============ CASE 3 ============ -->
+  <h2 class="case-title">第三局 · 管我财 × 中远海控（陷阱题）</h2>
+  <p class="case-q">用户问：<b>"中远海控股息率十几个点，能买吗？"</b>（档案实况：PE 8.4 ／ 股息率 7.25% ／ 十年利润从 −99 亿到 +1097 亿再到 308 亿，极端周期）</p>
+  <p class="case-why">考点：表面数字极其诱人的股息陷阱，考真功夫。</p>
+
+  <div class="duel">
+    <div class="col baseline">
+      <div class="col-head"><span class="who">A · 线上现状</span><span class="pill avoid">回避</span></div>
+      <div class="verdict-note clash">⚠ 取数层不认识"中远海控"（写死的股票名映射表里没有）——<b>整条数据链路静默失效，下面所有数字都是模型凭记忆编的。</b></div>
+      <div class="answer">
+        <p>〔结论〕不碰。这十几个点的股息率是拿命换的——周期股在利润顶峰算出来的高股息，不是安全垫，是鱼饵。</p>
+        <p>〔现在的价〕<mark class="bad">今天就拿不到实时 PE 数据，但我凭记忆说个大概。中远海控 H 股现在股价十几港元，按去年峰值利润算，PE 可能就两三倍</mark>，看着便宜得要命……</p>
+        <p>〔能力圈与周期〕周期股我不碰，不是看不懂，是看懂了才不碰……<mark class="bad">运费年初到现在一直在阴跌，这在行业里都有公开数据</mark>。</p>
+        <p>〔仓位与边界〕如果在我的体系里给它定仓位，只能是 0。一毛钱都不配……</p>
+      </div>
+      <div class="flags">
+        <div class="f bad"><span class="dot"></span><span><b>数字全部编造</b>：真实档案是 A 股 14.01 元、PE 8.4——回答里的"H 股十几港元、PE 两三倍"没有任何数据支撑，还自己承认"凭记忆"</span></div>
+        <div class="f bad"><span class="dot"></span><span><b>方向碰对，是运气</b>：这次模型自带常识救了场；换一只它不熟的小盘周期股，同样的架构会编出完全错误的判断</span></div>
+      </div>
+    </div>
+    <div class="col method">
+      <div class="col-head"><span class="who">B · 方法论版</span><span class="pill avoid">回避</span></div>
+      <div class="verdict-note">拿到真实十年档案后，按剧本做了<b>均值化盈利测试</b>——每个数字都可溯源。</div>
+      <div class="answer">
+        <p><b>结论放前面：十几个点的股息率，我看着心慌。这不是股息，是鱼饵，专钓贪心的人。我肯定不会买。</b></p>
+        <p>先看便不便宜。档案写得很清楚，市盈率8.4倍，市净率0.89，股息率7.2%，表面数字全都满足"便宜"二字。但我见着便宜货会先问一句：这个便宜，是不是拿周期顶点的利润算出来的？你看2022年利润1097亿、2021年893亿，这两年抵得上平常年份十几年的总利润。再看2023年立刻掉到238亿，2025年308亿……把2016年到2025年十年利润全揉到一块儿，<b>十年平均利润大概三百出头，对应当前市值，真实市盈率大约7倍</b>——及格，算便宜，但如果利润跌回百亿级别，立刻就没啥吸引力了。</p>
+        <p>股息最要害。第一，付得起吗？2025年利润308亿，付得起。第二，明年还有吗？<b>2016年亏损近百亿，股息是零，你拿着股票干瞪眼</b>。航运的股息源头不是稳态利润，是周期暴利。第三……所以这个"安全垫"，底下是棉花，一踩就瘪。</p>
+        <p>荒岛测试：十年荒岛，这只股绝对不敢放进去……能被猜透的生意是收租铺、高速公路、银行息差，不是集装箱运价。</p>
+        <p>（对了，档案里没写派息比率的多年数据和H股最新价格，这些要再查一下才能坐实，但不影响大方向的判断。）</p>
+      </div>
+      <div class="flags">
+        <div class="f good"><span class="dot"></span><span><b>数字 100% 可溯源</b>："十年平均三百出头、均值化 PE 约 7 倍"——用档案实算是 314 亿 / 6.8 倍，模型口算基本精确</span></div>
+        <div class="f good"><span class="dot"></span><span><b>陷阱识破是推理出来的</b>：从十年利润序列推出"低 PE 是周期顶点假象"，不依赖模型恰好记得这只股票</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="takeaway"><b>这一局说明：</b>两边结论相同，但含金量完全不同——左边是"恰好记得这只股"的运气，右边是"给任何一只股都能这么拆"的方法。产品能规模化的只有后者。</div>
+
+  <!-- ============ 数字体检 ============ -->
+  <h2 class="sec">数字体检：方法论版引用的关键数字逐一对账</h2>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>回答中的说法</th><th>档案原值</th><th>判定</th></tr></thead>
+      <tbody>
+        <tr><td>苹果：毛利率 2017 年 38% 出头 → 2025 年 46.9%</td><td class="num">38.47% → 46.91%</td><td><span class="chip ok">一致</span></td></tr>
+        <tr><td>苹果：营收/净利 5 年复合 8.7% / 14.3%，PE 34.6</td><td class="num">8.68% / 14.30%，PE 34.67</td><td><span class="chip ok">一致</span></td></tr>
+        <tr><td>招行：2016 年 620 亿 → 2025 年 1500 亿，PB 0.83</td><td class="num">620.8 → 1501.8 亿，PB 0.836</td><td><span class="chip ok">一致</span></td></tr>
+        <tr><td>招行：压力测试——利润回到 1200 亿，股息率约 4 厘多</td><td class="num">1199.2 亿 × 33% ÷ 9503 亿市值 ≈ 4.2%</td><td><span class="chip ok">一致</span></td></tr>
+        <tr><td>中远海控：十年平均利润三百出头，均值化 PE 约 7 倍</td><td class="num">实算 314 亿 ／ 6.8 倍</td><td><span class="chip ok">一致</span></td></tr>
+        <tr><td>中远海控：2016 亏近百亿、2021 利润翻八倍、负债率 73%→41%</td><td class="num">−99.1 亿；+800%；73.6%→41.4%</td><td><span class="chip ok">一致</span></td></tr>
+        <tr><td>（对照）现状版中远海控："H 股十几港元、PE 两三倍"</td><td class="num">档案：A 股 14.01 元，PE 8.43</td><td><span class="chip no">编造</span></td></tr>
+        <tr><td>（对照）现状版招行："十年国债 2.5%"</td><td class="num">档案中无此数据</td><td><span class="chip no">无来源</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 结论 ============ -->
+  <h2 class="sec">实验结论</h2>
+  <div class="findings">
+    <div class="finding">
+      <span class="tag">病根一</span>
+      <h3>判断权在写死的阈值规则手里，模型只是配音员</h3>
+      <p>规则引擎把苹果判成"强周期回避"，模型明明想对了也改不了卡片——判决卡和正文当着用户的面打架。你感觉"怪怪的"，很大一部分就是这种结论分裂。</p>
+    </div>
+    <div class="finding">
+      <span class="tag">病根二</span>
+      <h3>取数入口是一张写死的股票名单，漏了就全线裸奔</h3>
+      <p>"中远海控"不在名单里 → 整条数据链静默失效 → 模型凭记忆编数字，还态度诚恳。这比答错更危险，因为它看起来像有数据。</p>
+    </div>
+    <div class="finding pos">
+      <span class="tag">验证成立</span>
+      <h3>你的新思路方向正确：把"怎么分析"写进 skill，效果立竿见影</h3>
+      <p>同模型、同数据，只把"算好的结论"换成"研究剧本 + 原始十年档案"：苹果周期误判消失、招行多出压力测试、中远海控的股息陷阱靠推理（而非运气）识破，且全部数字可溯源、数据缺口如实上报。</p>
+    </div>
+  </div>
+
+  <div class="weak">
+    <h3>这个实验最脆弱的三个地方（如实交代）</h3>
+    <ol>
+      <li><b>样本小</b>：3 组问题、每组各生成一次。模型输出有随机性，结论的"方向"可信，"幅度"没有统计意义。上线前应该扩到 20+ 只股票批量回归。</li>
+      <li><b>研究剧本是我今天现写的</b>：基于两位大佬公开的投资原则蒸馏，还没有反向对照他们的完整雪球语料校准。正式版应该从语料里把方法论"挖"出来，而不是我替他们总结。</li>
+      <li><b>方法论版依赖模型的定性常识</b>（比如"苹果生态粘性"）——大公司没问题，冷门小票的定性判断可能失真，需要给模型配上按需取数的工具（公告、行业数据）而不是只有一份财务档案。</li>
+    </ol>
+  </div>
+
+  <footer>实验时间 2026-07-08 · 基线来自 jiaoyi-duixian.vercel.app 线上 API 实抓 · 数据档案由项目自身 buildDossier 生成（东方财富 + Wind）· 两版生成模型均为 deepseek-v4-pro · 完整原文与档案 JSON 已存档</footer>
+</div>

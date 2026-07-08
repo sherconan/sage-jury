@@ -304,62 +304,155 @@ async function fetchUSBocha(symbol: string, name: string): Promise<Partial<Stock
   } catch (e: any) { return { errors: [`bocha ${e.message}`] }; }
 }
 
+// === Wind 万得（mcp.wind.com.cn）: 权威估值 + 财务底座 ===
+// 协议照搬 ~/.agents/skills/wind-mcp-skill/scripts/cli.mjs：MCP over HTTP, JSON-RPC 2.0,
+// Bearer 鉴权, SSE 响应。实测可省去 initialize 直接 tools/call（无状态后端），edge fetch 兼容。
+// 用 NL fundamentals 工具（question 含中文名 + 代码，后端自行解析，不依赖交易所后缀）。
+const WIND_TIMEOUT = 12000;
+
+function windTicker(t: Ticker): string {
+  if (t.market === 'A') return `${t.code}.${t.code.startsWith('6') ? 'SH' : 'SZ'}`;
+  if (t.market === 'HK') return `${t.code}.HK`;
+  return t.code; // 美股传裸代码，Wind 后端自行解析为 .O/.N
+}
+
+// 按列名关键字 + 单位把 Wind 返回行映射到 StockFactsTyped（亿元口径，与既有源一致）
+function mapWindRow(columns: { name: string; unit?: string }[], row: any[]): Partial<StockFactsTyped> {
+  const out: Partial<StockFactsTyped> = {};
+  const num = (i: number): number | undefined => {
+    const v = row[i];
+    if (typeof v === 'number') return isNaN(v) ? undefined : v;
+    if (typeof v === 'string' && v.trim() !== '' && !isNaN(+v)) return +v;
+    return undefined;
+  };
+  columns.forEach((c, i) => {
+    const n = c.name, u = c.unit || '', v = num(i);
+    if (v === undefined) return;
+    if (/PE/.test(n) || n.includes('市盈率')) out.pe_ttm = v;
+    else if (/PB/.test(n) || n.includes('市净率')) out.pb_mrq = v;
+    else if (n.includes('股息率')) out.dividend_yield_pct = v;
+    else if (n.includes('ROE') || n.includes('净资产收益率')) out.roe_pct = v;
+    else if (n.includes('毛利率')) out.gross_margin_pct = v;
+    else if (n.includes('总市值')) out.market_cap_billion = u.includes('万亿') ? v * 1e4 : v;
+    else if (n.includes('净利润')) out.net_income_billion = u.includes('万亿') ? v * 1e4 : v;
+    else if (n.includes('营业总收入') || n.includes('营业收入')) out.revenue_billion = u.includes('万亿') ? v * 1e4 : v;
+  });
+  return out;
+}
+
+export async function fetchWindFacts(t: Ticker): Promise<Partial<StockFactsTyped>> {
+  const key = process.env.WIND_API_KEY || "";
+  if (!key) return { errors: ["wind: WIND_API_KEY missing"] };
+  const isA = t.market === 'A';
+  const server = isA ? 'stock_data' : 'global_stock_data';
+  const tool = isA ? 'get_stock_fundamentals' : 'get_global_stock_fundamentals';
+  const q = `${t.name}${windTicker(t)} 最新市盈率PE_TTM、市净率PB_LF、股息率TTM、最新总市值、最近一期净资产收益率ROE、营业总收入、归属母公司股东的净利润、销售毛利率`;
+  try {
+    const r = await fetch(`https://mcp.wind.com.cn/vserver_${server}/mcp/`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json, text/event-stream',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: Date.now(), method: 'tools/call',
+        params: { name: tool, arguments: { question: q, lang: '中文' }, _meta: { clientVersion: 'sage' } },
+      }),
+      signal: AbortSignal.timeout(WIND_TIMEOUT),
+    });
+    if (!r.ok) return { errors: [`wind ${r.status}`] };
+    const txt = (await r.text()).trim();
+    let payload: any;
+    if (txt.startsWith('{')) payload = JSON.parse(txt);
+    else {
+      const ls = txt.split(/\r?\n/).filter(l => l.startsWith('data: '));
+      if (!ls.length) return { errors: ["wind no sse"] };
+      payload = JSON.parse(ls[ls.length - 1].slice(6));
+    }
+    const inner = payload?.result?.content?.[0]?.text;
+    if (typeof inner !== 'string') return { errors: ["wind no content"] };
+    const obj = JSON.parse(inner);
+    const blk = obj?.data?.data?.[0];
+    if (!blk?.columns || !blk?.rows?.[0]) return { errors: ["wind empty"] };
+    return { ...mapWindRow(blk.columns, blk.rows[0]), source: [`wind/${t.market}`] };
+  } catch (e: any) { return { errors: [`wind ${e.message}`] }; }
+}
+
 // === Orchestrator: 按市场并行调用最佳数据源 ===
 export async function gatherFacts(t: Ticker): Promise<StockFactsTyped> {
   const base: StockFactsTyped = { ticker: t, source: [], errors: [] };
   if (t.market === 'A') {
-    const [quote, peP, fin] = await Promise.all([
+    const [quote, peP, fin, wind] = await Promise.all([
       fetchEastmoneyQuote(t),
       fetchAPePct(t.code),
       fetchAFinancials(t.code),
+      fetchWindFacts(t),
     ]);
     return { ...base, ...quote, ...peP, ...fin,
-      source: [...(quote.source || []), ...(peP.source || []), ...(fin.source || [])],
-      errors: [...(quote.errors || []), ...(peP.errors || []), ...(fin.errors || [])] };
+      // Wind 权威估值/财务优先，东财兜底；price/涨幅/PE 历史分位仍走东财
+      pe_ttm: wind.pe_ttm ?? quote.pe_ttm,
+      pb_mrq: wind.pb_mrq ?? quote.pb_mrq,
+      dividend_yield_pct: wind.dividend_yield_pct ?? quote.dividend_yield_pct,
+      market_cap_billion: wind.market_cap_billion ?? quote.market_cap_billion,
+      roe_pct: wind.roe_pct ?? fin.roe_pct,
+      gross_margin_pct: wind.gross_margin_pct ?? fin.gross_margin_pct,
+      revenue_billion: wind.revenue_billion ?? fin.revenue_billion,
+      net_income_billion: wind.net_income_billion ?? fin.net_income_billion,
+      source: [...(quote.source || []), ...(peP.source || []), ...(fin.source || []), ...(wind.source || [])],
+      errors: [...(quote.errors || []), ...(peP.errors || []), ...(fin.errors || []), ...(wind.errors || [])] };
   }
   if (t.market === 'HK') {
     // v60.9.2: 港股三源并行 — gtimg(PE 唯一源) + eastmoney(PB/股息/市值 主) + HK F10(财务, 多半已废)
-    const [quote, gtimg, fin] = await Promise.all([
+    const [quote, gtimg, fin, wind] = await Promise.all([
       fetchEastmoneyQuote(t),
       fetchGtimgHK(t.code),
       fetchHKFinancials(t.code),
+      fetchWindFacts(t),
     ]);
     const hk: StockFactsTyped = {
       ...base,
-      // PE: 只有 gtimg 给得出（eastmoney 港股 f162 恒 0）
-      pe_ttm: gtimg.pe_ttm,
-      // 价格/PB/股息/市值: eastmoney 优先, gtimg 兜底
+      // PE: Wind 权威优先, gtimg 兜底（eastmoney 港股 f162 恒 0）
+      pe_ttm: wind.pe_ttm ?? gtimg.pe_ttm,
+      // 价格/涨幅: 仍走 eastmoney/gtimg（准实时）
       price: quote.price ?? gtimg.price,
-      pb_mrq: quote.pb_mrq ?? gtimg.pb_mrq,
-      dividend_yield_pct: quote.dividend_yield_pct ?? gtimg.dividend_yield_pct,
-      market_cap_billion: quote.market_cap_billion ?? gtimg.market_cap_billion,
       change_today_pct: quote.change_today_pct,
-      // 财务: HK F10（已被东财 302 改版废弃, 基本返回空, 留作以后修复）
-      revenue_billion: fin.revenue_billion,
-      net_income_billion: fin.net_income_billion,
-      roe_pct: fin.roe_pct,
-      gross_margin_pct: fin.gross_margin_pct,
-      source: [...(quote.source || []), ...(gtimg.source || []), ...(fin.source || [])],
-      errors: [...(quote.errors || []), ...(gtimg.errors || []), ...(fin.errors || [])],
+      // PB/股息/市值: Wind 优先, eastmoney/gtimg 兜底
+      pb_mrq: wind.pb_mrq ?? quote.pb_mrq ?? gtimg.pb_mrq,
+      dividend_yield_pct: wind.dividend_yield_pct ?? quote.dividend_yield_pct ?? gtimg.dividend_yield_pct,
+      market_cap_billion: wind.market_cap_billion ?? quote.market_cap_billion ?? gtimg.market_cap_billion,
+      // 财务: Wind 权威优先（HK F10 已被东财 302 改版废弃, 基本返回空）
+      revenue_billion: wind.revenue_billion ?? fin.revenue_billion,
+      net_income_billion: wind.net_income_billion ?? fin.net_income_billion,
+      roe_pct: wind.roe_pct ?? fin.roe_pct,
+      gross_margin_pct: wind.gross_margin_pct ?? fin.gross_margin_pct,
+      source: [...(quote.source || []), ...(gtimg.source || []), ...(fin.source || []), ...(wind.source || [])],
+      errors: [...(quote.errors || []), ...(gtimg.errors || []), ...(fin.errors || []), ...(wind.errors || [])],
     };
     return hk;
   }
   // US: 多源融合（v60.8.6 加 sina hq.sinajs.cn 拿 PE TTM）
-  const [sina, eastmoneyUS, stooq, bocha] = await Promise.all([
+  const [sina, eastmoneyUS, stooq, bocha, wind] = await Promise.all([
     fetchUSSina(t.code),       // ⭐ sina gb_aapl 端口拿 PE TTM (字段 14)
     fetchEastmoneyQuote(t),     // eastmoney 105.XXX 拿 PB/股息/市值/今日涨幅
     fetchUSStooq(t.code),       // stooq 兜底 price
     fetchUSBocha(t.code, t.name), // Bocha web search 兜底 PE
+    fetchWindFacts(t),          // ⭐ Wind 权威 PE/PB/股息/市值 + ROE/营收/净利/毛利（美股原先无财务）
   ]);
   const merged: Partial<StockFactsTyped> = {
     price: sina.price ?? eastmoneyUS.price ?? stooq.price,
-    pe_ttm: sina.pe_ttm ?? ((eastmoneyUS.pe_ttm && eastmoneyUS.pe_ttm > 0) ? eastmoneyUS.pe_ttm : bocha.pe_ttm),
-    pb_mrq: eastmoneyUS.pb_mrq,
-    dividend_yield_pct: eastmoneyUS.dividend_yield_pct,
-    market_cap_billion: eastmoneyUS.market_cap_billion,
+    pe_ttm: wind.pe_ttm ?? sina.pe_ttm ?? ((eastmoneyUS.pe_ttm && eastmoneyUS.pe_ttm > 0) ? eastmoneyUS.pe_ttm : bocha.pe_ttm),
+    pb_mrq: wind.pb_mrq ?? eastmoneyUS.pb_mrq,
+    dividend_yield_pct: wind.dividend_yield_pct ?? eastmoneyUS.dividend_yield_pct ?? bocha.dividend_yield_pct,
+    market_cap_billion: wind.market_cap_billion ?? eastmoneyUS.market_cap_billion,
     change_today_pct: eastmoneyUS.change_today_pct,
+    // Wind 新增：美股财务（既有源完全没有）
+    roe_pct: wind.roe_pct,
+    gross_margin_pct: wind.gross_margin_pct,
+    revenue_billion: wind.revenue_billion,
+    net_income_billion: wind.net_income_billion,
   };
   return { ...base, ...merged,
-    source: [...(sina.source || []), ...(eastmoneyUS.source || []), ...(stooq.source || []), ...(bocha.source || [])],
-    errors: [...(sina.errors || []), ...(eastmoneyUS.errors || []), ...(stooq.errors || []), ...(bocha.errors || [])] };
+    source: [...(sina.source || []), ...(eastmoneyUS.source || []), ...(stooq.source || []), ...(bocha.source || []), ...(wind.source || [])],
+    errors: [...(sina.errors || []), ...(eastmoneyUS.errors || []), ...(stooq.errors || []), ...(bocha.errors || []), ...(wind.errors || [])] };
 }

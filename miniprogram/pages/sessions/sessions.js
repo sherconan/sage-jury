@@ -15,12 +15,18 @@ Page({
       const lastSage = [...msgs].reverse().find(m => m.role === 'sage' && m.content);
       const lastUser = [...msgs].reverse().find(m => m.role === 'user' && m.content);
       const preview = (lastSage && lastSage.content) || (lastUser && lastUser.content) || '';
+      // v63-mp: 列表卡上展示最近一条 sage 结论的判决徽章（看好/观察/不碰/能力圈外）
+      // 绑真实持久化 verdict.tone/signal，无 verdict 则不渲染徽章（绝不编造）
+      const lastVerdict = [...msgs].reverse().find(m => m.role === 'sage' && m.verdict && m.verdict.tone);
+      const v = lastVerdict && lastVerdict.verdict;
       return {
         ...s,
         userTurnCount: msgs.filter(m => m.role === 'user').length,
         timeFmt: sess.fmtTime(s.ts_updated || s.ts_created),
         preview: String(preview).replace(/\s+/g, ' ').slice(0, 60),
         streaming: !!streaming[s.id],
+        verdictTone: v ? v.tone : '',
+        verdictSignal: v ? v.signal : '',
       };
     });
     if (q) {

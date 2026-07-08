@@ -1,0 +1,4181 @@
+[
+ {
+  "event": "phase",
+  "data": {
+   "name": "analyzing",
+   "message": "Python 端分析中..."
+  }
+ },
+ {
+  "event": "phase",
+  "data": {
+   "name": "analyzing",
+   "message": "研究美股 10 年财务..."
+  }
+ },
+ {
+  "event": "facts",
+  "data": {
+   "ticker": {
+    "code": "AAPL",
+    "secid": "105.AAPL",
+    "name": "苹果",
+    "market": "US"
+   },
+   "v62": true,
+   "depth": "full",
+   "years": 12
+  }
+ },
+ {
+  "event": "verdict",
+  "data": {
+   "sage": "duan-yongping",
+   "v62": true,
+   "signal": "pass",
+   "confidence": 0,
+   "headline": "强周期生意，段永平一向回避",
+   "keyMetrics": [
+    "PE 34.7｜EY 2.9%",
+    "营收5年CAGR 8.7%",
+    "ROE5年均 164.7%",
+    "毛利率 46.9%"
+   ],
+   "dims": {
+    "生意本质": {
+     "note": "近 5 年营收复合增速 8.7%（稳健增长）；近 5 年净利复合增速 14.3%；最新毛利率 46.9%且仍在走高——高毛利，说明有定价权；近 5 年 ROE 均值 164.7%，连续高于 15%——资本回报扎实，护城河的财务证据",
+     "pass": true,
+     "signal": "strong",
+     "score": 0,
+     "weight": 0
+    },
+    "管理与资本配置": {
+     "note": "近 5 年 ROE 波动幅度 28.0%——波动较大",
+     "pass": true,
+     "signal": "ok",
+     "score": 0,
+     "weight": 0
+    },
+    "现在的价": {
+     "note": "PE-TTM 34.7 倍，盈利收益率（EY）2.9%；段永平的锚：PE 25 倍以下他才\"感觉舒服\"，超 40 倍算贵——当前 偏高，要够好的生意才撑得起；PB 39.91",
+     "pass": true,
+     "signal": "ok",
+     "score": 0,
+     "weight": 0
+    },
+    "能力圈与周期": {
+     "note": "营收增速多年大起大落（波幅 41.0%，3 年负增长）——典型周期生意，段永平对强周期一向回避",
+     "pass": false,
+     "signal": "weak",
+     "score": 0,
+     "weight": 0
+    }
+   }
+  }
+ },
+ {
+  "event": "history",
+  "data": {
+   "count": 4,
+   "posts": [
+    {
+     "date": "2023-10-06",
+     "text": "难就难在便宜估值时段是什么？苹果现在便宜吗？茅台便宜吗？腾讯便宜吗？阿里巴巴便宜吗？Brkb 便宜吗？便宜到底是什么意思？很多人习惯把便宜跟过去到过什么价钱比的，那乐视便宜吗？GAME STOP便宜吗？AMC便宜吗？如果看不懂生意，说啥都是白说的。",
+     "likes": 1122,
+     "url": "https://xueqiu.com/1247347556/262535202",
+     "score": 11.52499642846007
+    },
+    {
+     "date": "2021-05-03",
+     "text": "$伯克希尔-哈撒韦B(BRK.B)$  我也觉得卖掉航空股没啥错。航空生意的苦日子可能还有相当长的时间，而且这种情况每隔一段时间还可能再来，这个商业模式确实没那么好。我也同意卖掉苹果可能是个错误。老巴推荐买S&amp;P500的说法已经有些年头了。我也一直有点买S&amp;P500的想法（还没买过，想法有些年头了），但优先顺序在苹果，Google，Brk后面。如果未来某天大跌到遍地是黄金但不知道哪个是雷的时候，我会优先考虑S&amp;P500. 几年前我有个朋友曾经问过老巴，BRK未来还能比S&amp;P500表现好吗？他说不容易，可能能够好一点点。我朋友还说他买了一点BRK哈，老巴说：我们不会让你亏钱的。",
+     "likes": 1059,
+     "url": "https://xueqiu.com/1247347556/178898514",
+     "score": 11.512447980053743
+    },
+    {
+     "date": "2021-12-11",
+     "text": "$苹果(AAPL)$   真的要过三万亿了吗？已经近在咫尺了。三万亿早晚要过的，但现在就过还是要适应一下。好像不太久以前还觉得一万亿就有点疯狂了，难道是懂苹果的人突然多起来了吗？",
+     "likes": 746,
+     "url": "https://xueqiu.com/1247347556/205653906",
+     "score": 11.436369413736335
+    },
+    {
+     "date": "2025-09-10",
+     "text": "$苹果(AAPL)$ 今天打圆石滩，有只小鹿从13洞跟着我到了14洞，然后趴在地上歇着了。",
+     "likes": 5398,
+     "url": "https://xueqiu.com/1247347556/351809596",
+     "score": 10.866116440110249
+    }
+   ]
+  }
+ },
+ {
+  "event": "quotes",
+  "data": [
+   {
+    "date": "2023-10-06",
+    "text": "难就难在便宜估值时段是什么？苹果现在便宜吗？茅台便宜吗？腾讯便宜吗？阿里巴巴便宜吗？Brkb 便宜吗？便宜到底是什么意思？很多人习惯把便宜跟过去到过什么价钱比的，那乐视便宜吗？GAME STOP便宜吗？AMC便宜吗？如果看不懂生意，说啥都是白说的。",
+    "likes": 1122,
+    "url": "https://xueqiu.com/1247347556/262535202",
+    "_rel_score": 12,
+    "_rec_mul": 1,
+    "_final_score": 12
+   },
+   {
+    "date": "2021-05-03",
+    "text": "$伯克希尔-哈撒韦B(BRK.B)$  我也觉得卖掉航空股没啥错。航空生意的苦日子可能还有相当长的时间，而且这种情况每隔一段时间还可能再来，这个商业模式确实没那么好。我也同意卖掉苹果可能是个错误。老巴推荐买S&amp;P500的说法已经有些年头了。我也一直有点买S&amp;P500的想法（还没买过，想法有些年头了），但优先顺序在苹果，Google，Brk后面。如果未来某天大跌到遍地是黄金但不知道哪个是雷的时候，我会优先考虑S&amp;P500. 几年前我有个朋友曾经问过老巴，BRK未来还能比S&amp;P500表现好吗？他说不容易，可能能够好一点点。我朋友还说他买了一点BRK哈，老巴说：我们不会让你亏钱的。",
+    "likes": 1059,
+    "url": "https://xueqiu.com/1247347556/178898514",
+    "_rel_score": 12,
+    "_rec_mul": 1,
+    "_final_score": 12
+   },
+   {
+    "date": "2021-12-11",
+    "text": "$苹果(AAPL)$   真的要过三万亿了吗？已经近在咫尺了。三万亿早晚要过的，但现在就过还是要适应一下。好像不太久以前还觉得一万亿就有点疯狂了，难道是懂苹果的人突然多起来了吗？",
+    "likes": 746,
+    "url": "https://xueqiu.com/1247347556/205653906",
+    "_rel_score": 11,
+    "_rec_mul": 1,
+    "_final_score": 11
+   },
+   {
+    "date": "2025-09-10",
+    "text": "$苹果(AAPL)$ 今天打圆石滩，有只小鹿从13洞跟着我到了14洞，然后趴在地上歇着了。",
+    "likes": 5398,
+    "url": "https://xueqiu.com/1247347556/351809596",
+    "_rel_score": 11,
+    "_rec_mul": 1,
+    "_final_score": 11
+   }
+  ]
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "get_realtime_quote",
+   "args": {
+    "stock": "苹果",
+    "market": "US"
+   },
+   "id": "v62-quote-1783478277208"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "get_realtime_quote",
+   "id": "v62-quote-1783478277208",
+   "result": "苹果(AAPL) 现价 310.66 | 市值 45628亿 | 数据源 push2/eastmoney"
+  }
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "get_10y_financials",
+   "args": {
+    "stock": "苹果",
+    "years": 12
+   },
+   "id": "v62-fin-1783478277208"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "get_10y_financials",
+   "id": "v62-fin-1783478277208",
+   "result": "苹果 · 12年年报 · 最新年 营收 4161.6亿 | ROE 171.4% | 毛利率 46.9% | 净利率 26.9% · 数据源 push2,datacenter/usf10-income,datacenter/usf10-balance,wind/US"
+  }
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "get_valuation_metrics",
+   "args": {
+    "stock": "苹果"
+   },
+   "id": "v62-val-1783478277208"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "get_valuation_metrics",
+   "id": "v62-val-1783478277208",
+   "result": "苹果 · PE 34.7 | PB 39.91 | EY 2.9% | 营收5年CAGR 8.7% | 净利5年CAGR 14.3% | ROE5年均 164.7%"
+  }
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "analyze_with_sage_framework",
+   "args": {
+    "sage": "段永平",
+    "stock": "苹果"
+   },
+   "id": "v62-analyze-1783478277208"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "analyze_with_sage_framework",
+   "id": "v62-analyze-1783478277208",
+   "result": "苹果 · 段永平框架（商业模式/差异化/护城河/管理层与企业文化/在能力圈内/合理估值）已分析 · 历史发言 4 条已检索"
+  }
+ },
+ {
+  "event": "phase",
+  "data": {
+   "name": "writer",
+   "message": "段永平写答案..."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "结论"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "下"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不去"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "手"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "！"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "是好"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生意"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "34"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "让我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "感觉"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不好"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "跟"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "几年前"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一万"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "亿"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "都觉得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "疯狂"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的时候"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "比"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "懂"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的人"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "可能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "太多了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "点"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "先"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这是什么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这门"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生意"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "很简单"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "卖"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "iPhone"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "Mac"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "iPad"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "手表"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "耳机"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这些"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "硬件"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "真正"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "厉害"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "把"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "硬件"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "软件"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "服务"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "捆"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "在一起"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "做了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生态系统"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "iPhone"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就很难"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "离开"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "i"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "Cloud"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "App"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " Store"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "Apple"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " Music"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "都"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "把你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "锁"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "住了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "市场"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "追捧"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "是因为"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "AI"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "概念"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "觉得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "Apple"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " Intelligence"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "带动"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "换"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "机"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "潮"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "华尔街"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "也在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "赌"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "投资"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "赌"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "概念"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生意"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "本身"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "和"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价格"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生意"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "本质"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生意"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "真"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "懂了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "right"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " business"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "！"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "毛利率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "46"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "9"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "走高"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说明"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "定价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "权"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "——"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价格"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "自己"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "算"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "供需"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "算"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这点"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "很重要"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "营收"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "5"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "复合"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "增长"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "8"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "7"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不算"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "快"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "稳"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "当"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "净"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "增速"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "14"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "3"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "更快"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说明"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利润"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "变"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "厚"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "RO"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "E"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "均值"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "164"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "吓"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "人"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "其实"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "因为"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "大量"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "回购"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "把"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "净资产"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "没了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "真实"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "资本"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "回报"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "没那么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "夸张"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "确实"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说明"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "赚钱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能力"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "超"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "强"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "护"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "城"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "河"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "深"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我最"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "重的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生态"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "粘"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "性"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "换个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "手机"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "容易"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "换个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生态"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "太难"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "10"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "年后"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "肯定"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "right"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " people"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "！"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "库"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "克"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "虽然"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不如"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "乔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "布斯"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "创造力"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "运营"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "和"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "供应链"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "管理"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "是世界"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "顶"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "级的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "right"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " price"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "？"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "嗯"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这才是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的问题"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "-T"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "TM"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "34"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "7"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "盈利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收益率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "（"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "EY"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "）"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "才"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "2"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "9"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "！"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "国债"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收益率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "大概"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "4"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "左右"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "盈利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收益率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "居然"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "比"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "无"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "风险"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "低"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这意味着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "股票"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拿"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "到的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "\""
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "\""
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还不如"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "国债"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "稳"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "当"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "除非"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "确定"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "盈利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "持续"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "增长"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我记得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "202"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "1"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "快到"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "三"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "万亿"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "时"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我说"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "\""
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "要"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "适应"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一下"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "\"，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "那时"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "低"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "些"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "更高"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "25"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "以下"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我才"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "感觉"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "舒服"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "些"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "30"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "以上"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "非常"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "谨慎"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "光"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不够"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还要"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "想"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "未来"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "十年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "赚"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "多少钱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "折"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "回来"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "34"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "意味着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "市场"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "已经"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "给了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "挺"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "乐观"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "预期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "安全"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "边际"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不够"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能力"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "圈"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "与"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "在我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能力"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "圈"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "内"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "商业模式"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "简单"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看懂"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "怎么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "赚钱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "消费"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "电子"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "本身"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "换"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "机"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拉"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "长"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "宏观经济"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不好"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "都会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "影响"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "销量"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "虽然"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "服务"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收入"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "增加"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "对冲"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一些"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "营收"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "增速"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "波"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "幅"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "41"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说明"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "波动"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不小"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "好在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "品牌"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "和服务"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "稳"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "最大的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "坑"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "估值"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "太高"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一旦"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "AI"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "换"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "机"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "故事"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "达"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "预期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "股价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "可能会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "杀"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "得很"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "惨"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我不是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "跌"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "万一"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "跌"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "30"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你能不能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "睡得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "觉"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "？\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "仓位"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "与"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "边界"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我自己"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拿着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "苹果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "仓位"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "挺"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "重的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "绝对不会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "加"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "仓"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "如果你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "已经"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "持有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "继续"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拿着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "没问题"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "好"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "公司"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "值得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "长期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拥有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "；"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "如果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还没"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "冲"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "进去"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "风险"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收益"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "比"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不好"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "什么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "情况下"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "改变"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看法"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "？"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "要么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "跌"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "到"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "25"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "以下"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "或者"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "盈利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "突然"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "大增"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "把"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拉"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "下来"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "千万别"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "用"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "Margin"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "千万别"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "因为"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "怕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "踏"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "空"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "追"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "高"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "！"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "十年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "机会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "总是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "本"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "分"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一点"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "等"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "合理"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "再"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "动手"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "done",
+  "data": {
+   "fullReply": "〔结论〕现在这个价买不了，我下不去手！苹果是好生意，但34倍PE让我感觉不好，跟几年前一万亿都觉得疯狂的时候比，现在懂苹果的人可能太多了点。\n\n〔先看这是什么〕苹果这门生意很简单，就是卖iPhone、Mac、iPad、手表耳机这些硬件，但真正厉害的是它把硬件、软件、服务捆在一起做了个生态系统。你买了iPhone就很难离开，iCloud、App Store、Apple Music都把你锁住了。现在市场追捧它是因为AI概念，觉得Apple Intelligence能带动换机潮，华尔街也在赌这个。但投资不是赌概念，得看生意本身和价格。\n\n〔生意本质〕这个生意我是真看懂了。right business！毛利率46.9%还在走高，说明有定价权——价格自己说了算，不是供需说了算，这点很重要。营收5年复合增长8.7%，不算快但稳当，净利增速14.3%更快，说明利润在变厚。ROE均值164%看着吓人，其实因为苹果大量回购把净资产买没了，真实资本回报没那么夸张，但确实说明赚钱能力超强、护城河深。我最看重的就是这生态粘性，换个手机容易，换个生态太难了，10年后苹果肯定还在。right people！库克虽然不如乔布斯有创造力，但运营和供应链管理是世界顶级的。right price？嗯，这才是现在的问题。\n\n〔现在的价〕PE-TTM 34.7倍，盈利收益率（EY）才2.9%！国债收益率现在大概4%左右，苹果的盈利收益率居然比无风险利率还低，这意味着你买苹果股票拿到的\"利息\"还不如买国债稳当，除非你确定苹果的盈利能持续增长。我记得2021年苹果快到三万亿时我说\"要适应一下\"，那时PE还低些，现在更高了。25倍以下我才感觉舒服些，30倍以上就得非常谨慎。光看PE不够，还要想未来十年它能赚多少钱折现回来，但34倍PE意味着市场已经给了挺乐观的预期，安全边际不够。\n\n〔能力圈与周期〕苹果在我能力圈内，商业模式简单，我能看懂它怎么赚钱。但消费电子本身有周期，换机周期拉长、宏观经济不好都会影响销量，虽然服务收入在增加能对冲一些。营收增速波幅41%，说明周期波动不小，好在苹果有品牌和服务稳着。现在最大的坑就是估值太高，一旦AI换机故事不达预期，股价可能会杀得很惨。我不是说苹果会跌，我是说现在这个价买，万一跌个30%，你能不能睡得着觉？\n\n〔仓位与边界〕我自己还拿着苹果，仓位挺重的，但现在这个价我绝对不会加仓。如果你已经持有，继续拿着没问题，好公司值得长期拥有；如果还没买，现在冲进去风险收益比不好。什么情况下我会改变看法？要么跌到25倍PE以下，或者盈利突然大增把PE拉下来。千万别用Margin，千万别因为怕踏空就追高！看十年，机会总是有的，本分一点，等合理价再动手。",
+   "chars": 1135,
+   "history_used": 4,
+   "data_errors": [],
+   "stripped_chars": 0
+  }
+ }
+]

@@ -1,0 +1,3301 @@
+[
+ {
+  "event": "phase",
+  "data": {
+   "name": "analyzing",
+   "message": "Python 端分析中..."
+  }
+ },
+ {
+  "event": "phase",
+  "data": {
+   "name": "analyzing",
+   "message": "研究公司 10 年财务..."
+  }
+ },
+ {
+  "event": "facts",
+  "data": {
+   "ticker": {
+    "code": "600036",
+    "secid": "1.600036",
+    "name": "招商银行",
+    "market": "A"
+   },
+   "v62": true,
+   "depth": "full",
+   "years": 10
+  }
+ },
+ {
+  "event": "verdict",
+  "data": {
+   "sage": "guan-wo-cai",
+   "v62": true,
+   "signal": "buy",
+   "confidence": 0,
+   "headline": "便宜 + 高股息 + 稳态 — 管哥的低估逆向典型对象",
+   "keyMetrics": [
+    "PE 6.3｜EY 15.9%",
+    "PB 0.84",
+    "股息率 5.37%",
+    "ROE5年均 15.6%",
+    "营收5年CAGR 3.0%"
+   ],
+   "dims": {
+    "分位（现在贵不贵）": {
+     "note": "PE-TTM 6.3 倍（深度低估区）；盈利收益率 EY 15.9% vs A 10Y 国债 2.5% = 利差 13.4%（息差厚，有安全垫）；PB 0.84（破净！下行有底）",
+     "pass": true,
+     "signal": "strong",
+     "score": 0,
+     "weight": 0
+    },
+    "排雷（看有没有坑）": {
+     "note": "近年财务无明显雷点：净利为正、ROE 不低、营收未明显萎缩、毛利稳定",
+     "pass": true,
+     "signal": "strong",
+     "score": 0,
+     "weight": 0
+    },
+    "股息（下行有没有保护）": {
+     "note": "股息率 5.37%（≥5%，下行保护到位，管哥很喜欢）；股息 5.4% ≥ 10Y 国债 2.5% （超过国债，纯股息逻辑成立）",
+     "pass": true,
+     "signal": "strong",
+     "score": 0,
+     "weight": 0
+    },
+    "稳态（生意稳不稳）": {
+     "note": "近 5 年 ROE 均值 15.6%，波幅 3.6%（稳态可定量）；近 10 年营收增速波幅 15.7%，2 年负增长（一般波动）",
+     "pass": true,
+     "signal": "ok",
+     "score": 0,
+     "weight": 0
+    },
+    "荒岛（10 年后还在不在）": {
+     "note": "近 5 年营收复合 3.0%（生意没死）；5 年 ROE持续 > 8% — 资本回报体系扎实，10 年范围大概率延续",
+     "pass": true,
+     "signal": "ok",
+     "score": 0,
+     "weight": 0
+    }
+   }
+  }
+ },
+ {
+  "event": "history",
+  "data": {
+   "count": 4,
+   "posts": [
+    {
+     "date": "2026-01-14",
+     "text": "$招商银行(SH600036)$ 賣1這是什麼意思？這麼掛能賣得出去嗎？",
+     "likes": 344,
+     "url": "https://xueqiu.com/9650668145/370891036",
+     "score": 15.268279221285765
+    },
+    {
+     "date": "2023-10-27",
+     "text": "$招商银行(03968)$ 的問題很嚴重，三季度營收大幅下降，在降息背景下，存款資金成本不降反而大幅上升，非息收入有滯後效應，今年輕微下滑，預計明年加速下滑。",
+     "likes": 267,
+     "url": "https://xueqiu.com/9650668145/264822792",
+     "score": 15.213255630682287
+    },
+    {
+     "date": "2023-12-13",
+     "text": "千萬不要拿$建设银行(00939)$ 去換$招商银行(03968)$ ，後者要開始承擔大行責任了",
+     "likes": 237,
+     "url": "https://xueqiu.com/9650668145/270664219",
+     "score": 15.187374173005052
+    },
+    {
+     "date": "2022-10-08",
+     "text": "$招商银行(03968)$ 市值比$中国银行(03988)$ 高那么多，一直沒有積極承擔大銀行責任，支持中央號召，向經營困難的中小企輸血。一聲嘆息",
+     "likes": 161,
+     "url": "https://xueqiu.com/9650668145/232222775",
+     "score": 15.103412938015925
+    }
+   ]
+  }
+ },
+ {
+  "event": "quotes",
+  "data": [
+   {
+    "date": "2026-01-14",
+    "text": "$招商银行(SH600036)$ 賣1這是什麼意思？這麼掛能賣得出去嗎？",
+    "likes": 344,
+    "url": "https://xueqiu.com/9650668145/370891036",
+    "_rel_score": 15,
+    "_rec_mul": 1,
+    "_final_score": 15
+   },
+   {
+    "date": "2023-10-27",
+    "text": "$招商银行(03968)$ 的問題很嚴重，三季度營收大幅下降，在降息背景下，存款資金成本不降反而大幅上升，非息收入有滯後效應，今年輕微下滑，預計明年加速下滑。",
+    "likes": 267,
+    "url": "https://xueqiu.com/9650668145/264822792",
+    "_rel_score": 15,
+    "_rec_mul": 1,
+    "_final_score": 15
+   },
+   {
+    "date": "2023-12-13",
+    "text": "千萬不要拿$建设银行(00939)$ 去換$招商银行(03968)$ ，後者要開始承擔大行責任了",
+    "likes": 237,
+    "url": "https://xueqiu.com/9650668145/270664219",
+    "_rel_score": 15,
+    "_rec_mul": 1,
+    "_final_score": 15
+   },
+   {
+    "date": "2022-10-08",
+    "text": "$招商银行(03968)$ 市值比$中国银行(03988)$ 高那么多，一直沒有積極承擔大銀行責任，支持中央號召，向經營困難的中小企輸血。一聲嘆息",
+    "likes": 161,
+    "url": "https://xueqiu.com/9650668145/232222775",
+    "_rel_score": 15,
+    "_rec_mul": 1,
+    "_final_score": 15
+   }
+  ]
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "get_realtime_quote",
+   "args": {
+    "stock": "招商银行",
+    "market": "A"
+   },
+   "id": "v62-quote-1783478323309"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "get_realtime_quote",
+   "id": "v62-quote-1783478323309",
+   "result": "招商银行(600036) 现价 ? | 市值 9533亿 | 数据源 push2/eastmoney"
+  }
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "get_10y_financials",
+   "args": {
+    "stock": "招商银行",
+    "years": 10
+   },
+   "id": "v62-fin-1783478323309"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "get_10y_financials",
+   "id": "v62-fin-1783478323309",
+   "result": "招商银行 · 10年年报 · 最新年 营收 3375.3亿 | ROE 13.4% | 毛利率 ?% | 净利率 44.8% · 数据源 push2,datacenter/valuation,datacenter/f10-finance,wind/A"
+  }
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "get_valuation_metrics",
+   "args": {
+    "stock": "招商银行"
+   },
+   "id": "v62-val-1783478323309"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "get_valuation_metrics",
+   "id": "v62-val-1783478323309",
+   "result": "招商银行 · PE 6.3 | PB 0.84 | EY 15.9% | 营收5年CAGR 3.0% | 净利5年CAGR 9.1% | ROE5年均 15.6%"
+  }
+ },
+ {
+  "event": "tool_call",
+  "data": {
+   "name": "analyze_with_sage_framework",
+   "args": {
+    "sage": "管我财",
+    "stock": "招商银行"
+   },
+   "id": "v62-analyze-1783478323309"
+  }
+ },
+ {
+  "event": "tool_result",
+  "data": {
+   "name": "analyze_with_sage_framework",
+   "id": "v62-analyze-1783478323309",
+   "result": "招商银行 · 管我财框架（估值水位/排雷扫描/股息安全垫/生意稳态/荒岛测试）已分析 · 历史发言 4 条已检索"
+  }
+ },
+ {
+  "event": "phase",
+  "data": {
+   "name": "writer",
+   "message": "管我财写答案..."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "结论"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "6"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不到"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "5"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "厘"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "几"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "股息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PB"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "破"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "净"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "上"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "哪"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "找"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这种"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "便宜"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "货"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "先"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这是什么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "招"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一家"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "银行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "普通的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "银行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "国内"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "零售"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "银行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "做得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "最好的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "客户"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "黏"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "性"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "高"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有钱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "人"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "存"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "钱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "第一个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "想到"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "用户"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "为什么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "觉得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "猛"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "？"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "前"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "十年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "确实"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "猛"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利润"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "涨"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "飞快"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "股价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "飞天"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "提醒"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "被"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "要求"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "\""
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "承担"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "大"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "责任"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "\""
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不能再"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "只管"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "赚钱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不管"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "社会责任"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生意"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "本质"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "银行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这门"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "生意"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "本质上"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "吃"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "差"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "降"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "里"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "差"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "窄"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "营收"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "承"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "压"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "23"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "10"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "月在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "雪"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "球"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说过"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "招"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "三季度"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "营收"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "大幅"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "下降"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "存款"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "资金"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "成本"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "降"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "反"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "升"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "非"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收入"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "滞后"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "效应"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "压力"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一天"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "两天"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "消"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "化的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "招"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "好在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "零售"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "底"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "子"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "厚"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "定价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "权"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "相对"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "强"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "放"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "长"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "线"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "国内"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "银行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "里"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "最能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "打"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的那个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "杠杆"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "低"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " RO"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "E"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "长期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "15"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "往上"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说明"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "资产"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "质量"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "扎实"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "才"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "6"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "3"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "盈利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "收益率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " E"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "Y"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "有"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "15"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "9"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "跟"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "2"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "5"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "十年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "国债"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "比"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "差"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "13"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "点多"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "厚"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "得"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "离谱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "PB"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "0"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "84"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "跌破"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "净资产"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "了"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "—"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一股"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "招"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "花的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "钱"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "比"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "账"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "上"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "净资产"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "还"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "少"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "两"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "成"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这不"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "便宜"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "什么叫"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "便宜"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "股息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "5"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "37"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "5"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "的安全"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "垫"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "已经"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "铺"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "好"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就算"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "股价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "不"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "涨"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "每年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拿"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "5"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "厘"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "多"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "也"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "够"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "你"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "睡的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能力"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "圈"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "与"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "银行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "是我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "能力"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "圈"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "内的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "东西"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "定量"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "算"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "账"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "就能"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "明白"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "处于"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "降"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "营收"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "增速"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "放缓"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利润"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "靠"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拨"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "备"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "调节"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "撑着"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "最大的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "坑"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "资产"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "质量"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "恶化"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "—"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "如果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "经济"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "出"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "大"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "问题"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "坏"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "账"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "爆发"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "那"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "利润"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "表"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "很难"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "招"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "行"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "过去"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "五年"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " RO"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "E"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "均值"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "15"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "."
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "6"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "波"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "幅"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "才"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "3"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "多点"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "说明"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它的"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "风"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "控"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "体系"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "经"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "得起"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "周期"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "波动"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。\n\n"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〔"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "仓位"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "与"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "边界"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "〕"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "分批"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "买"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "别"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一次"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "重"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "仓"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "现在"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "价"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "敢"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "拿"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "但如果"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "哪天"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " PE"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "回到"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "10"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "倍"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "以上"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "、"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "股息"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "率"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "跌破"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": " "
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "3"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "%，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我就会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "考虑"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "减"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "仓"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "什么"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "情况下"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "我会"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "改变"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看法"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "？"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "一是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "经济"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "硬"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "着陆"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "导致"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "坏"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "账"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "爆"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "雷"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "，"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "二是"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "政策"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "逼"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "它"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "承担"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "更多"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "社会责任"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "影响"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "盈利"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "这两个"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "暂时"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "看不到"
+  }
+ },
+ {
+  "event": "chunk",
+  "data": {
+   "delta": "。"
+  }
+ },
+ {
+  "event": "done",
+  "data": {
+   "fullReply": "〔结论〕买。6 倍 PE 不到，5 厘几的股息，PB 还破净，你上哪找这种便宜货。\n\n〔先看这是什么〕招行就是一家银行，但它不是普通的银行。国内零售银行做得最好的，客户黏性高，有钱人存钱第一个想到它。用户为什么觉得它猛？前十年确实猛，利润涨得飞快，股价飞天。但我得提醒你，它现在被要求\"承担大行责任\"了，不能再只管赚钱不管社会责任。\n\n〔生意本质〕银行这门生意本质上吃息差。降息周期里息差收窄，营收就会承压。我 23 年 10 月在雪球说过，招行三季度营收大幅下降，存款资金成本不降反升，非息收入有滞后效应。这压力不是一天两天能消化的。但招行好在零售底子厚、定价权相对强，放长线它还是国内银行里最能打的那个。杠杆率不低，但 ROE 长期 15% 往上，说明资产质量扎实。\n\n〔现在的价〕现在 PE 才 6.3 倍，盈利收益率 EY 有 15.9%。跟 2.5% 的十年国债比，利差 13 个点多，厚得离谱。PB 0.84，跌破净资产了—你买一股招行花的钱比它账上净资产还少两成，这不便宜什么叫便宜。股息率 5.37%，5% 的安全垫已经铺好。就算股价不涨，每年拿 5 厘多也够你睡的。\n\n〔能力圈与周期〕银行是我能力圈内的东西，定量算账就能看明白。现在处于降息周期，营收增速放缓，利润靠拨备调节撑着。最大的坑是资产质量恶化—如果经济出大问题，坏账爆发，那利润表会很难看。但招行过去五年 ROE 均值 15.6%，波幅才 3 个多点，说明它的风控体系经得起周期波动。\n\n〔仓位与边界〕分批买，别一次重仓。现在这个价我敢拿，但如果哪天 PE 回到 10 倍以上、股息率跌破 3%，我就会考虑减仓。什么情况下我会改变看法？一是经济硬着陆导致坏账爆雷，二是政策逼它承担更多社会责任影响盈利。这两个暂时看不到。",
+   "chars": 750,
+   "history_used": 4,
+   "data_errors": [],
+   "stripped_chars": 0
+  }
+ }
+]

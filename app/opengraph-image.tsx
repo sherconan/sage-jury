@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "大佬陪审团 · Sage Jury";
+export const alt = "交易对线 — 和投资大佬对线你的每一笔交易";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -34,26 +34,26 @@ export default async function OGImage() {
               fontSize: "30px",
             }}
           >
-            ⚖️
+            ⚔️
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: "24px", fontWeight: 700 }}>大佬陪审团</div>
-            <div style={{ fontSize: "14px", color: "#D4AF37", letterSpacing: "0.3em" }}>SAGE JURY</div>
+            <div style={{ fontSize: "24px", fontWeight: 700 }}>交易对线</div>
+            <div style={{ fontSize: "14px", color: "#D4AF37", letterSpacing: "0.3em" }}>TRADE FACE-OFF</div>
           </div>
         </div>
 
         <div style={{ marginTop: "60px", fontSize: "72px", fontWeight: 900, lineHeight: 1.1 }}>
-          让 15 位投资大佬
+          和投资大佬
         </div>
         <div style={{ fontSize: "72px", fontWeight: 900, lineHeight: 1.1 }}>
-          替你<span style={{ color: "#D4AF37" }}>审判</span>每一笔交易
+          <span style={{ color: "#D4AF37" }}>对线</span>你的每一笔交易
         </div>
 
         <div style={{ marginTop: "50px", fontSize: "28px", color: "#C2CCD8", lineHeight: 1.4 }}>
-          段永平 · 冯柳 · 但斌 · 林园 · 张坤 · 巴菲特
+          段永平 · 管我财
         </div>
         <div style={{ marginTop: "10px", fontSize: "22px", color: "#8FA0B5" }}>
-          一笔交易 → 6 张评分卡 → 1 份判决书
+          上万条雪球真实发言 + Wind 万得实时财务数据
         </div>
 
         <div
@@ -65,7 +65,7 @@ export default async function OGImage() {
             gap: "12px",
           }}
         >
-          {["#1E3A8A", "#7C2D12", "#831843", "#064E3B", "#0C4A6E", "#451A03"].map((c, i) => (
+          {["#1E3A8A", "#831843"].map((c, i) => (
             <div
               key={i}
               style={{
@@ -82,7 +82,7 @@ export default async function OGImage() {
                 fontWeight: 700,
               }}
             >
-              {["DYP", "FL", "DB", "LY", "ZK", "WB"][i]}
+              {["DYP", "GWC"][i]}
             </div>
           ))}
         </div>
@@ -97,7 +97,7 @@ export default async function OGImage() {
             letterSpacing: "0.2em",
           }}
         >
-          THE COURT OF INVESTMENT · 2026
+          TRADE FACE-OFF · 2026
         </div>
       </div>
     ),

@@ -1,6 +1,6 @@
 // pages/jury/jury.js — v62-mp.1 multi-sage 多人对线
 const app = getApp();
-const { callJurySSE, decorateToolCall, parseCitationSegments } = require('../../utils/api');
+const { callJurySSE, decorateToolCall, parseCitationSegments, decorateVerdict, decorateFacts } = require('../../utils/api');
 const { parseMarkdown } = require('../../utils/markdown');
 
 const STARTER_QUESTIONS = [
@@ -76,6 +76,8 @@ Page({
         toolCalls: [],
         toolsAllDone: false,
         analystThinking: '',
+        verdict: null,
+        facts: null,
         writerStarted: false,
         done: false,
         error: '',
@@ -102,6 +104,9 @@ Page({
             next.contentBlocks = parseMarkdown(patch.content);
           }
           if (patch.analystThinking !== undefined) next.analystThinking = patch.analystThinking;
+          // v63-mp: verdict/facts 已是 server 端原始 payload，复用 chat 同款装饰器（仅当 server 路由到 jury 时到达）
+          if (patch.verdict !== undefined) next.verdict = decorateVerdict(patch.verdict);
+          if (patch.facts !== undefined) next.facts = decorateFacts(patch.facts);
           if (patch.toolCalls !== undefined) {
             next.toolCalls = patch.toolCalls.map(decorateToolCall);
             next.toolsAllDone = next.toolCalls.every(tc => !!tc.result);
@@ -122,8 +127,16 @@ Page({
         }
       );
     } catch (e) {
-      wx.showToast({ title: '请求失败：' + (e.errMsg || e.message || ''), icon: 'none', duration: 2200 });
-      this.setData({ loading: false });
+      // 网络层失败：onAllDone 不会触发，给仍在"分析中"的卡收口为错误态，避免永久转圈
+      const msg = e.errMsg || e.message || '网络异常';
+      const cur = this.data.sageStates;
+      const next = {};
+      Object.keys(cur).forEach(slug => {
+        const s = cur[slug];
+        next[slug] = (s.done || s.error) ? s : { ...s, error: msg };
+      });
+      wx.showToast({ title: '请求失败：' + msg, icon: 'none', duration: 2200 });
+      this.setData({ sageStates: next, loading: false });
     }
   },
 });

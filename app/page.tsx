@@ -12,6 +12,20 @@ import { cn } from "@/lib/utils";
 // =================== Types ===================
 interface QuoteRef { date: string; text: string; likes: number; url: string; _rel_score?: number; _rec_mul?: number; _final_score?: number; }
 interface ToolCall { name: string; args: any; id?: string; result?: string; }
+// v63: 后端结构化判决/估值/维度——之前前端丢弃了这些事件，只渲染纯文字墙
+interface VerdictData {
+  signal?: string;            // buy / watch / pass / too_hard …
+  headline?: string;
+  keyMetrics?: string[];      // ["PE 20", "营收5年CAGR 11.9%", …]
+  dims?: Record<string, { note?: string; pass?: boolean; signal?: string }>;
+  sage?: string;
+}
+interface FactsMeta {
+  ticker?: { name?: string; code?: string; market?: string } | null;
+  v62?: boolean;
+  facts?: any;                // 非 v62 路径的 StockFactsTyped
+  note?: string;
+}
 interface Msg {
   role: "user" | "sage";
   content: string;
@@ -24,6 +38,9 @@ interface Msg {
   analystThinking?: string;
   analystDone?: boolean;
   writerStarted?: boolean;
+  // v63: 结构化卡片数据
+  verdict?: VerdictData;
+  factsMeta?: FactsMeta;
 }
 interface Session {
   id: string;
@@ -40,21 +57,54 @@ interface SageOption {
 }
 
 // =================== Static Config ===================
-// v60.4.8: 与 SAGES_RAW.tier 对齐——dan-bin/lao-tang 是 tier=removed，下线
-// 完整 15 个 sage（含 fallback 路径）见 /sage/[id] 单独页；主聊页保留有 corpus 的 2 位
+// v63: 上线 roster 扩到 10 位大佬。total_posts > 0 = 有真实雪球语料（带「发言溯源」）；
+// = 0 = 靠结构化人设 + 真实财务数据作答（无历史发言库）。
 const SAGES: SageOption[] = [
   { slug: "duan-yongping", display: "段永平", alias: "大道无形我有型",
-    philosophy: "本分 · 不懂不投 · 看十年后", total_posts: 10497,
+    philosophy: "本分 · 不懂不投 · 看十年后", total_posts: 10630,
     initials: "DYP", gradient: "from-blue-500 to-indigo-600" },
   { slug: "guan-wo-cai", display: "管我财", alias: "管我财",
-    philosophy: "低估逆向平均赢 · 排雷胜选股", total_posts: 33877,
+    philosophy: "低估逆向平均赢 · 排雷胜选股", total_posts: 33853,
     initials: "GWC", gradient: "from-emerald-500 to-teal-600" },
+  { slug: "dan-bin", display: "但斌", alias: "时间的玫瑰",
+    philosophy: "长持伟大消费品 · 享受复利", total_posts: 597,
+    initials: "DB", gradient: "from-rose-500 to-pink-600" },
+  { slug: "lao-tang", display: "唐朝（老唐）", alias: "手把手教你读财报",
+    philosophy: "三年后估值 · 确定性折现", total_posts: 116,
+    initials: "LT", gradient: "from-amber-500 to-orange-600" },
+  { slug: "feng-liu", display: "冯柳", alias: "高毅·弱者体系",
+    philosophy: "逆向 · 预期差 · 下行保护优先", total_posts: 0,
+    initials: "FL", gradient: "from-violet-500 to-purple-600" },
+  { slug: "zhang-kun", display: "张坤", alias: "易方达·公募一哥",
+    philosophy: "集中持有 · 自由现金流为王", total_posts: 0,
+    initials: "ZK", gradient: "from-sky-500 to-blue-600" },
+  { slug: "lin-yuan", display: "林园", alias: "嘴巴股专家",
+    philosophy: "垄断 · 上瘾 · 重复消费", total_posts: 0,
+    initials: "LY", gradient: "from-lime-500 to-green-600" },
+  { slug: "qiu-guolu", display: "邱国鹭", alias: "便宜的好公司",
+    philosophy: "好行业 · 好公司 · 好价格", total_posts: 0,
+    initials: "QGL", gradient: "from-cyan-500 to-teal-600" },
+  { slug: "buffett", display: "巴菲特", alias: "Warren Buffett",
+    philosophy: "护城河 · 能力圈 · 安全边际", total_posts: 0,
+    initials: "WB", gradient: "from-slate-600 to-slate-800" },
+  { slug: "li-lu", display: "李录", alias: "喜马拉雅资本",
+    philosophy: "商业持久性 · 安全边际 · 复利", total_posts: 0,
+    initials: "LL", gradient: "from-fuchsia-500 to-purple-600" },
 ];
 
 const STARTERS: Record<string, string[]> = {
-  "duan-yongping": ["你为什么换神华去泡泡玛特？", "苹果还能拿吗？", "拼多多怎么看？"],
-  "guan-wo-cai":   ["腾讯能买吗？", "招行 PE 历史什么分位？", "26 年荒岛策略选什么？"],
+  "duan-yongping": ["苹果还能拿吗？", "拼多多怎么看？", "茅台现在能买吗？"],
+  "guan-wo-cai":   ["腾讯能买吗？", "招行现在贵不贵？", "长江电力适合做底仓吗？"],
+  "dan-bin":       ["茅台还能长持吗？", "腾讯算时间的玫瑰吗？", "比亚迪怎么看？"],
+  "lao-tang":      ["茅台现在估值贵不贵？", "腾讯三年后值多少？", "洋河还能拿吗？"],
+  "feng-liu":      ["海康威视有没有预期差？", "现在的医药板块怎么看？", "腾讯算左侧机会吗？"],
+  "zhang-kun":     ["茅台的自由现金流如何？", "腾讯护城河还在吗？", "海天味业怎么看？"],
+  "lin-yuan":      ["茅台符合嘴巴股吗？", "片仔癀怎么看？", "爱尔眼科算上瘾消费吗？"],
+  "qiu-guolu":     ["招行算便宜的好公司吗？", "格力现在怎么看？", "美的值得买吗？"],
+  "buffett":       ["苹果还有护城河吗？", "茅台符合你的标准吗？", "比亚迪怎么看？"],
+  "li-lu":         ["茅台的商业持久性如何？", "腾讯在你能力圈内吗？", "宁德时代怎么看？"],
 };
+const DEFAULT_STARTERS = ["茅台现在能买吗？", "腾讯怎么看？", "苹果还能拿吗？"];
 
 const STOCK_SUGGESTIONS = [
   "茅台", "五粮液", "汾酒", "泸州老窖", "洋河", "海天", "伊利", "片仔癀",
@@ -141,6 +191,40 @@ function fmtTime(ts: number) {
   if (diff < 86400_000) return `${Math.floor(diff/3600_000)} 小时前`;
   return d.toISOString().slice(5, 10).replace("-", "/");
 }
+
+// =================== v63 结构化卡片 ===================
+// 判决信号 → 中文标签 + 语义色调（克制专业的研报配色，不花哨）
+type Tone = "buy" | "watch" | "avoid" | "hard";
+const SIGNAL_MAP: Record<string, { label: string; tone: Tone }> = {
+  buy: { label: "值得重注", tone: "buy" },
+  strong_buy: { label: "强烈看好", tone: "buy" },
+  add: { label: "可加仓", tone: "buy" },
+  watch: { label: "观望 · 等价", tone: "watch" },
+  hold: { label: "持有", tone: "watch" },
+  neutral: { label: "中性", tone: "watch" },
+  pass: { label: "不碰", tone: "avoid" },
+  avoid: { label: "回避", tone: "avoid" },
+  sell: { label: "卖出", tone: "avoid" },
+  too_hard: { label: "能力圈外", tone: "hard" },
+  unknown: { label: "数据不足", tone: "hard" },
+};
+const TONE_STYLE: Record<Tone, { badge: string; ring: string; soft: string; text: string; bar: string; dot: string }> = {
+  buy:   { badge: "bg-emerald-600 text-white", ring: "border-emerald-200", soft: "bg-emerald-50/70", text: "text-emerald-700", bar: "bg-emerald-500", dot: "bg-emerald-500" },
+  watch: { badge: "bg-amber-500 text-white",   ring: "border-amber-200",   soft: "bg-amber-50/70",   text: "text-amber-700",   bar: "bg-amber-400",   dot: "bg-amber-400" },
+  avoid: { badge: "bg-rose-600 text-white",     ring: "border-rose-200",    soft: "bg-rose-50/70",    text: "text-rose-700",    bar: "bg-rose-500",    dot: "bg-rose-500" },
+  hard:  { badge: "bg-slate-600 text-white",    ring: "border-slate-200",   soft: "bg-slate-50",      text: "text-slate-600",   bar: "bg-slate-400",   dot: "bg-slate-400" },
+};
+function resolveSignal(sig?: string): { label: string; tone: Tone } {
+  if (!sig) return { label: "判断中", tone: "watch" };
+  return SIGNAL_MAP[sig] || { label: sig, tone: "watch" };
+}
+// "营收5年CAGR 11.9%" → { label:"营收5年CAGR", value:"11.9%" }；解析不出就整串当 value
+function parseMetric(s: string): { label: string; value: string } {
+  const m = s.match(/^(.+?)[\s:：]+([+\-]?[\d.,]+\s*[%倍元亿×x]?[A-Za-z]*)$/);
+  if (m) return { label: m[1].trim(), value: m[2].replace(/\s+/g, "") };
+  return { label: "", value: s };
+}
+const DIM_DOT: Record<string, Tone> = { strong: "buy", ok: "watch", weak: "avoid", unknown: "hard" };
 
 // =================== Component ===================
 export default function ChatPage() {
@@ -328,6 +412,9 @@ export default function ChatPage() {
           let data: any; try { data = JSON.parse(line.slice(6)); } catch { continue; }
           lastEventAt = Date.now(); // v60.6.1 stall watchdog 心跳
           if (evt === "quotes") patchLast({ quotes: data || [], loading: true });
+          // v63: 接住后端结构化判决/估值——之前被丢弃，导致只剩纯文字墙
+          else if (evt === "verdict") patchLast({ verdict: data || {}, loading: true });
+          else if (evt === "facts") patchLast({ factsMeta: data || {}, loading: true });
           else if (evt === "chunk" && data.delta) {
             const clean = cleanDSML(data.delta);
             if (clean) { accumulated += clean; patchLast({ content: accumulated, loading: false }); }
@@ -471,8 +558,8 @@ export default function ChatPage() {
           style={{ display: "flex", flexDirection: "column" }}>
           <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
             <span className="font-semibold text-slate-900 flex items-center gap-2">
-              <span className="text-base">🎩</span>
-              <span>Sage Chat</span>
+              <span className="text-base">⚔️</span>
+              <span>交易对线</span>
             </span>
             <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 hover:bg-slate-100 rounded">
               <X className="h-4 w-4 text-slate-500" />
@@ -552,7 +639,7 @@ export default function ChatPage() {
             })}
           </div>
           <div className="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-400 text-center">
-            数据本地存储 · 4 sage · 4 工具
+            数据本地存储 · {SAGES.length} 位大佬 · 真实财务数据
           </div>
         </aside>
 
@@ -568,7 +655,7 @@ export default function ChatPage() {
                 activeSage.gradient)}>{activeSage.initials}</div>
               <div>
                 <p className="text-sm font-semibold text-slate-900">{activeSession?.title || "和 " + activeSage.display + " 对话"}</p>
-                <p className="text-[11px] text-slate-500">{activeSage.philosophy} · 基于 {activeSage.total_posts.toLocaleString()} 条雪球发言</p>
+                <p className="text-[11px] text-slate-500">{activeSage.philosophy}{activeSage.total_posts > 0 ? ` · 基于 ${activeSage.total_posts.toLocaleString()} 条雪球发言` : " · 结构化人设 + 真实财务数据"}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -595,7 +682,7 @@ export default function ChatPage() {
                 <p className="mt-2 text-sm text-slate-500">{activeSage.philosophy}</p>
                 <p className="mt-1 text-xs text-slate-400">4 工具 (历史发言语义搜 · 网搜 · 实时行情 · K 线)</p>
                 <div className="mt-7 flex flex-wrap justify-center gap-2 max-w-xl">
-                  {(STARTERS[activeSage.slug] || []).map(s => (
+                  {(STARTERS[activeSage.slug] || DEFAULT_STARTERS).map(s => (
                     <button key={s} onClick={() => submit(s)}
                       className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition shadow-sm">
                       {s}
@@ -610,8 +697,8 @@ export default function ChatPage() {
                   m.role === "user" ? "bg-slate-900 text-white" : `bg-gradient-to-br ${activeSage.gradient} text-white`)}>
                   {m.role === "user" ? "你" : activeSage.initials}
                 </div>
-                <div className={cn("max-w-[78%] rounded-2xl px-5 py-3.5 shadow-sm",
-                  m.role === "user" ? "bg-slate-900 text-white" : "bg-white border border-slate-200")}>
+                <div className={cn("rounded-2xl px-5 py-3.5 shadow-sm",
+                  m.role === "user" ? "max-w-[78%] bg-slate-900 text-white" : "w-full max-w-2xl md:max-w-3xl bg-white border border-slate-200")}>
                   {/* v58: tool calls — 折叠 + 人话标签 + 紧凑 */}
                   {m.role === "sage" && m.toolCalls && m.toolCalls.length > 0 && (
                     <details className="mb-3 group">
@@ -666,7 +753,74 @@ export default function ChatPage() {
                       </div>
                     </details>
                   )}
-                  {m.loading && !m.content && !m.toolCalls?.length ? (
+                  {/* v63: 结构化卡片 —— 判决 / 估值 / 维度（命中"把信息展示卡片做好"） */}
+                  {m.role === "sage" && m.verdict && (m.verdict.signal || m.verdict.headline || (m.verdict.keyMetrics?.length ?? 0) > 0) && (() => {
+                    const { label, tone } = resolveSignal(m.verdict!.signal);
+                    const st = TONE_STYLE[tone];
+                    const tk = m.factsMeta?.ticker;
+                    const mktLabel = tk?.market === "A" ? "A股" : tk?.market === "US" ? "美股" : tk?.market === "HK" ? "港股" : "";
+                    const metrics = (m.verdict!.keyMetrics || []).map(parseMetric).filter(x => x.value);
+                    const dims = m.verdict!.dims ? Object.entries(m.verdict!.dims) : [];
+                    return (
+                      <div className="mb-4 space-y-2.5">
+                        {/* 判决卡 */}
+                        <div className={cn("relative overflow-hidden rounded-xl border bg-white", st.ring)}>
+                          <div className={cn("absolute inset-y-0 left-0 w-1", st.bar)} />
+                          <div className="py-3 pl-4 pr-4">
+                            <div className="flex flex-wrap items-center gap-2.5">
+                              <span className={cn("inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold tracking-wide", st.badge)}>{label}</span>
+                              {tk?.name && (
+                                <span className="text-sm font-semibold text-slate-900">{tk.name}
+                                  {tk.code && <span className="ml-1 font-mono text-[11px] font-normal text-slate-400">{tk.code}</span>}
+                                </span>
+                              )}
+                              <span className="ml-auto font-mono text-[10px] uppercase tracking-widest text-slate-300">{activeSage.display} · 判断</span>
+                            </div>
+                            {m.verdict!.headline && <p className="mt-2 text-[13.5px] leading-relaxed text-slate-700">{m.verdict!.headline}</p>}
+                          </div>
+                        </div>
+                        {/* 估值数据卡 */}
+                        {metrics.length > 0 && (
+                          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2">
+                              <span className="text-[11px] font-semibold text-slate-500">关键估值与质地</span>
+                              <span className="font-mono text-[9px] uppercase tracking-wider text-slate-300">{mktLabel ? `${mktLabel} · 年报口径` : "年报口径"}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-px bg-slate-100 sm:grid-cols-3">
+                              {metrics.map((mm, i) => (
+                                <div key={i} className="bg-white px-4 py-2.5">
+                                  <div className="truncate text-[10.5px] text-slate-400">{mm.label || "指标"}</div>
+                                  <div className="mt-0.5 font-mono text-[15px] font-semibold tabular-nums text-slate-800">{mm.value}</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* 维度发现 */}
+                        {dims.length > 0 && (
+                          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                            <div className="mb-2 text-[11px] font-semibold text-slate-500">{activeSage.display}的框架</div>
+                            <ul className="space-y-2">
+                              {dims.map(([dim, d], i) => {
+                                const key = d?.signal || (d?.pass ? "ok" : "weak");
+                                const dt = TONE_STYLE[DIM_DOT[key] || "watch"];
+                                return (
+                                  <li key={i} className="flex gap-2.5 text-[12.5px]">
+                                    <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", dt.dot)} />
+                                    <div className="min-w-0">
+                                      <span className="font-medium text-slate-700">{dim}</span>
+                                      {d?.note && <span className="text-slate-500"> — {d.note}</span>}
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {m.loading && !m.content && !m.toolCalls?.length && !m.verdict ? (
                     <div className="flex items-center gap-2 text-slate-500 text-sm">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       <span>{activeSage.display} 正在思考...</span>

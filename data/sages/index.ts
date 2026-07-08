@@ -1028,3 +1028,5 @@ SAGES_RAW.push(
 // 对外只导出非 removed 的陪审员
 export const SAGES = SAGES_RAW.filter(s => s.tier !== "removed");
 export const SAGE_BY_ID = Object.fromEntries(SAGES.map((s) => [s.id, s]));
+// v63: 含全部大佬（含 tier=removed 的但斌/老唐/林园）——交易对线 10 人 roster 用，按 slug 取人设
+export const SAGE_BY_ID_ALL = Object.fromEntries(SAGES_RAW.map((s) => [s.id, s]));
