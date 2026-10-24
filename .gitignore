@@ -19,3 +19,4 @@ data/xueqiu-watcher/daily/
 # python
 __pycache__/
 *.pyc
+data/xueqiu-watcher/*.sqlite
